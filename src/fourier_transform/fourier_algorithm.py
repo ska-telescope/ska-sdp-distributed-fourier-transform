@@ -10,6 +10,7 @@ import itertools
 # Fixing seed of numpy random
 numpy.random.seed(123456789)
 
+
 def coordinates(N):
     """1D array which spans [-.5,.5[ with 0 at position N/2"""
     N2 = N // 2
