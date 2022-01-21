@@ -1,16 +1,108 @@
 """Distributed Fourier Transform Module."""
 
-import matplotlib.patches as patches
-from matplotlib import pylab
 import scipy.special
 import scipy.signal
 import numpy
-import itertools
-
-# Fixing seed of numpy random
-numpy.random.seed(123456789)
 
 
+# TODO: need to merge the functions with _a in their name to their equivalents from Crocodile
+#   Crocodile functions are below the _a ones
+def slice_a(fill_val, axis_val, dims, axis):
+    """
+    Slice A
+
+    param fill_val: Fill value
+    param axis_val: Axis value
+    param dims: Dimensions
+    param axis: Axis
+
+    return:
+    """
+    return tuple([axis_val if i == axis else fill_val for i in range(dims)])
+
+
+def pad_mid_a(a, N, axis):
+    """
+    Pad Mid A
+
+    param a: A
+    param N: Total image size on a side
+    param axis: Axis
+
+    return:
+    """
+    N0 = a.shape[axis]
+    if N == N0:
+        return a
+    pad = slice_a(
+        (0, 0), (N // 2 - N0 // 2, (N + 1) // 2 - (N0 + 1) // 2), len(a.shape), axis
+    )
+    return numpy.pad(a, pad, mode="constant", constant_values=0.0)
+
+
+def extract_mid_a(a, N, axis):
+    """
+    Extract mid A
+
+    param a: A
+    param N: Total image size on a side
+    param axis: Axis
+
+    return:
+    """
+    assert N <= a.shape[axis]
+    cx = a.shape[axis] // 2
+    if N % 2 != 0:
+        slc = slice(cx - N // 2, cx + N // 2 + 1)
+    else:
+        slc = slice(cx - N // 2, cx + N // 2)
+    return a[slice_a(slice(None), slc, len(a.shape), axis)]
+
+
+def fft_a(a, axis):
+    """
+    FFT A
+
+    param a: A
+    param axis: Axis
+
+    return:
+    """
+    return numpy.fft.fftshift(
+        numpy.fft.fft(numpy.fft.ifftshift(a, axis), axis=axis), axis
+    )
+
+
+def ifft_a(a, axis):
+    """
+    IFFT A
+
+    param a: A
+    param axis: Axis
+
+    return:
+    """
+    return numpy.fft.fftshift(
+        numpy.fft.ifft(numpy.fft.ifftshift(a, axis), axis=axis), axis
+    )
+
+
+def broadcast_a(a, dims, axis):
+    """
+    Broadcast A
+
+    param a: A
+    param dims: Dimensions
+    param axis: Axis
+
+
+    return:
+    """
+    return a[slice_a(numpy.newaxis, slice(None), dims, axis)]
+
+
+# CROCODILE FUNCTIONS:
+# TODO: update, where needed, so they can also operate a single, given axis (merge with funcs above)
 def coordinates(N):
     """1D array which spans [-.5,.5[ with 0 at position N/2"""
     N2 = N // 2
@@ -20,10 +112,13 @@ def coordinates(N):
         return numpy.mgrid[-N2 : N2 + 1] / N
 
 
-def fft(a):
+def fft(a, axis=None):
     """Fourier transformation from image to grid space
 
     :param a: image in `lm` coordinate space
+    :param axis: int or shape tuple, optional
+        Axes over which to calculate.  Defaults to None, which shifts all axes.
+        (doc from numpy.fft.ifftshift docstring)
     :returns: `uv` grid
     """
     if len(a.shape) == 1:
@@ -123,98 +218,7 @@ def anti_aliasing_function(shape, m, c):
     )
 
 
-def fmt(x):
-    """
-
-    :param x: X
-
-    :return: x
-    """
-    if x >= 1024 * 1024 and (x % (1024 * 1024)) == 0:
-        return "%dM" % (x // 1024 // 1024)
-    if x >= 1024 and (x % 1024) == 0:
-        return "%dk" % (x // 1024)
-    return "%d" % x
-
-
-def mark_range(
-    lbl, x0, x1=None, y0=None, y1=None, ax=None, x_offset=1 / 200, linestyle="--"
-):
-    """Helper for marking ranges in a graph.
-
-    :param lbl: label
-    :param x0: X0
-    :param x1: X1
-    :param y1: Y1
-    :param ax: Ax
-    :param x_offset: X offset
-    :param linestyle: Linestyle
-
-    """
-    if ax is None:
-        ax = pylab.gca()
-    if y0 is None:
-        y0 = ax.get_ylim()[1]
-    if y1 is None:
-        y1 = ax.get_ylim()[0]
-    wdt = ax.get_xlim()[1] - ax.get_xlim()[0]
-    ax.add_patch(
-        patches.PathPatch(patches.Path([(x0, y0), (x0, y1)]), linestyle=linestyle)
-    )
-    if x1 is not None:
-        ax.add_patch(
-            patches.PathPatch(patches.Path([(x1, y0), (x1, y1)]), linestyle=linestyle)
-        )
-    else:
-        x1 = x0
-    if pylab.gca().get_yscale() == "linear":
-        lbl_y = (y0 * 7 + y1) / 8
-    else:
-        # Some type of log scale
-        lbl_y = (y0 ** 7 * y1) ** (1 / 8)
-    ax.annotate(lbl, (x1 + x_offset * wdt, lbl_y))
-
-
-def find_x_sorted_smooth(xs, ys, y):
-    """Find sorted smooth.
-
-    :param xs: Xs
-    :param ys: Ys
-    :param y: Y
-
-    :return: xs
-
-    """
-
-    assert len(xs) == len(ys)
-    pos = numpy.searchsorted(ys, y)
-    if pos <= 0:
-        return xs[0]
-    if pos >= len(ys) or ys[pos] == ys[pos - 1]:
-        return xs[len(ys) - 1]
-    w = (y - ys[pos - 1]) / (ys[pos] - ys[pos - 1])
-    return xs[pos - 1] * (1 - w) + xs[pos] * w
-
-
-def find_x_sorted_logsmooth(xs, ys, y):
-    """
-    Find sorted log smooth.
-
-    :param xs: Xs
-    :param ys: Ys
-    :param y: Y
-
-    :return: log xs
-
-    """
-    return find_x_sorted_smooth(xs, numpy.log(numpy.maximum(1e-100, ys)), numpy.log(y))
-
-
-def whole(xs):
-    """."""
-    return numpy.all(numpy.abs(xs - numpy.around(xs)) < 1e-13)
-
-
+# 1D FOURIER ALGORITHM FUNCTIONS
 def make_subgrid_and_facet(
     G,
     nsubgrid,
@@ -497,116 +501,7 @@ def subgrid_range_2(
     return extract_mid(FMiNjSi, yB_size)
 
 
-def slice_a(fill_val, axis_val, dims, axis):
-    """
-    Slice A
-
-    param fill_val: Fill value
-    param axis_val: Axis value
-    param dims: Dimensions
-    param axis: Axis
-
-    return:
-    """
-    return tuple([axis_val if i == axis else fill_val for i in range(dims)])
-
-
-def pad_mid_a(a, N, axis):
-    """
-    Pad Mid A
-
-    param a: A
-    param N: Total image size on a side
-    param axis: Axis
-
-    return:
-    """
-    N0 = a.shape[axis]
-    if N == N0:
-        return a
-    pad = slice_a(
-        (0, 0), (N // 2 - N0 // 2, (N + 1) // 2 - (N0 + 1) // 2), len(a.shape), axis
-    )
-    return numpy.pad(a, pad, mode="constant", constant_values=0.0)
-
-
-def extract_mid_a(a, N, axis):
-    """
-    Extract mid A
-
-    param a: A
-    param N: Total image size on a side
-    param axis: Axis
-
-    return:
-    """
-    assert N <= a.shape[axis]
-    cx = a.shape[axis] // 2
-    if N % 2 != 0:
-        slc = slice(cx - N // 2, cx + N // 2 + 1)
-    else:
-        slc = slice(cx - N // 2, cx + N // 2)
-    return a[slice_a(slice(None), slc, len(a.shape), axis)]
-
-
-def fft_a(a, axis):
-    """
-    FFT A
-
-    param a: A
-    param axis: Axis
-
-    return:
-    """
-    return numpy.fft.fftshift(
-        numpy.fft.fft(numpy.fft.ifftshift(a, axis), axis=axis), axis
-    )
-
-
-def ifft_a(a, axis):
-    """
-    IFFT A
-
-    param a: A
-    param axis: Axis
-
-    return:
-    """
-    return numpy.fft.fftshift(
-        numpy.fft.ifft(numpy.fft.ifftshift(a, axis), axis=axis), axis
-    )
-
-
-def broadcast_a(a, dims, axis):
-    """
-    Broadcast A
-
-    param a: A
-    param dims: Dimensions
-    param axis: Axis
-
-    return:
-    """
-    slc = [numpy.newaxis] * dims
-    slc[axis] = slice(None)
-    return a[slc]
-
-
-# TODO Two functions with same name?
-def broadcast_a(a, dims, axis):
-    """
-    Broadcast A
-
-    param a: A
-    param dims: Dimensions
-    param axis: Axis
-
-
-    return:
-    """
-    return a[slice_a(numpy.newaxis, slice(None), dims, axis)]
-
-
+# 2D FOURIER ALGORITHM FUNCTIONS
 def prepare_facet(facet, axis, Fb, yP_size):
     """
 
@@ -669,146 +564,53 @@ def extract_subgrid(
     )
 
 
-def test_accuracy(
-    nsubgrid,
-    xA_size,
-    nfacet,
-    yB_size,
-    N,
-    subgrid_off,
-    subgrid_A,
-    facet_off,
-    facet_B,
-    xM_yN_size,
-    xM_size,
-    Fb,
-    yP_size,
-    xMxN_yP_size,
-    facet_m0_trunc,
-    xM_yP_size,
-    Fn,
-    xs=252,
-    ys=252,
+# COMMON 1D and 2D FUNCTIONS -- SETTING UP FOR ALGORITHM TO RUN
+
+# TODO: what exactly are the things we return here? + needs docstring
+def get_actual_work_terms(
+    pswf, xM, xMxN_yP_size, yB_size, yN_size, xM_size, N, yP_size
 ):
-    """
-
-    param nsubgrid: Number of subgrids
-    param xA_size: Effective subgrid size
-    param nfacet: Number of facets
-    param yB_size: Effective facet size
-    param N: Total image size on a side
-    param subgrid_off: Subgrid off
-    param subgrid_A: Subgrid A
-    param facet_off: Facet off
-    param facet_B: Facet B
-    param xM_yN_size:
-    param xM_size: Subgrid size, padded for transfer (internal)
-    param Fb:
-    param yP_size: Facet size, padded for m convolution (internal)
-    param xMxN_yP_size:
-    param facet_m0_trunc:
-    param xM_yP_size:
-    param Fn:
-    param xs:
-    param ys:
-    """
-    subgrid_2 = numpy.empty((nsubgrid, nsubgrid, xA_size, xA_size), dtype=complex)
-    facet_2 = numpy.empty((nfacet, nfacet, yB_size, yB_size), dtype=complex)
-
-    # G_2 = numpy.exp(2j*numpy.pi*numpy.random.rand(N,N))*numpy.random.rand(N,N)/2
-    # FG_2 = fft(G_2)
-
-    FG_2 = numpy.zeros((N, N))
-    FG_2[ys, xs] = 1
-    G_2 = ifft(FG_2)
-
-    for i0, i1 in itertools.product(range(nsubgrid), range(nsubgrid)):
-        subgrid_2[i0, i1] = extract_mid(
-            numpy.roll(G_2, (-subgrid_off[i0], -subgrid_off[i1]), (0, 1)), xA_size
-        )
-        subgrid_2[i0, i1] *= numpy.outer(subgrid_A[i0], subgrid_A[i1])
-    for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
-        facet_2[j0, j1] = extract_mid(
-            numpy.roll(FG_2, (-facet_off[j0], -facet_off[j1]), (0, 1)), yB_size
-        )
-        facet_2[j0, j1] *= numpy.outer(facet_B[j0], facet_B[j1])
-
-    NMBF_NMBF = numpy.empty(
-        (nsubgrid, nsubgrid, nfacet, nfacet, xM_yN_size, xM_yN_size), dtype=complex
+    # Calculate actual work terms to use. We need both $n$ and $b$ in image space
+    Fb = 1 / extract_mid(pswf, yB_size)
+    Fn = pswf[(yN_size // 2) % int(1 / 2 / xM) :: int(1 / 2 / xM)]
+    facet_m0_trunc = pswf * numpy.sinc(coordinates(yN_size) * xM_size / N * yN_size)
+    facet_m0_trunc = (
+        xM_size
+        * yP_size
+        / N
+        * extract_mid(ifft(pad_mid(facet_m0_trunc, yP_size)), xMxN_yP_size).real
     )
-    for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
-        BF_F = prepare_facet(facet_2[j0, j1], 0, Fb, yP_size)
-        BF_BF = prepare_facet(BF_F, 1, Fb, yP_size)
-        for i0 in range(nsubgrid):
-            NMBF_BF = extract_subgrid(
-                BF_BF,
-                i0,
-                0,
-                subgrid_off,
-                yP_size,
-                xMxN_yP_size,
-                facet_m0_trunc,
-                xM_yP_size,
-                Fn,
-                xM_yN_size,
-                N,
-            )
-            for i1 in range(nsubgrid):
-                NMBF_NMBF[i0, i1, j0, j1] = extract_subgrid(
-                    NMBF_BF,
-                    i1,
-                    1,
-                    subgrid_off,
-                    yP_size,
-                    xMxN_yP_size,
-                    facet_m0_trunc,
-                    xM_yP_size,
-                    Fn,
-                    xM_yN_size,
-                    N,
-                )
-
-    err_mean = err_mean_img = 0
-    for i0, i1 in itertools.product(range(nsubgrid), range(nsubgrid)):
-        approx = numpy.zeros((xM_size, xM_size), dtype=complex)
-        for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
-            approx += numpy.roll(
-                pad_mid(NMBF_NMBF[i0, i1, j0, j1], xM_size),
-                (facet_off[j0] * xM_size // N, facet_off[j1] * xM_size // N),
-                (0, 1),
-            )
-        approx = extract_mid(ifft(approx), xA_size)
-        approx *= numpy.outer(subgrid_A[i0], subgrid_A[i1])
-        err_mean += numpy.abs(approx - subgrid_2[i0, i1]) ** 2 / nsubgrid ** 2
-        err_mean_img += numpy.abs(fft(approx - subgrid_2[i0, i1])) ** 2 / nsubgrid ** 2
-    # pylab.imshow(numpy.log(numpy.sqrt(err_mean)) / numpy.log(10)); pylab.colorbar(); pylab.show()
-    x = numpy.log(numpy.sqrt(err_mean_img)) / numpy.log(10)
-    display_plots(x)
-    print(
-        "RMSE:",
-        numpy.sqrt(numpy.mean(err_mean)),
-        "(image:",
-        numpy.sqrt(numpy.mean(err_mean_img)),
-        ")",
-    )
+    return Fb, Fn, facet_m0_trunc
 
 
-def display_plots(x, legend=None, grid=False, xlim=None):
-    """Display plots using pylab
+def calculate_pswf(yN_size, alpha, W):
+    # Calculate PSWF at the full required resolution (facet size)
+    pswf = anti_aliasing_function(yN_size, alpha, numpy.pi * W / 2).real
+    pswf /= numpy.prod(
+        numpy.arange(2 * alpha - 1, 0, -2, dtype=float)
+    )  # double factorial
+    return pswf
 
-    param x: X values
-    param legend: Legend
-    param grid: Grid
-    param xlim: X axis limitation
-    """
-    pylab.rcParams["figure.figsize"] = 16, 8
-    pylab.rcParams["image.cmap"] = "viridis"
-    if grid:
-        pylab.grid()
-    if legend is not None:
-        pylab.legend(legend)
-    if xlim is not None:
-        pylab.xlim(xlim)
-    pylab.imshow(x)
-    pylab.colorbar()
-    pylab.show()
+
+def generate_mask_for_subgrid_facet(
+    facet_off, nfacet, nsubgrid, subgrid_off, xA_size, N, yB_size
+):
+    subgrid_A = numpy.zeros((nsubgrid, xA_size), dtype=int)
+    subgrid_border = (
+        subgrid_off + numpy.hstack([subgrid_off[1:], [N + subgrid_off[0]]])
+    ) // 2
+    for i in range(nsubgrid):
+        left = (subgrid_border[i - 1] - subgrid_off[i] + xA_size // 2) % N
+        right = subgrid_border[i] - subgrid_off[i] + xA_size // 2
+        assert left >= 0 and right <= xA_size, "xA not large enough to cover subgrids!"
+        subgrid_A[i, left:right] = 1
+
+    facet_B = numpy.zeros((nfacet, yB_size), dtype=bool)
+    facet_split = numpy.array_split(range(N), nfacet)
+    facet_border = (facet_off + numpy.hstack([facet_off[1:], [N]])) // 2
+    for j in range(nfacet):
+        left = (facet_border[j - 1] - facet_off[j] + yB_size // 2) % N
+        right = facet_border[j] - facet_off[j] + yB_size // 2
+        assert left >= 0 and right <= yB_size, "yB not large enough to cover facets!"
+        facet_B[j, left:right] = 1
+    return facet_B, subgrid_A

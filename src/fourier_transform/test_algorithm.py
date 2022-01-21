@@ -3,10 +3,16 @@
 
 import math
 import time
+import itertools
+from matplotlib import pylab
 
 from fourier_algorithm import *
 
 # Plot setup
+from src.fourier_transform.utils import mark_range, whole, test_accuracy
+
+# Fixing seed of numpy random
+numpy.random.seed(123456789)
 
 pylab.rcParams["figure.figsize"] = 16, 4
 pylab.rcParams["image.cmap"] = "viridis"
@@ -60,7 +66,6 @@ xMxN_yP_size = xM_yP_size + int(2 * numpy.ceil(xN_size * yP_size / N / 2))
 assert (xM_size * yN_size) % N == 0
 xM_yN_size = xM_size * yN_size // N
 
-cfg_name = "%s_%s_%s_%g" % (fmt(N), fmt(yP_size), fmt(xM_size), target_err)
 print(
     f"xN_size={xN_size:.1f} xM_yP_size={xM_yP_size}, xMxN_yP_size={xMxN_yP_size}, xM_yN_size={xM_yN_size}"
 )
