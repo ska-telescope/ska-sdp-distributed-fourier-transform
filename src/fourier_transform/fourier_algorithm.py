@@ -17,7 +17,7 @@ def coordinates(N):
     if N % 2 == 0:
         return numpy.mgrid[-N2:N2] / N
     else:
-        return numpy.mgrid[-N2 : N2 + 1] / N
+        return numpy.mgrid[-N2: N2 + 1] / N
 
 
 def fft(a):
@@ -88,14 +88,14 @@ def extract_mid(a, N):
         assert N <= a.shape[1]
         cy = a.shape[1] // 2
         if N % 2 != 0:
-            return a[cx - s : cx + s + 1, cy - s : cy + s + 1]
+            return a[cx - s: cx + s + 1, cy - s: cy + s + 1]
         else:
-            return a[cx - s : cx + s, cy - s : cy + s]
+            return a[cx - s: cx + s, cy - s: cy + s]
     elif len(a.shape) == 1:
         if N % 2 != 0:
-            return a[cx - s : cx + s + 1]
+            return a[cx - s: cx + s + 1]
         else:
-            return a[cx - s : cx + s]
+            return a[cx - s: cx + s]
     else:
         assert False, "Unsupported grid shape for extract_mid!"
 
@@ -112,7 +112,6 @@ def anti_aliasing_function(shape, m, c):
 
     # One dimensional?
     if len(numpy.array(shape).shape) == 0:
-
         pswf = scipy.special.pro_ang1(m, m, c, 2 * coordinates(shape))[0]
         pswf[0] = 0  # zap NaN
         return pswf
@@ -138,7 +137,7 @@ def fmt(x):
 
 
 def mark_range(
-    lbl, x0, x1=None, y0=None, y1=None, ax=None, x_offset=1 / 200, linestyle="--"
+        lbl, x0, x1=None, y0=None, y1=None, ax=None, x_offset=1 / 200, linestyle="--"
 ):
     """Helper for marking ranges in a graph.
 
@@ -216,15 +215,15 @@ def whole(xs):
 
 
 def make_subgrid_and_facet(
-    G,
-    nsubgrid,
-    xA_size,
-    subgrid_A,
-    subgrid_off,
-    nfacet,
-    yB_size,
-    facet_B,
-    facet_off,
+        G,
+        nsubgrid,
+        xA_size,
+        subgrid_A,
+        subgrid_off,
+        nfacet,
+        yB_size,
+        facet_B,
+        facet_off,
 ):
     """
 
@@ -254,17 +253,17 @@ def make_subgrid_and_facet(
 
 
 def subgrid_range_1(
-    BjFj,
-    i,
-    facet_m0_trunc,
-    subgrid_off,
-    yP_size,
-    N,
-    xMxN_yP_size,
-    xN_yP_size,
-    xM_yP_size,
-    xM_yN_size,
-    Fn,
+        BjFj,
+        i,
+        facet_m0_trunc,
+        subgrid_off,
+        yP_size,
+        N,
+        xMxN_yP_size,
+        xN_yP_size,
+        xM_yP_size,
+        xM_yN_size,
+        Fn,
 ):
     """
     Subgrid range 1
@@ -288,27 +287,27 @@ def subgrid_range_1(
         numpy.roll(BjFj, -subgrid_off[i] * yP_size // N), xMxN_yP_size
     )
     MiBjFj_sum = numpy.array(extract_mid(MiBjFj, xM_yP_size))
-    MiBjFj_sum[: xN_yP_size // 2] += MiBjFj[-xN_yP_size // 2 :]
-    MiBjFj_sum[-xN_yP_size // 2 :] += MiBjFj[: xN_yP_size // 2 :]
+    MiBjFj_sum[: xN_yP_size // 2] += MiBjFj[-xN_yP_size // 2:]
+    MiBjFj_sum[-xN_yP_size // 2:] += MiBjFj[: xN_yP_size // 2:]
 
     return Fn * extract_mid(fft(MiBjFj_sum), xM_yN_size)
 
 
 def facets_to_subgrid_1(
-    facet,
-    nsubgrid,
-    nfacet,
-    xM_yN_size,
-    Fb,
-    Fn,
-    yP_size,
-    facet_m0_trunc,
-    subgrid_off,
-    N,
-    xMxN_yP_size,
-    xN_yP_size,
-    xM_yP_size,
-    dtype,
+        facet,
+        nsubgrid,
+        nfacet,
+        xM_yN_size,
+        Fb,
+        Fn,
+        yP_size,
+        facet_m0_trunc,
+        subgrid_off,
+        N,
+        xMxN_yP_size,
+        xN_yP_size,
+        xM_yP_size,
+        dtype,
 ):
     """
 
@@ -374,7 +373,7 @@ def facets_to_subgrid_2(nmbfs, i, xM_size, nfacet, facet_off, N, subgrid_A, xA_s
 
 
 def subgrid_to_facet_1(
-    subgrid, nsubgrid, nfacet, xM_yN_size, xM_size, facet_off, N, Fn
+        subgrid, nsubgrid, nfacet, xM_yN_size, xM_size, facet_off, N, Fn
 ):
     """
     Subgrid to facet 1
@@ -401,19 +400,19 @@ def subgrid_to_facet_1(
 
 
 def subgrid_to_facet_2(
-    nafs,
-    j,
-    yB_size,
-    nsubgrid,
-    xMxN_yP_size,
-    xM_yP_size,
-    xN_yP_size,
-    facet_m0_trunc,
-    yP_size,
-    subgrid_off,
-    N,
-    Fb,
-    facet_B,
+        nafs,
+        j,
+        yB_size,
+        nsubgrid,
+        xMxN_yP_size,
+        xM_yP_size,
+        xN_yP_size,
+        facet_m0_trunc,
+        yP_size,
+        subgrid_off,
+        N,
+        Fb,
+        facet_B,
 ):
     """
 
@@ -455,17 +454,17 @@ def subgrid_to_facet_2(
 
 
 def subgrid_range_2(
-    xMxN_yP_size,
-    xM_yP_size,
-    i,
-    j,
-    nafs,
-    xN_yP_size,
-    facet_m0_trunc,
-    yP_size,
-    subgrid_off,
-    yB_size,
-    N,
+        xMxN_yP_size,
+        xM_yP_size,
+        i,
+        j,
+        nafs,
+        xN_yP_size,
+        facet_m0_trunc,
+        yP_size,
+        subgrid_off,
+        yB_size,
+        N,
 ):
     """
     Subgrid Range 2
@@ -487,8 +486,8 @@ def subgrid_range_2(
     NjSi = numpy.zeros(xMxN_yP_size, dtype=complex)
     NjSi_mid = extract_mid(NjSi, xM_yP_size)
     NjSi_mid[:] = ifft(pad_mid(nafs[i, j], xM_yP_size))  # updates NjSi via reference!
-    NjSi[-xN_yP_size // 2 :] = NjSi_mid[: xN_yP_size // 2]
-    NjSi[: xN_yP_size // 2 :] = NjSi_mid[-xN_yP_size // 2 :]
+    NjSi[-xN_yP_size // 2:] = NjSi_mid[: xN_yP_size // 2]
+    NjSi[: xN_yP_size // 2:] = NjSi_mid[-xN_yP_size // 2:]
     FMiNjSi = fft(
         numpy.roll(
             pad_mid(facet_m0_trunc * NjSi, yP_size), subgrid_off[i] * yP_size // N
@@ -624,17 +623,17 @@ def prepare_facet(facet, axis, Fb, yP_size):
 
 
 def extract_subgrid(
-    BF,
-    i,
-    axis,
-    subgrid_off,
-    yP_size,
-    xMxN_yP_size,
-    facet_m0_trunc,
-    xM_yP_size,
-    Fn,
-    xM_yN_size,
-    N,
+        BF,
+        i,
+        axis,
+        subgrid_off,
+        yP_size,
+        xMxN_yP_size,
+        facet_m0_trunc,
+        xM_yP_size,
+        Fn,
+        xM_yN_size,
+        N,
 ):
     """
 
@@ -669,26 +668,26 @@ def extract_subgrid(
     )
 
 
-def test_accuracy(
-    nsubgrid,
-    xA_size,
-    nfacet,
-    yB_size,
-    N,
-    subgrid_off,
-    subgrid_A,
-    facet_off,
-    facet_B,
-    xM_yN_size,
-    xM_size,
-    Fb,
-    yP_size,
-    xMxN_yP_size,
-    facet_m0_trunc,
-    xM_yP_size,
-    Fn,
-    xs=252,
-    ys=252,
+def test_accuracy_facet_to_subgrid(
+        nsubgrid,
+        xA_size,
+        nfacet,
+        yB_size,
+        N,
+        subgrid_off,
+        subgrid_A,
+        facet_off,
+        facet_B,
+        xM_yN_size,
+        xM_size,
+        Fb,
+        yP_size,
+        xMxN_yP_size,
+        facet_m0_trunc,
+        xM_yP_size,
+        Fn,
+        xs=252,
+        ys=252,
 ):
     """
 
@@ -792,6 +791,178 @@ def test_accuracy(
         ")",
     )
 
+
+# Below are the 2D subgrid to facet functions
+def prepare_subgrid(subgrid, xM_size):
+    """
+        Initial shared work per subgrid - no reason to do this per-axis, so always do it for all
+        param subgrid: Subgrid
+        param xM_size: Subgrid size, padded for transfer (internal)
+
+        return: the FS term
+        """
+    return fft(pad_mid(subgrid, xM_size))
+
+
+def extract_facet_contribution(FSi, Fn, facet_off, j, xM_size, N, xM_yN_size, axis):
+    """
+        Extract contribution of subgrid to a facet
+
+        param Fsi:
+        param Fn:
+        param facet_off:
+        param j: Index on the facet
+        param xM_size: Subgrid size, padded for transfer (internal)
+        param N: Total image size on a side
+        param xM_yN_size:
+        param axis: Axis
+
+        return: Contribution of facet on the subgrid
+
+    """
+
+    return (broadcast_a(Fn, len(FSi.shape), axis) * \
+            extract_mid_a(numpy.roll(FSi, -facet_off[j] * xM_size // N, axis), xM_yN_size, axis))
+
+
+def add_subgrid_contribution(MiNjSi_sum, NjSi, i, facet_m0_trunc, subgrid_off, xMxN_yP_size, xM_yP_size,
+                             yP_size, N, axis):
+    """
+        Add subgrid contribution to a facet
+
+        param MiNjSi_sum:
+        param NjSi:
+        param i:
+        param facet_m0_trunc:
+        param subgrid_off:
+        param xMxN_yP_size:
+        param xM_yP_size:
+        param yP_size:
+        param N:
+        param axis:
+
+        return MiNjSi_sum:
+
+    """
+    dims = len(MiNjSi_sum.shape)
+    MiNjSi = numpy.zeros_like(MiNjSi_sum)
+    NjSi_temp = extract_mid_a(MiNjSi, xMxN_yP_size, axis)
+    NjSi_mid = extract_mid_a(NjSi_temp, xM_yP_size, axis)
+    NjSi_mid[...] = ifft_a(pad_mid_a(NjSi, xM_yP_size, axis), axis)  # updates NjSi via reference!
+    xN_yP_size = xMxN_yP_size - xM_yP_size
+    slc1 = slice_a(slice(None), slice(xN_yP_size // 2), dims, axis)
+    slc2 = slice_a(slice(None), slice(-xN_yP_size // 2, None), dims, axis)
+    NjSi_temp[slc1] = NjSi_mid[slc2]
+    NjSi_temp[slc2] = NjSi_mid[slc1]
+    NjSi_temp[...] *= broadcast_a(facet_m0_trunc, len(NjSi.shape), axis)
+    MiNjSi_sum[...] += numpy.roll(pad_mid_a(MiNjSi, yP_size, axis), subgrid_off[i] * yP_size // N, axis=axis)
+
+def finish_facet(MiNjSi_sum, Fb, facet_B, yB_size, j, axis):
+    """
+        Obtain finished facet
+
+        param MiNjSi_sum:
+        param Fb:
+        param facet_B:
+        param yB_size:
+        param j:
+        param axis:
+
+        return: The finished facet (in BMNAF term)
+    """
+    return extract_mid_a(fft_a(MiNjSi_sum, axis), yB_size, axis) * \
+           broadcast_a(Fb * facet_B[j], len(MiNjSi_sum.shape), axis)
+
+
+def test_accuracy_subgrid_to_facet(nsubgrid,
+        xA_size,
+        nfacet,
+        yB_size,
+        N,
+        subgrid_off,
+        subgrid_A,
+        facet_off,
+        facet_B,
+        xM_yN_size,
+        xM_size,
+        Fb,
+        yP_size,
+        xMxN_yP_size,
+        facet_m0_trunc,
+        xM_yP_size,
+        Fn,
+        xs=252,
+        ys=252,
+):
+    """
+
+    param nsubgrid: Number of subgrids
+    param xA_size: Effective subgrid size
+    param nfacet: Number of facets
+    param yB_size: Effective facet size
+    param N: Total image size on a side
+    param subgrid_off: Subgrid off
+    param subgrid_A: Subgrid A
+    param facet_off: Facet off
+    param facet_B: Facet B
+    param xM_yN_size:
+    param xM_size: Subgrid size, padded for transfer (internal)
+    param Fb:
+    param yP_size: Facet size, padded for m convolution (internal)
+    param xMxN_yP_size:
+    param facet_m0_trunc:
+    param xM_yP_size:
+    param Fn:
+    param xs:
+    param ys:
+    """
+    subgrid_2 = numpy.empty((nsubgrid, nsubgrid, xA_size, xA_size), dtype=complex)
+    facet_2 = numpy.empty((nfacet, nfacet, yB_size, yB_size), dtype=complex)
+
+    FG_2 = numpy.zeros((N, N))
+    FG_2[ys, xs] = 1
+    G_2 = ifft(FG_2)
+
+    for i0, i1 in itertools.product(range(nsubgrid), range(nsubgrid)):
+        subgrid_2[i0, i1] = extract_mid(numpy.roll(G_2, (-subgrid_off[i0], -subgrid_off[i1]), (0, 1)), xA_size)
+        subgrid_2[i0, i1] *= numpy.outer(subgrid_A[i0], subgrid_A[i1])
+    for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
+        facet_2[j0, j1] = extract_mid(numpy.roll(FG_2, (-facet_off[j0], -facet_off[j1]), (0, 1)), yB_size)
+        facet_2[j0, j1] *= numpy.outer(facet_B[j0], facet_B[j1])
+
+    NAF_NAF = numpy.empty((nsubgrid, nsubgrid, nfacet, nfacet, xM_yN_size, xM_yN_size), dtype=complex)
+    for i0, i1 in itertools.product(range(nsubgrid), range(nsubgrid)):
+        AF_AF = prepare_subgrid(subgrid_2[i0, i1], xM_size)
+        for j0 in range(nfacet):
+            NAF_AF = extract_facet_contribution(AF_AF, Fn, facet_off, j0, xM_size, N, xM_yN_size, 0)
+            for j1 in range(nfacet):
+                NAF_NAF[i0, i1, j0, j1] = extract_facet_contribution(NAF_AF, Fn, facet_off, j1, xM_size, N, xM_yN_size, 1)
+
+    BMNAF_BMNAF = numpy.empty((nfacet, nfacet, yB_size, yB_size), dtype=complex)
+    for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
+        MNAF_BMNAF = numpy.zeros((yP_size, yB_size), dtype=complex)
+        for i0 in range(nsubgrid):
+            NAF_MNAF = numpy.zeros((xM_yN_size, yP_size), dtype=complex)
+            for i1 in range(nsubgrid):
+                add_subgrid_contribution(NAF_MNAF, NAF_NAF[i0, i1, j0, j1], i1, facet_m0_trunc, subgrid_off, xMxN_yP_size, xM_yP_size,
+                             yP_size, N, 1)
+            NAF_BMNAF = finish_facet(NAF_MNAF, Fb, facet_B, yB_size, j1, 1)
+            add_subgrid_contribution(MNAF_BMNAF, NAF_BMNAF, i0, facet_m0_trunc, subgrid_off, xMxN_yP_size, xM_yP_size,
+                             yP_size, N, 0)
+        BMNAF_BMNAF[j0, j1] = finish_facet(MNAF_BMNAF, Fb, facet_B, yB_size, j0, 0)
+
+    pylab.rcParams['figure.figsize'] = 16, 8
+    err_mean = err_mean_img = 0
+
+    for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
+        approx = numpy.zeros((yB_size, yB_size), dtype=complex)
+        approx += BMNAF_BMNAF[j0, j1]
+        err_mean += numpy.abs(ifft(approx - facet_2[j0, j1])) ** 2 / nfacet ** 2
+        err_mean_img += numpy.abs(approx - facet_2[j0, j1]) ** 2 / nfacet ** 2
+
+    x = numpy.log(numpy.sqrt(err_mean_img)) / numpy.log(10)
+    display_plots(x)
+    print("RMSE:", numpy.sqrt(numpy.mean(err_mean)), "(image:", numpy.sqrt(numpy.mean(err_mean_img)), ")")
 
 def display_plots(x, legend=None, grid=False, xlim=None):
     """Display plots using pylab

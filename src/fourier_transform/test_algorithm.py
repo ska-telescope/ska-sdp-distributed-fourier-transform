@@ -367,6 +367,7 @@ for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
     )
     facet_2[j0, j1] *= numpy.outer(facet_B[j0], facet_B[j1])
 
+# facet to subgrid test.
 # Having those operations separately means that we can shuffle things around quite a bit
 # without affecting the result. The obvious first choice might be to do all facet-preparation
 # up-front, as this allows us to share the computation across all subgrids:
@@ -511,7 +512,7 @@ print(
     ")",
 )
 
-test_accuracy(
+test_accuracy_facet_to_subgrid(
     nsubgrid,
     xA_size,
     nfacet,
@@ -532,3 +533,114 @@ test_accuracy(
     xs=252,
     ys=252,
 )
+
+### 2D case subgrid to facet
+### This is based on the original implementation by Peter, and has not involved data redistribution yet.
+
+# Verify that this is consistent with the previous implementation
+nafs = subgrid_to_facet_1(
+    subgrid, nsubgrid, nfacet, xM_yN_size, xM_size, facet_off, N, Fn
+)
+for i in range(nsubgrid):
+    FSi = prepare_subgrid(subgrid[i], xM_size)
+    for j in range(nfacet):
+        naf_new = extract_facet_contribution(FSi, Fn, facet_off, j, xM_size, N, xM_yN_size, 0)
+        assert numpy.sqrt(numpy.average(numpy.abs(nafs[i,j] - naf_new)**2)) < 1e-14
+
+approx_facet = numpy.array(
+    [
+        subgrid_to_facet_2(
+            nafs,
+            j,
+            yB_size,
+            nsubgrid,
+            xMxN_yP_size,
+            xM_yP_size,
+            xN_yP_size,
+            facet_m0_trunc,
+            yP_size,
+            subgrid_off,
+            N,
+            Fb,
+            facet_B,
+        )
+        for j in range(nfacet)
+    ])
+
+for j in range(nfacet):
+    MiNjSi_sum = numpy.zeros(yP_size, dtype=complex)
+    for i in range(nsubgrid):
+        add_subgrid_contribution(MiNjSi_sum, nafs[i,j], i, facet_m0_trunc, subgrid_off, xMxN_yP_size, xM_yP_size,
+                        yP_size, N, 0)
+    approx_facet_new = finish_facet(MiNjSi_sum, Fb, facet_B, yB_size, j, 0)
+    assert numpy.sqrt(numpy.average(numpy.abs(approx_facet_new - approx_facet[j])**2)) < 1e-12
+
+# The actual calculation
+t = time.time()
+NAF_NAF = numpy.empty((nsubgrid, nsubgrid, nfacet, nfacet, xM_yN_size, xM_yN_size), dtype=complex)
+for i0, i1 in itertools.product(range(nsubgrid), range(nsubgrid)):
+    AF_AF = prepare_subgrid(subgrid_2[i0, i1], xM_size)
+    for j0 in range(nfacet):
+        NAF_AF = extract_facet_contribution(AF_AF, Fn, facet_off, j0, xM_size, N, xM_yN_size, 0)
+        for j1 in range(nfacet):
+            NAF_NAF[i0, i1, j0, j1] = extract_facet_contribution(NAF_AF, Fn, facet_off, j1, xM_size, N, xM_yN_size, 1)
+
+BMNAF_BMNAF = numpy.empty((nfacet, nfacet, yB_size, yB_size), dtype=complex)
+for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
+    MNAF_BMNAF = numpy.zeros((yP_size, yB_size), dtype=complex)
+    for i0 in range(nsubgrid):
+        NAF_MNAF = numpy.zeros((xM_yN_size, yP_size), dtype=complex)
+        for i1 in range(nsubgrid):
+            add_subgrid_contribution(NAF_MNAF, NAF_NAF[i0, i1, j0, j1], i1, facet_m0_trunc, subgrid_off, xMxN_yP_size, xM_yP_size,
+                             yP_size, N, 1)
+        NAF_BMNAF = finish_facet(NAF_MNAF, Fb, facet_B, yB_size, j1, 1)
+        add_subgrid_contribution(MNAF_BMNAF, NAF_BMNAF, i0, facet_m0_trunc, subgrid_off, xMxN_yP_size, xM_yP_size,
+                             yP_size, N, 0)
+    BMNAF_BMNAF[j0, j1] = finish_facet(MNAF_BMNAF, Fb, facet_B, yB_size, j0, 0)
+print(time.time() - t, "s")
+
+pylab.rcParams["figure.figsize"] = 16, 8
+err_mean = err_mean_img = 0
+for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
+    approx = numpy.zeros((yB_size, yB_size), dtype=complex)
+    approx += BMNAF_BMNAF[j0, j1]
+
+    err_mean += numpy.abs(ifft(approx - facet_2[j0, j1])) ** 2 / nfacet ** 2
+    err_mean_img += numpy.abs(approx - facet_2[j0, j1]) ** 2 / nfacet ** 2
+
+pylab.imshow(numpy.log(numpy.sqrt(err_mean)) / numpy.log(10))
+pylab.colorbar()
+pylab.show()
+pylab.imshow(numpy.log(numpy.sqrt(err_mean_img)) / numpy.log(10))
+pylab.colorbar()
+pylab.show()
+print(
+    "RMSE:",
+    numpy.sqrt(numpy.mean(err_mean)),
+    "(image:",
+    numpy.sqrt(numpy.mean(err_mean_img)),
+    ")",
+)
+
+test_accuracy_subgrid_to_facet(
+    nsubgrid,
+    xA_size,
+    nfacet,
+    yB_size,
+    N,
+    subgrid_off,
+    subgrid_A,
+    facet_off,
+    facet_B,
+    xM_yN_size,
+    xM_size,
+    Fb,
+    yP_size,
+    xMxN_yP_size,
+    facet_m0_trunc,
+    xM_yP_size,
+    Fn,
+    xs=252,
+    ys=252,
+)
+
