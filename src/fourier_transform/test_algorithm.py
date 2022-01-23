@@ -544,8 +544,10 @@ nafs = subgrid_to_facet_1(
 for i in range(nsubgrid):
     FSi = prepare_subgrid(subgrid[i], xM_size)
     for j in range(nfacet):
-        naf_new = extract_facet_contribution(FSi, Fn, facet_off, j, xM_size, N, xM_yN_size, 0)
-        assert numpy.sqrt(numpy.average(numpy.abs(nafs[i,j] - naf_new)**2)) < 1e-14
+        naf_new = extract_facet_contribution(
+            FSi, Fn, facet_off, j, xM_size, N, xM_yN_size, 0
+        )
+        assert numpy.sqrt(numpy.average(numpy.abs(nafs[i, j] - naf_new) ** 2)) < 1e-14
 
 approx_facet = numpy.array(
     [
@@ -565,25 +567,45 @@ approx_facet = numpy.array(
             facet_B,
         )
         for j in range(nfacet)
-    ])
+    ]
+)
 
 for j in range(nfacet):
     MiNjSi_sum = numpy.zeros(yP_size, dtype=complex)
     for i in range(nsubgrid):
-        add_subgrid_contribution(MiNjSi_sum, nafs[i,j], i, facet_m0_trunc, subgrid_off, xMxN_yP_size, xM_yP_size,
-                        yP_size, N, 0)
+        add_subgrid_contribution(
+            MiNjSi_sum,
+            nafs[i, j],
+            i,
+            facet_m0_trunc,
+            subgrid_off,
+            xMxN_yP_size,
+            xM_yP_size,
+            yP_size,
+            N,
+            0,
+        )
     approx_facet_new = finish_facet(MiNjSi_sum, Fb, facet_B, yB_size, j, 0)
-    assert numpy.sqrt(numpy.average(numpy.abs(approx_facet_new - approx_facet[j])**2)) < 1e-12
+    assert (
+        numpy.sqrt(numpy.average(numpy.abs(approx_facet_new - approx_facet[j]) ** 2))
+        < 1e-12
+    )
 
 # The actual calculation
 t = time.time()
-NAF_NAF = numpy.empty((nsubgrid, nsubgrid, nfacet, nfacet, xM_yN_size, xM_yN_size), dtype=complex)
+NAF_NAF = numpy.empty(
+    (nsubgrid, nsubgrid, nfacet, nfacet, xM_yN_size, xM_yN_size), dtype=complex
+)
 for i0, i1 in itertools.product(range(nsubgrid), range(nsubgrid)):
     AF_AF = prepare_subgrid(subgrid_2[i0, i1], xM_size)
     for j0 in range(nfacet):
-        NAF_AF = extract_facet_contribution(AF_AF, Fn, facet_off, j0, xM_size, N, xM_yN_size, 0)
+        NAF_AF = extract_facet_contribution(
+            AF_AF, Fn, facet_off, j0, xM_size, N, xM_yN_size, 0
+        )
         for j1 in range(nfacet):
-            NAF_NAF[i0, i1, j0, j1] = extract_facet_contribution(NAF_AF, Fn, facet_off, j1, xM_size, N, xM_yN_size, 1)
+            NAF_NAF[i0, i1, j0, j1] = extract_facet_contribution(
+                NAF_AF, Fn, facet_off, j1, xM_size, N, xM_yN_size, 1
+            )
 
 BMNAF_BMNAF = numpy.empty((nfacet, nfacet, yB_size, yB_size), dtype=complex)
 for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
@@ -591,11 +613,31 @@ for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
     for i0 in range(nsubgrid):
         NAF_MNAF = numpy.zeros((xM_yN_size, yP_size), dtype=complex)
         for i1 in range(nsubgrid):
-            add_subgrid_contribution(NAF_MNAF, NAF_NAF[i0, i1, j0, j1], i1, facet_m0_trunc, subgrid_off, xMxN_yP_size, xM_yP_size,
-                             yP_size, N, 1)
+            add_subgrid_contribution(
+                NAF_MNAF,
+                NAF_NAF[i0, i1, j0, j1],
+                i1,
+                facet_m0_trunc,
+                subgrid_off,
+                xMxN_yP_size,
+                xM_yP_size,
+                yP_size,
+                N,
+                1,
+            )
         NAF_BMNAF = finish_facet(NAF_MNAF, Fb, facet_B, yB_size, j1, 1)
-        add_subgrid_contribution(MNAF_BMNAF, NAF_BMNAF, i0, facet_m0_trunc, subgrid_off, xMxN_yP_size, xM_yP_size,
-                             yP_size, N, 0)
+        add_subgrid_contribution(
+            MNAF_BMNAF,
+            NAF_BMNAF,
+            i0,
+            facet_m0_trunc,
+            subgrid_off,
+            xMxN_yP_size,
+            xM_yP_size,
+            yP_size,
+            N,
+            0,
+        )
     BMNAF_BMNAF[j0, j1] = finish_facet(MNAF_BMNAF, Fb, facet_B, yB_size, j0, 0)
 print(time.time() - t, "s")
 
@@ -643,4 +685,3 @@ test_accuracy_subgrid_to_facet(
     xs=252,
     ys=252,
 )
-
