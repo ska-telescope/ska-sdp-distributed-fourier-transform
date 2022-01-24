@@ -99,6 +99,7 @@ mark_range("$x_n$", -xN, xN)
 pylab.xlim(-2 * int(xN_size) / N, (2 * int(xN_size) - 1) / N)
 pylab.grid()
 pylab.show()
+# pylab.savefig("plot_n.png")
 pylab.semilogy(coordinates(yN_size) * yN_size, pswf)
 pylab.legend(["$\\mathcal{F}[n]$"])
 mark_range("$y_B$", -yB, yB)
@@ -106,7 +107,7 @@ pylab.xlim(-N // 2, N // 2 - 1)
 mark_range("$y_n$", -yN, yN)
 pylab.grid()
 pylab.show()
-
+# pylab.savefig("plot_fn.png")
 
 # Calculate actual work terms to use. We need both $n$ and $b$ in image space.
 Fb = 1 / extract_mid(pswf, yB_size)
@@ -122,6 +123,7 @@ pylab.semilogy(coordinates(xMxN_yP_size) / yP_size * xMxN_yP_size, facet_m0_trun
 mark_range("xM", -xM, xM)
 pylab.grid()
 pylab.show()
+# pylab.savefig("plot_xm.png")
 
 ## Layout subgrids + facets
 
@@ -210,9 +212,11 @@ for i in range(nsubgrid):
 mark_range("$x_A$", -xA, xA, ax=ax1)
 pylab.grid()
 pylab.show()
+# pylab.savefig("plot_error_facet_to_subgrid_1d.png")
 mark_range("$N/2$", -N / 2, N / 2, ax=ax2)
 pylab.grid()
 pylab.show()
+# pylab.savefig("plot_empty_n_per_2_1d.png")
 print(
     "RMSE:",
     numpy.sqrt(numpy.mean(err_sum)),
@@ -285,6 +289,7 @@ mark_range("$y_B$", -yB, yB, ax=ax2)
 mark_range("$0.5$", -0.5, 0.5, ax=ax1)
 
 pylab.show()
+# pylab.savefig("plot_error_subgrid_to_facet_1d.png")
 
 # @interact_manual
 # def generate_error_map_2():
@@ -511,9 +516,11 @@ for i0, i1 in itertools.product(range(nsubgrid), range(nsubgrid)):
 pylab.imshow(numpy.log(numpy.sqrt(err_mean)) / numpy.log(10))
 pylab.colorbar()
 pylab.show()
+# pylab.savefig("plot_error_mean_facet_to_subgrid_2d.png")
 pylab.imshow(numpy.log(numpy.sqrt(err_mean_img)) / numpy.log(10))
 pylab.colorbar()
 pylab.show()
+# pylab.savefig("plot_error_mean_image_facet_to_subgrid_2d.png")
 print(
     "RMSE:",
     numpy.sqrt(numpy.mean(err_mean)),
@@ -663,9 +670,11 @@ for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
 pylab.imshow(numpy.log(numpy.sqrt(err_mean)) / numpy.log(10))
 pylab.colorbar()
 pylab.show()
+# pylab.savefig("plot_error_mean_subgrid_to_facet_2d.png")
 pylab.imshow(numpy.log(numpy.sqrt(err_mean_img)) / numpy.log(10))
 pylab.colorbar()
 pylab.show()
+# pylab.savefig("plot_error_mean_image_subgrid_to_facet_2d.png")
 print(
     "RMSE:",
     numpy.sqrt(numpy.mean(err_mean)),

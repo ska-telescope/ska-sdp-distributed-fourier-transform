@@ -84,6 +84,9 @@ def display_plots(x, legend=None, grid=False, xlim=None):
     pylab.imshow(x)
     pylab.colorbar()
     pylab.show()
+    # pylab.savefig("plot_test_accuracy_facet_to_subgrid_2d.png")
+    # pylab.savefig("plot_test_accuracy_subgrid_to_facet_2d.png")
+    pass
 
 
 # TODO: needs better name; used both for 1D and 2D
@@ -305,7 +308,7 @@ def test_accuracy_facet_to_subgrid(
         err_mean_img += numpy.abs(fft(approx - subgrid_2[i0, i1])) ** 2 / nsubgrid ** 2
     # pylab.imshow(numpy.log(numpy.sqrt(err_mean)) / numpy.log(10)); pylab.colorbar(); pylab.show()
     x = numpy.log(numpy.sqrt(err_mean_img)) / numpy.log(10)
-    display_plots(x)
+    display_plots(x)  # pylab.savefig("plot_test_accuracy_facet_to_subgrid_2d.png")
     print(
         "RMSE:",
         numpy.sqrt(numpy.mean(err_mean)),
@@ -433,7 +436,7 @@ def test_accuracy_subgrid_to_facet(
         err_mean_img += numpy.abs(approx - facet_2[j0, j1]) ** 2 / nfacet ** 2
 
     x = numpy.log(numpy.sqrt(err_mean_img)) / numpy.log(10)
-    display_plots(x)
+    display_plots(x)  # pylab.savefig("plot_test_accuracy_subgrid_to_facet_2d.png")
     print(
         "RMSE:",
         numpy.sqrt(numpy.mean(err_mean)),
