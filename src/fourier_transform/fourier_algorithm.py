@@ -95,7 +95,6 @@ def broadcast_a(a, dims, axis):
     param dims: Dimensions
     param axis: Axis
 
-
     return:
     """
     return a[slice_a(numpy.newaxis, slice(None), dims, axis)]
@@ -501,7 +500,7 @@ def subgrid_range_2(
     return extract_mid(FMiNjSi, yB_size)
 
 
-# 2D FOURIER ALGORITHM FUNCTIONS
+# 2D FOURIER ALGORITHM FUNCTIONS (facet to subgrid)
 def prepare_facet(facet, axis, Fb, yP_size):
     """
 
@@ -564,59 +563,7 @@ def extract_subgrid(
     )
 
 
-# COMMON 1D and 2D FUNCTIONS -- SETTING UP FOR ALGORITHM TO RUN
-
-# TODO: what exactly are the things we return here? + needs docstring
-def get_actual_work_terms(
-    pswf, xM, xMxN_yP_size, yB_size, yN_size, xM_size, N, yP_size
-):
-    # Calculate actual work terms to use. We need both $n$ and $b$ in image space
-    Fb = 1 / extract_mid(pswf, yB_size)
-    Fn = pswf[(yN_size // 2) % int(1 / 2 / xM) :: int(1 / 2 / xM)]
-    facet_m0_trunc = pswf * numpy.sinc(coordinates(yN_size) * xM_size / N * yN_size)
-    facet_m0_trunc = (
-        xM_size
-        * yP_size
-        / N
-        * extract_mid(ifft(pad_mid(facet_m0_trunc, yP_size)), xMxN_yP_size).real
-    )
-    return Fb, Fn, facet_m0_trunc
-
-
-def calculate_pswf(yN_size, alpha, W):
-    # Calculate PSWF at the full required resolution (facet size)
-    pswf = anti_aliasing_function(yN_size, alpha, numpy.pi * W / 2).real
-    pswf /= numpy.prod(
-        numpy.arange(2 * alpha - 1, 0, -2, dtype=float)
-    )  # double factorial
-    return pswf
-
-
-def generate_mask_for_subgrid_facet(
-    facet_off, nfacet, nsubgrid, subgrid_off, xA_size, N, yB_size
-):
-    subgrid_A = numpy.zeros((nsubgrid, xA_size), dtype=int)
-    subgrid_border = (
-        subgrid_off + numpy.hstack([subgrid_off[1:], [N + subgrid_off[0]]])
-    ) // 2
-    for i in range(nsubgrid):
-        left = (subgrid_border[i - 1] - subgrid_off[i] + xA_size // 2) % N
-        right = subgrid_border[i] - subgrid_off[i] + xA_size // 2
-        assert left >= 0 and right <= xA_size, "xA not large enough to cover subgrids!"
-        subgrid_A[i, left:right] = 1
-
-    facet_B = numpy.zeros((nfacet, yB_size), dtype=bool)
-    facet_split = numpy.array_split(range(N), nfacet)
-    facet_border = (facet_off + numpy.hstack([facet_off[1:], [N]])) // 2
-    for j in range(nfacet):
-        left = (facet_border[j - 1] - facet_off[j] + yB_size // 2) % N
-        right = facet_border[j] - facet_off[j] + yB_size // 2
-        assert left >= 0 and right <= yB_size, "yB not large enough to cover facets!"
-        facet_B[j, left:right] = 1
-    return facet_B, subgrid_A
-
-
-# Below are the 2D subgrid to facet functions
+# 2D FOURIER ALGORITHM FUNCTIONS (subgrid to facet)
 def prepare_subgrid(subgrid, xM_size):
     """
     Initial shared work per subgrid - no reason to do this per-axis, so always do it for all
@@ -713,3 +660,55 @@ def finish_facet(MiNjSi_sum, Fb, facet_B, yB_size, j, axis):
     return extract_mid_a(fft_a(MiNjSi_sum, axis), yB_size, axis) * broadcast_a(
         Fb * facet_B[j], len(MiNjSi_sum.shape), axis
     )
+
+
+# COMMON 1D and 2D FUNCTIONS -- SETTING UP FOR ALGORITHM TO RUN
+
+# TODO: what exactly are the things we return here? + needs docstring
+def get_actual_work_terms(
+    pswf, xM, xMxN_yP_size, yB_size, yN_size, xM_size, N, yP_size
+):
+    # Calculate actual work terms to use. We need both $n$ and $b$ in image space
+    Fb = 1 / extract_mid(pswf, yB_size)
+    Fn = pswf[(yN_size // 2) % int(1 / 2 / xM) :: int(1 / 2 / xM)]
+    facet_m0_trunc = pswf * numpy.sinc(coordinates(yN_size) * xM_size / N * yN_size)
+    facet_m0_trunc = (
+        xM_size
+        * yP_size
+        / N
+        * extract_mid(ifft(pad_mid(facet_m0_trunc, yP_size)), xMxN_yP_size).real
+    )
+    return Fb, Fn, facet_m0_trunc
+
+
+def calculate_pswf(yN_size, alpha, W):
+    # Calculate PSWF at the full required resolution (facet size)
+    pswf = anti_aliasing_function(yN_size, alpha, numpy.pi * W / 2).real
+    pswf /= numpy.prod(
+        numpy.arange(2 * alpha - 1, 0, -2, dtype=float)
+    )  # double factorial
+    return pswf
+
+
+def generate_mask_for_subgrid_facet(
+    facet_off, nfacet, nsubgrid, subgrid_off, xA_size, N, yB_size
+):
+    subgrid_A = numpy.zeros((nsubgrid, xA_size), dtype=int)
+    subgrid_border = (
+        subgrid_off + numpy.hstack([subgrid_off[1:], [N + subgrid_off[0]]])
+    ) // 2
+    for i in range(nsubgrid):
+        left = (subgrid_border[i - 1] - subgrid_off[i] + xA_size // 2) % N
+        right = subgrid_border[i] - subgrid_off[i] + xA_size // 2
+        assert left >= 0 and right <= xA_size, "xA not large enough to cover subgrids!"
+        subgrid_A[i, left:right] = 1
+
+    facet_B = numpy.zeros((nfacet, yB_size), dtype=bool)
+    facet_split = numpy.array_split(range(N), nfacet)
+    facet_border = (facet_off + numpy.hstack([facet_off[1:], [N]])) // 2
+    for j in range(nfacet):
+        left = (facet_border[j - 1] - facet_off[j] + yB_size // 2) % N
+        right = facet_border[j] - facet_off[j] + yB_size // 2
+        assert left >= 0 and right <= yB_size, "yB not large enough to cover facets!"
+        facet_B[j, left:right] = 1
+    return facet_B, subgrid_A
