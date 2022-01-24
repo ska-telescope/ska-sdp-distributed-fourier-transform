@@ -146,50 +146,31 @@ def main():
     subgrid_2 = numpy.empty((nsubgrid, nsubgrid, xA_size, xA_size), dtype=complex)
     facet_2 = numpy.empty((nfacet, nfacet, yB_size, yB_size), dtype=complex)
 
-    # # adding sources
-    # add_sources = True
-    # if add_sources:
-    #     FG_2 = numpy.zeros((N, N))
-    #     source_count = 1000
-    #     sources = [
-    #         (
-    #             numpy.random.randint(-N // 2, N // 2 - 1),
-    #             numpy.random.randint(-N // 2, N // 2 - 1),
-    #             numpy.random.rand() * N * N / numpy.sqrt(source_count) / 2,
-    #         )
-    #         for _ in range(source_count)
-    #     ]
-    #     for x, y, i in sources:
-    #         FG_2[y + N // 2, x + N // 2] += i
-    #     G_2 = ifft(FG_2)
-    #
-    # else:
-    #     # without sources
-    #     G_2 = (
-    #         numpy.exp(2j * numpy.pi * numpy.random.rand(N, N))
-    #         * numpy.random.rand(N, N)
-    #         / 2
-    #     )
-    #     FG_2 = fft(G_2)
+    # adding sources
+    add_sources = True
+    if add_sources:
+        FG_2 = numpy.zeros((N, N))
+        source_count = 1000
+        sources = [
+            (
+                numpy.random.randint(-N // 2, N // 2 - 1),
+                numpy.random.randint(-N // 2, N // 2 - 1),
+                numpy.random.rand() * N * N / numpy.sqrt(source_count) / 2,
+            )
+            for _ in range(source_count)
+        ]
+        for x, y, i in sources:
+            FG_2[y + N // 2, x + N // 2] += i
+        G_2 = ifft(FG_2)
 
-    G_2 = (
-        numpy.exp(2j * numpy.pi * numpy.random.rand(N, N)) * numpy.random.rand(N, N) / 2
-    )
-    FG_2 = fft(G_2)
-
-    FG_2 = numpy.zeros((N, N))
-    source_count = 1000
-    sources = [
-        (
-            numpy.random.randint(-N // 2, N // 2 - 1),
-            numpy.random.randint(-N // 2, N // 2 - 1),
-            numpy.random.rand() * N * N / numpy.sqrt(source_count) / 2,
+    else:
+        # without sources
+        G_2 = (
+            numpy.exp(2j * numpy.pi * numpy.random.rand(N, N))
+            * numpy.random.rand(N, N)
+            / 2
         )
-        for _ in range(source_count)
-    ]
-    for x, y, i in sources:
-        FG_2[y + N // 2, x + N // 2] += i
-    G_2 = ifft(FG_2)
+        FG_2 = fft(G_2)
 
     log.info("Mean grid absolute: %s", numpy.mean(numpy.abs(G_2)))
 

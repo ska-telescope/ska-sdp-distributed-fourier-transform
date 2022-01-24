@@ -3,8 +3,6 @@ import logging
 import numpy
 from matplotlib import pylab, patches as patches
 
-
-# MANUAL TESTING UTILS
 from src.fourier_transform.fourier_algorithm import (
     coordinates,
     extract_mid,
@@ -22,6 +20,7 @@ from src.fourier_transform.fourier_algorithm import (
 log = logging.getLogger("fourier-logger")
 
 
+# MANUAL TESTING UTILS
 def whole(xs):
     """."""
     return numpy.all(numpy.abs(xs - numpy.around(xs)) < 1e-13)
