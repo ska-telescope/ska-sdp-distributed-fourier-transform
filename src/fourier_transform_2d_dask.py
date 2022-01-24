@@ -24,7 +24,7 @@ from src.fourier_transform.utils import (
     plot_1,
     plot_2,
     plot_errors_2D,
-    test_accuracy,
+    test_accuracy_facet_to_subgrid,
 )
 
 log = logging.getLogger("fourier-logger")
@@ -350,7 +350,7 @@ def main():
         xA_size,
     )
 
-    test_accuracy(
+    test_accuracy_facet_to_subgrid(
         nsubgrid,
         xA_size,
         nfacet,

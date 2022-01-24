@@ -9,7 +9,12 @@ from matplotlib import pylab
 from fourier_algorithm import *
 
 # Plot setup
-from src.fourier_transform.utils import mark_range, whole, test_accuracy
+from src.fourier_transform.utils import (
+    mark_range,
+    whole,
+    test_accuracy_subgrid_to_facet,
+    test_accuracy_facet_to_subgrid,
+)
 
 # Fixing seed of numpy random
 numpy.random.seed(123456789)
