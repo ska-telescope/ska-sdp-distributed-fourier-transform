@@ -9,14 +9,117 @@ the 2D case, I commented the 1D parts out. This is to make sure results don't ch
 due to numpy.random being called different number of times between reference code and
 tested code.
 """
+import logging
+from unittest.mock import patch, call
 
 from src.fourier_transform_1d_dask import main as main_1d
 from src.fourier_transform_2d_dask import main as main_2d
 
+log = logging.getLogger("fourier-logger")
+log.setLevel(logging.WARNING)
+
+PLOT_MAP_1D = {
+    "test_data/reference_data/plot_n.png": "test_data/test_n.png",
+    "test_data/reference_data/plot_fn.png": "test_data/test_fn.png",
+    "test_data/reference_data/plot_xm.png": "test_data/test_xm.png",
+    "test_data/reference_data/plot_error_facet_to_subgrid_1d.png":
+        "test_data/test_error_facet_to_subgrid_1d.png",
+    "test_data/reference_data/plot_error_subgrid_to_facet_1d.png":
+        "test_data/test_error_subgrid_to_facet_1d.png",
+}
+
+PLOT_MAP_2D = {
+    "test_data/reference_data/plot_n.png": "test_data/test_n.png",
+    "test_data/reference_data/plot_fn.png": "test_data/test_fn.png",
+    "test_data/reference_data/plot_xm.png": "test_data/test_xm.png",
+    # TODO: why are the next two different?!
+    # "test_data/reference_data/plot_error_mean_facet_to_subgrid_2d.png":
+    #     "test_data/test_error_mean_facet_to_subgrid_2d.png",
+    # "test_data/reference_data/plot_error_mean_image_facet_to_subgrid_2d.png":
+    #     "test_data/test_error_mean_image_facet_to_subgrid_2d.png",
+    "test_data/reference_data/plot_test_accuracy_facet_to_subgrid_2d.png":
+        "test_data/test_test_accuracy_facet_to_subgrid_2d.png",
+    # "test_data/reference_data/plot_error_mean_subgrid_to_facet_2d.png":
+    #   "test_data/test_error_mean_subgrid_to_facet_2d.png",
+    # "test_data/reference_data/plot_error_mean_image_subgrid_to_facet_2d.png":
+    #   "test_data/test_error_mean_image_subgrid_to_facet_2d.png",
+    # "test_data/reference_data/plot_test_accuracy_subgrid_to_facet_2d.png":
+    #   "test_data/test_test_accuracy_subgrid_to_facet_2d.png",
+}
+
+
+def _compare_images(expected, result):
+    with open(expected, "rb") as f1, open(result, "rb") as f2:
+        contents1 = f1.read()
+        contents2 = f2.read()
+        try:
+            assert contents1 == contents2
+        except AssertionError:
+            log.error("Assertion Failed: %s, %s", expected, result)
+            raise AssertionError
+
 
 def test_end_to_end_1d_dask():
-    main_1d()
+    # Comparison values generated with numpy.random.seed(123456789)
+    expected_log_calls = [
+        call("xN=0.0207031 xM=0.125 yN=160 xNyN=3.3125 xA=0.0917969"),
+        call("xN_size=42.4 xM_yP_size=128, xMxN_yP_size=150, xM_yN_size=80"),
+        call("3x3 facets for FoV of 0.75 (100.0% efficiency)"),
+        call("6 subgrids, 4 facets needed to cover"),
+        # (facet to subgrid)
+        call("Facet data: %s %s", (4, 256), 1024),
+        call("Redistributed data: %s %s", (6, 4, 80), 1920),
+        call("Reconstructed subgrids: %s %s", (6, 188), 1128),
+        call("RMSE: %s (image: %s)", 4.2565524670253074e-08, 5.836290700482092e-07),
+        # (subgrid to facet)
+        call("Subgrid data: %s %s", (6, 188), 1128),
+        call("Intermediate data: %s %s", (6, 4, 80), 1920),
+        call("Reconstructed facets: %s %s", (4, 256), 1024),
+        call("RMSE: %s (image: %s)", 1.1820730237627836e-07, 1.8913168380204536e-06),
+    ]
+
+    with patch("logging.Logger.info") as mock_log:
+        main_1d(to_plot=False)
+        for log_call in expected_log_calls:
+            assert log_call in mock_log.call_args_list
+
+
+def test_end_to_end_1d_dask_plot():
+    # Comparison figures generated with numpy.random.seed(123456789)
+    fig_prefix = "test_data/test"
+    main_1d(to_plot=True, fig_name=fig_prefix)
+
+    for expected, result in PLOT_MAP_1D.items():
+        _compare_images(expected, result)
 
 
 def test_end_to_end_2d_dask():
-    main_2d()
+    # Comparison values generated with numpy.random.seed(123456789)
+    expected_log_calls = [
+        call("xN=0.0207031 xM=0.125 yN=160 xNyN=3.3125 xA=0.0917969"),
+        call("xN_size=42.4 xM_yP_size=128, xMxN_yP_size=150, xM_yN_size=80"),
+        call("3x3 facets for FoV of 0.75 (100.0% efficiency)"),
+        call("6 subgrids, 4 facets needed to cover"),
+        call("6 x 6 subgrids, 4 x 4 facets"),
+        call("Mean grid absolute: 0.25043735950409796"),
+        # (facet to subgrid)
+        call("RMSE: %s (image: %s)", 4.3586457627354794e-08, 8.194254033942702e-06),
+        call("RMSE: %s (image: %s)", 1.8993992558912768e-17, 3.5708706010756e-15),
+        # (subgrid to facet)
+        call("RMSE: %s (image: %s)", 2.16596591454563e-07, 5.544872741236812e-05),
+        call("RMSE: %s (image: %s)", 3.1048924152453573e-13, 7.948524583028115e-11),
+    ]
+
+    with patch("logging.Logger.info") as mock_log:
+        main_2d()
+        for log_call in expected_log_calls:
+            assert log_call in mock_log.call_args_list
+
+
+def test_end_to_end_2d_dask_plot():
+    # Comparison figures generated with numpy.random.seed(123456789)
+    fig_prefix = "test_data/test"
+    main_2d(to_plot=True, fig_name=fig_prefix)
+
+    for expected, result in PLOT_MAP_2D.items():
+        _compare_images(expected, result)

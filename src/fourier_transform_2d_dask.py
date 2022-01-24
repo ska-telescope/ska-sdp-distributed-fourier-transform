@@ -23,7 +23,7 @@ from src.fourier_transform.utils import (
     whole,
     plot_1,
     plot_2,
-    plot_errors_2D,
+    calculate_and_plot_errors_2d,
     test_accuracy_facet_to_subgrid,
 )
 
@@ -68,7 +68,7 @@ TARGET_ERR = 1e-5
 ALPHA = 0
 
 
-def main():
+def main(to_plot=True, fig_name=None):
     log.info("== Chosen configuration")
     for n in [
         "W",
@@ -111,13 +111,16 @@ def main():
     log.info("\n== Calculate PSWF")
     pswf = calculate_pswf(yN_size, ALPHA, W)
 
-    plot_1(pswf, xN, xN_size, yB, yN, N, yN_size)
+    if to_plot:
+        plot_1(pswf, xN, xN_size, yB, yN, N, yN_size, fig_name=fig_name)
 
     # Calculate actual work terms to use. We need both $n$ and $b$ in image space.
     Fb, Fn, facet_m0_trunc = get_actual_work_terms(
         pswf, xM, xMxN_yP_size, yB_size, yN_size, xM_size, N, yP_size
     )
-    plot_2(facet_m0_trunc, xM, xMxN_yP_size, yP_size)
+
+    if to_plot:
+        plot_2(facet_m0_trunc, xM, xMxN_yP_size, yP_size, fig_name=fig_name)
 
     log.info("\n== Generate layout (factes and subgrids")
     # Layout subgrids + facets
@@ -319,7 +322,7 @@ def main():
                 )
     log.info("%s s", time.time() - t)
 
-    plot_errors_2D(
+    calculate_and_plot_errors_2d(
         NMBF_NMBF,
         facet_off,
         nfacet,
@@ -329,6 +332,8 @@ def main():
         xM_size,
         N,
         xA_size,
+        to_plot=to_plot,
+        fig_name=fig_name,
     )
 
     test_accuracy_facet_to_subgrid(
@@ -351,6 +356,8 @@ def main():
         Fn,
         xs=252,
         ys=252,
+        to_plot=to_plot,
+        fig_name=fig_name,
     )
 
 

@@ -21,8 +21,8 @@ from src.fourier_transform.utils import (
     whole,
     plot_1,
     plot_2,
-    plot_errors_subgrid_1D,
-    plot_errors_facet_1D,
+    calculate_and_plot_errors_subgrid_1d,
+    calculate_and_plot_errors_facet_1d,
 )
 
 log = logging.getLogger("fourier-logger")
@@ -77,7 +77,12 @@ xM_size = TARGET_PARS["xM_size"]
 ALPHA = 0
 
 
-def main():
+def main(to_plot=True, fig_name=None):
+    """
+    :param to_plot: run plotting?
+    :param fig_name: If given, figures will be saved with this prefix into PNG files.
+                     If to_plot is set to False, fig_name doesn't have an effect.
+    """
     log.info("== Chosen configuration")
     for n in [
         "W",
@@ -120,13 +125,16 @@ def main():
     log.info("\n== Calculate PSWF")
     pswf = calculate_pswf(yN_size, ALPHA, W)
 
-    plot_1(pswf, xN, xN_size, yB, yN, N, yN_size)
+    if to_plot:
+        plot_1(pswf, xN, xN_size, yB, yN, N, yN_size, fig_name=fig_name)
 
     # Calculate actual work terms to use. We need both $n$ and $b$ in image space.
     Fb, Fn, facet_m0_trunc = get_actual_work_terms(
         pswf, xM, xMxN_yP_size, yB_size, yN_size, xM_size, N, yP_size
     )
-    plot_2(facet_m0_trunc, xM, xMxN_yP_size, yP_size)
+
+    if to_plot:
+        plot_2(facet_m0_trunc, xM, xMxN_yP_size, yP_size, fig_name=fig_name)
 
     log.info("\n== Generate layout (factes and subgrids")
     # Layout subgrids + facets
@@ -197,7 +205,16 @@ def main():
     )
     log.info("Reconstructed subgrids: %s %s", approx_subgrid.shape, approx_subgrid.size)
 
-    plot_errors_subgrid_1D(approx_subgrid, nsubgrid, subgrid, xA, xA_size, N)
+    calculate_and_plot_errors_subgrid_1d(
+        approx_subgrid,
+        nsubgrid,
+        subgrid,
+        xA,
+        xA_size,
+        N,
+        to_plot=to_plot,
+        fig_name=fig_name,
+    )
 
     #  By feeding the implementation single-pixel inputs we can create a full error map.
 
@@ -231,7 +248,17 @@ def main():
     )
     log.info("Reconstructed facets: %s %s", approx_facet.shape, approx_facet.size)
 
-    plot_errors_facet_1D(approx_facet, facet, nfacet, xA, xM, yB, yB_size)
+    calculate_and_plot_errors_facet_1d(
+        approx_facet,
+        facet,
+        nfacet,
+        xA,
+        xM,
+        yB,
+        yB_size,
+        to_plot=to_plot,
+        fig_name=fig_name,
+    )
 
 
 if __name__ == "__main__":

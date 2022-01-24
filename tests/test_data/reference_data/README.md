@@ -10,7 +10,7 @@ due to numpy.random being called different number of times between reference cod
 tested code.
 
 In addition, the following information is used for testing. It was printed by
-test_algorithm.py.
+test_algorithm.py. The code was run with numpy.random.seed(123456789).
 
 Set up:
 
