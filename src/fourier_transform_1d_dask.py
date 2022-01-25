@@ -7,6 +7,7 @@ import sys
 
 from matplotlib import pylab
 
+from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
 from src.fourier_transform.fourier_algorithm import (
     make_subgrid_and_facet,
     facets_to_subgrid_1,
@@ -15,7 +16,7 @@ from src.fourier_transform.fourier_algorithm import (
     subgrid_to_facet_2,
     get_actual_work_terms,
     calculate_pswf,
-    generate_mask_for_subgrid_facet,
+    generate_mask,
 )
 from src.fourier_transform.utils import (
     whole,
@@ -151,9 +152,8 @@ def main(to_plot=True, fig_name=None):
     # Determine subgrid/facet offsets and the appropriate A/B masks for cutting them out.
     # We are aiming for full coverage here: Every pixel is part of exactly one subgrid / facet.
 
-    facet_B, subgrid_A = generate_mask_for_subgrid_facet(
-        facet_off, nfacet, nsubgrid, subgrid_off, xA_size, N, yB_size
-    )
+    facet_B = generate_mask(N, nfacet, yB_size, facet_off)
+    subgrid_A = generate_mask(N, nsubgrid, xA_size, subgrid_off)
 
     G = numpy.random.rand(N) - 0.5
     subgrid, facet = make_subgrid_and_facet(
@@ -176,6 +176,7 @@ def main(to_plot=True, fig_name=None):
     xN_yP_size = xMxN_yP_size - xM_yP_size
 
     log.info("Facet data: %s %s", facet.shape, facet.size)
+
     nmbfs = facets_to_subgrid_1(
         facet,
         nsubgrid,
@@ -195,14 +196,11 @@ def main(to_plot=True, fig_name=None):
 
     # - redistribution of nmbfs here -
     log.info("Redistributed data: %s %s", nmbfs.shape, nmbfs.size)
-    approx_subgrid = numpy.array(
-        [
-            facets_to_subgrid_2(
-                nmbfs, i, xM_size, nfacet, facet_off, N, subgrid_A, xA_size
-            )
-            for i in range(nsubgrid)
-        ]
+
+    approx_subgrid = facets_to_subgrid_2(
+        nmbfs, xM_size, nfacet, facet_off, N, subgrid_A, xA_size, nsubgrid
     )
+
     log.info("Reconstructed subgrids: %s %s", approx_subgrid.shape, approx_subgrid.size)
 
     calculate_and_plot_errors_subgrid_1d(
@@ -262,4 +260,6 @@ def main(to_plot=True, fig_name=None):
 
 
 if __name__ == "__main__":
-    main()
+    # client, current_env_var = set_up_dask()
+    main(to_plot=False)
+    # tear_down_dask(client, current_env_var)

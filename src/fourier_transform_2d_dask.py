@@ -17,7 +17,7 @@ from src.fourier_transform.fourier_algorithm import (
     extract_subgrid,
     get_actual_work_terms,
     calculate_pswf,
-    generate_mask_for_subgrid_facet,
+    generate_mask,
 )
 from src.fourier_transform.utils import (
     whole,
@@ -69,6 +69,11 @@ ALPHA = 0
 
 
 def main(to_plot=True, fig_name=None):
+    """
+    :param to_plot: run plotting?
+    :param fig_name: If given, figures will be saved with this prefix into PNG files.
+                     If to_plot is set to False, fig_name doesn't have an effect.
+    """
     log.info("== Chosen configuration")
     for n in [
         "W",
@@ -137,9 +142,8 @@ def main(to_plot=True, fig_name=None):
     # Determine subgrid/facet offsets and the appropriate A/B masks for cutting them out.
     # We are aiming for full coverage here: Every pixel is part of exactly one subgrid / facet.
 
-    facet_B, subgrid_A = generate_mask_for_subgrid_facet(
-        facet_off, nfacet, nsubgrid, subgrid_off, xA_size, N, yB_size
-    )
+    facet_B = generate_mask(N, nfacet, yB_size, facet_off)
+    subgrid_A = generate_mask(N, nsubgrid, xA_size, subgrid_off)
 
     # ## 2D case
     #
