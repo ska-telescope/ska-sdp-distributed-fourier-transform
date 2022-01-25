@@ -7,13 +7,12 @@ import numpy
 
 import dask.array
 
-# TODO: need to merge the functions with _a in their name to their equivalents from Crocodile
-#   Crocodile functions are below the _a ones
-from src.fourier_transform.dask_wrapper import dask_wrapper
 
 USE_DASK = os.getenv("USE_DASK", False) == "True"
 
 
+# TODO: need to merge the functions with _a in their name to their equivalents from Crocodile
+#   Crocodile functions are below the _a ones
 def slice_a(fill_val, axis_val, dims, axis):
     """
     Slice A
@@ -404,6 +403,7 @@ def facets_to_subgrid_1(
             ],
             chunks=(1, 1, xM_yN_size),
         ).astype(dtype)
+        # TODO: compute should not happen here; for now dask is implemented until this point
         RNjMiBjFj = RNjMiBjFj.compute()
 
     else:
@@ -490,6 +490,7 @@ def subgrid_to_facet_1(
             ]
         )
         result = Fn * FNjSi
+        # TODO: compute should not happen here; for now dask is implemented until this point
         result = result.compute()
 
     else:
@@ -806,7 +807,7 @@ def generate_mask(n_image, ndata_point, true_usable_size, offset):
         right = subgrid_border[i] - offset[i] + true_usable_size // 2
         assert (
             left >= 0 and right <= true_usable_size
-        ), "xA not large enough to cover subgrids!"
+        ), "xA / yB not large enough to cover subgrids / facets!"
         mask[i, left:right] = 1
 
     return mask  # subgrid_A, facet_B

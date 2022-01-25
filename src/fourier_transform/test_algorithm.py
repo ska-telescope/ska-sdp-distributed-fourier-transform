@@ -4,6 +4,8 @@
 import math
 import time
 import itertools
+import logging
+import sys
 from matplotlib import pylab
 
 from fourier_algorithm import *
@@ -15,6 +17,10 @@ from src.fourier_transform.utils import (
     test_accuracy_subgrid_to_facet,
     test_accuracy_facet_to_subgrid,
 )
+
+log = logging.getLogger("fourier-logger")
+log.setLevel(logging.INFO)
+log.addHandler(logging.StreamHandler(sys.stdout))
 
 # Fixing seed of numpy random
 numpy.random.seed(123456789)
@@ -350,23 +356,33 @@ print(nsubgrid, "x", nsubgrid, "subgrids,", nfacet, "x", nfacet, "facets")
 subgrid_2 = numpy.empty((nsubgrid, nsubgrid, xA_size, xA_size), dtype=complex)
 facet_2 = numpy.empty((nfacet, nfacet, yB_size, yB_size), dtype=complex)
 
-G_2 = numpy.exp(2j * numpy.pi * numpy.random.rand(N, N)) * numpy.random.rand(N, N) / 2
-FG_2 = fft(G_2)
+# adding sources
+add_sources = True
+if add_sources:
+    FG_2 = numpy.zeros((N, N))
+    source_count = 1000
+    sources = [
+        (
+            numpy.random.randint(-N // 2, N // 2 - 1),
+            numpy.random.randint(-N // 2, N // 2 - 1),
+            numpy.random.rand() * N * N / numpy.sqrt(source_count) / 2,
+        )
+        for _ in range(source_count)
+    ]
+    for x, y, i in sources:
+        FG_2[y + N // 2, x + N // 2] += i
+    G_2 = ifft(FG_2)
 
-FG_2 = numpy.zeros((N, N))
-source_count = 1000
-sources = [
-    (
-        numpy.random.randint(-N // 2, N // 2 - 1),
-        numpy.random.randint(-N // 2, N // 2 - 1),
-        numpy.random.rand() * N * N / numpy.sqrt(source_count) / 2,
+else:
+    # without sources
+    G_2 = (
+            numpy.exp(2j * numpy.pi * numpy.random.rand(N, N))
+            * numpy.random.rand(N, N)
+            / 2
     )
-    for _ in range(source_count)
-]
-for x, y, i in sources:
-    FG_2[y + N // 2, x + N // 2] += i
-G_2 = ifft(FG_2)
-print("Mean grid absolute:", numpy.mean(numpy.abs(G_2)))
+    FG_2 = fft(G_2)
+
+print("Mean grid absolute: ", numpy.mean(numpy.abs(G_2)))
 
 for i0, i1 in itertools.product(range(nsubgrid), range(nsubgrid)):
     subgrid_2[i0, i1] = extract_mid(

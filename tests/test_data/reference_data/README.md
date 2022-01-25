@@ -12,6 +12,19 @@ tested code.
 In addition, the following information is used for testing. It was printed by
 test_algorithm.py. The code was run with numpy.random.seed(123456789).
 
+The following target parameters were used:
+TARGET_PARS = {
+    "W": 13.25,
+    "fov": 0.75,
+    "N": 1024,  # total image size
+    "Nx": 4,  # subgrid spacing
+    "yB_size": 256,  # true usable image size (facet)
+    "yN_size": 320,  # padding needed to transfer the data?
+    "yP_size": 512,  # padded (rough) image size (facet)
+    "xA_size": 188,  # true usable subgrid size
+    "xM_size": 256,  # padded (rough) subgrid size
+}
+
 Set up:
 
 == Chosen configuration
@@ -50,12 +63,12 @@ RMSE: 1.1820730237627836e-07 (image: 1.8913168380204536e-06 )
 2D:
 
 6 x 6 subgrids, 4 x 4 facets
-Mean grid absolute: 0.25043735950409796
+Mean grid absolute: 0.2523814510844513
 
 (facet to subgrid)
-RMSE: 4.3586457627354794e-08 (image: 8.194254033942702e-06 )
-RMSE: 1.8993992558912768e-17 (image: 3.5708706010756e-15 )
+RMSE: 3.6351180911901923e-08 (image: 6.834022011437562e-06 )
+RMSE: 1.8993992558912768e-17 (image: 3.5708706010756e-15)
 
 (subgrid to facet)
-RMSE: 2.16596591454563e-07 (image: 5.544872741236812e-05 )
-RMSE: 3.1048924152453573e-13 (image: 7.948524583028115e-11 )
+RMSE: 1.9066529538510885e-07 (image: 4.881031561858787e-05 )
+RMSE: 3.1048924152453573e-13 (image: 7.948524583028115e-11)

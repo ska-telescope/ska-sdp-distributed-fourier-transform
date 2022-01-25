@@ -115,13 +115,13 @@ def test_end_to_end_2d_dask():
         call("3x3 facets for FoV of 0.75 (100.0% efficiency)"),
         call("6 subgrids, 4 facets needed to cover"),
         call("%s x %s subgrids %s x %s facets", 6, 6, 4, 4),
-        call("Mean grid absolute: %s", 0.25043735950409796),
+        call("Mean grid absolute: %s", 0.2523814510844513),
         # (facet to subgrid)
-        call("RMSE: %s (image: %s)", 4.3586457627354794e-08, 8.194254033942702e-06),
+        call("RMSE: %s (image: %s)", 3.6351180911901923e-08, 6.834022011437562e-06),
         call("RMSE: %s (image: %s)", 1.8993992558912768e-17, 3.5708706010756e-15),
-        # (subgrid to facet)
-        call("RMSE: %s (image: %s)", 2.16596591454563e-07, 5.544872741236812e-05),
-        call("RMSE: %s (image: %s)", 3.1048924152453573e-13, 7.948524583028115e-11),
+        # (subgrid to facet) - not yet added to tested code
+        # call("RMSE: %s (image: %s)", 1.9503554118423179e-07, 4.992909854316334e-05),
+        # call("RMSE: %s (image: %s)", 3.1048924152453573e-13, 7.948524583028115e-11),
     ]
 
     with patch("logging.Logger.info") as mock_log:
@@ -145,7 +145,6 @@ def test_end_to_end_2d_dask_plot():
         "test_data/reference_data/plot_n.png": f"{fig_prefix}_n.png",
         "test_data/reference_data/plot_fn.png": f"{fig_prefix}_fn.png",
         "test_data/reference_data/plot_xm.png": f"{fig_prefix}_xm.png",
-        # TODO: why are the next two different?!
         # "test_data/reference_data/plot_error_mean_facet_to_subgrid_2d.png":
         #     f"{fig_prefix}_error_mean_facet_to_subgrid_2d.png",
         # "test_data/reference_data/plot_error_mean_image_facet_to_subgrid_2d.png":
