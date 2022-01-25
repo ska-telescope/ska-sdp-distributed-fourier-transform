@@ -190,11 +190,8 @@ nmbfs = facets_to_subgrid_1(
 
 # - redistribution of nmbfs here -
 print("Redistributed data:", nmbfs.shape, nmbfs.size)
-approx_subgrid = numpy.array(
-    [
-        facets_to_subgrid_2(nmbfs, i, xM_size, nfacet, facet_off, N, subgrid_A, xA_size)
-        for i in range(nsubgrid)
-    ]
+approx_subgrid = facets_to_subgrid_2(
+    nmbfs, xM_size, nfacet, facet_off, N, subgrid_A, xA_size, nsubgrid
 )
 print("Reconstructed subgrids:", approx_subgrid.shape, approx_subgrid.size)
 

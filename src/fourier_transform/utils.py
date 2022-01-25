@@ -30,7 +30,8 @@ def whole(xs):
 def mark_range(
     lbl, x0, x1=None, y0=None, y1=None, ax=None, x_offset=1 / 200, linestyle="--"
 ):
-    """Helper for marking ranges in a graph.
+    """
+    Helper for marking ranges in a graph.
 
     :param lbl: label
     :param x0: X0
@@ -39,7 +40,6 @@ def mark_range(
     :param ax: Ax
     :param x_offset: X offset
     :param linestyle: Linestyle
-
     """
     if ax is None:
         ax = pylab.gca()
@@ -66,12 +66,15 @@ def mark_range(
 
 
 def display_plots(x, legend=None, grid=False, xlim=None, fig_name=None):
-    """Display plots using pylab
+    """
+    Display plots using pylab
 
-    param x: X values
-    param legend: Legend
-    param grid: Grid
-    param xlim: X axis limitation
+    :param x: X values
+    :param legend: Legend
+    :param grid: Grid
+    :param xlim: X axis limitation
+    :param fig_name: partial name or prefix (can include path) if figure is saved
+                     if None, pylab.show() is called instead
     """
     pylab.clf()
     pylab.rcParams["figure.figsize"] = 16, 8
@@ -92,6 +95,16 @@ def display_plots(x, legend=None, grid=False, xlim=None, fig_name=None):
 
 # TODO: needs better name; used both for 1D and 2D
 def plot_1(pswf, xN, xN_size, yB, yN, N, yN_size, fig_name=None):
+    """
+    :param pswf: prolate-spheroidal wave function
+    :param xN:
+    :param xN_size:
+    :param yB:
+    :param yN:
+    :param yN_size:
+    :param fig_name: partial name or prefix (can include path) if figure is saved
+                     if None, pylab.show() is called instead
+    """
     pylab.clf()
     pylab.semilogy(
         coordinates(4 * int(xN_size)) * 4 * xN_size / N,
@@ -121,6 +134,14 @@ def plot_1(pswf, xN, xN_size, yB, yN, N, yN_size, fig_name=None):
 
 # TODO: needs better name; used both for 1D and 2D
 def plot_2(facet_m0_trunc, xM, xMxN_yP_size, yP_size, fig_name=None):
+    """
+    :param facet_m0_trunc:
+    :param xM:
+    :param xMxN_yP_size:
+    :param yP_size:
+    :param fig_name: partial name or prefix (can include path) if figure is saved
+                     if None, pylab.show() is called instead
+    """
     pylab.clf()
     pylab.semilogy(coordinates(xMxN_yP_size) / yP_size * xMxN_yP_size, facet_m0_trunc)
     mark_range("xM", -xM, xM)
@@ -134,6 +155,19 @@ def plot_2(facet_m0_trunc, xM, xMxN_yP_size, yP_size, fig_name=None):
 def calculate_and_plot_errors_subgrid_1d(
     approx_subgrid, nsubgrid, subgrid, xA, xA_size, N, to_plot=True, fig_name=None
 ):
+    """
+    Facet to subgrid error terms. Log and plot them.
+
+    :param approx_subgrid:
+    :param nsubgrid:
+    :param subgrid:
+    :param xA:
+    :param xA_size:
+    :param N:
+    :param to_plot: plot results?
+    :param fig_name: partial name or prefix (can include path) if figure is saved
+                     if None, pylab.show() is called instead
+    """
     # Let us look at the error terms:
     if to_plot:
         pylab.clf()
@@ -380,7 +414,10 @@ def test_accuracy_facet_to_subgrid(
     x = numpy.log(numpy.sqrt(err_mean_img)) / numpy.log(10)
 
     if to_plot:
-        full_name = f"{fig_name}_test_accuracy_facet_to_subgrid_2d"
+        if fig_name:
+            full_name = f"{fig_name}_test_accuracy_facet_to_subgrid_2d"
+        else:
+            full_name = None
         display_plots(x, fig_name=full_name)
 
     print(
