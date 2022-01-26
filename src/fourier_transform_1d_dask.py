@@ -2,6 +2,8 @@
 # coding: utf-8
 import logging
 import math
+import os
+
 import numpy
 import sys
 
@@ -17,6 +19,9 @@ from src.fourier_transform.fourier_algorithm import (
     get_actual_work_terms,
     calculate_pswf,
     generate_mask,
+    subgrid_to_facet_1_dask_array,
+    facets_to_subgrid_1_dask_array,
+    make_subgrid_and_facet_dask_array,
 )
 from src.fourier_transform.utils import (
     whole,
@@ -25,6 +30,8 @@ from src.fourier_transform.utils import (
     calculate_and_plot_errors_subgrid_1d,
     calculate_and_plot_errors_facet_1d,
 )
+
+USE_DASK = os.getenv("USE_DASK", False) == "True"
 
 log = logging.getLogger("fourier-logger")
 log.setLevel(logging.INFO)
@@ -57,7 +64,7 @@ TARGET_PARS = {
     "fov": 0.75,
     "N": 1024,  # total image size
     "Nx": 4,  # subgrid spacing: it tells you what subgrid offsets are permissible:
-              # here it is saying that they need to be divisible by 4.
+    # here it is saying that they need to be divisible by 4.
     "yB_size": 256,  # true usable image size (facet)
     "yN_size": 320,  # padding needed to transfer the data?
     "yP_size": 512,  # padded (rough) image size (facet)
@@ -157,17 +164,31 @@ def main(to_plot=True, fig_name=None):
     subgrid_A = generate_mask(N, nsubgrid, xA_size, subgrid_off)
 
     G = numpy.random.rand(N) - 0.5
-    subgrid, facet = make_subgrid_and_facet(
-        G,
-        nsubgrid,
-        xA_size,
-        subgrid_A,
-        subgrid_off,
-        nfacet,
-        yB_size,
-        facet_B,
-        facet_off,
-    )
+
+    if USE_DASK:
+        subgrid, facet = make_subgrid_and_facet_dask_array(
+            G,
+            nsubgrid,
+            xA_size,
+            subgrid_A,
+            subgrid_off,
+            nfacet,
+            yB_size,
+            facet_B,
+            facet_off,
+        )
+    else:
+        subgrid, facet = make_subgrid_and_facet(
+            G,
+            nsubgrid,
+            xA_size,
+            subgrid_A,
+            subgrid_off,
+            nfacet,
+            yB_size,
+            facet_B,
+            facet_off,
+        )
 
     log.info("\n== RUN: Facet to subgrid")
     # With a few more slight optimisations we arrive at a compact representation for our algorithm.
@@ -178,22 +199,40 @@ def main(to_plot=True, fig_name=None):
 
     log.info("Facet data: %s %s", facet.shape, facet.size)
 
-    nmbfs = facets_to_subgrid_1(
-        facet,
-        nsubgrid,
-        nfacet,
-        xM_yN_size,
-        Fb,
-        Fn,
-        yP_size,
-        facet_m0_trunc,
-        subgrid_off,
-        N,
-        xMxN_yP_size,
-        xN_yP_size,
-        xM_yP_size,
-        dtype,
-    )
+    if USE_DASK:
+        nmbfs = facets_to_subgrid_1_dask_array(
+            facet,
+            nsubgrid,
+            nfacet,
+            xM_yN_size,
+            Fb,
+            Fn,
+            yP_size,
+            facet_m0_trunc,
+            subgrid_off,
+            N,
+            xMxN_yP_size,
+            xN_yP_size,
+            xM_yP_size,
+            dtype,
+        )
+    else:
+        nmbfs = facets_to_subgrid_1(
+            facet,
+            nsubgrid,
+            nfacet,
+            xM_yN_size,
+            Fb,
+            Fn,
+            yP_size,
+            facet_m0_trunc,
+            subgrid_off,
+            N,
+            xMxN_yP_size,
+            xN_yP_size,
+            xM_yP_size,
+            dtype,
+        )
 
     # - redistribution of nmbfs here -
     log.info("Redistributed data: %s %s", nmbfs.shape, nmbfs.size)
@@ -219,9 +258,15 @@ def main(to_plot=True, fig_name=None):
 
     log.info("\n== RUN: Subgrid to facet")
     log.info("Subgrid data: %s %s", subgrid.shape, subgrid.size)
-    nafs = subgrid_to_facet_1(
-        subgrid, nsubgrid, nfacet, xM_yN_size, xM_size, facet_off, N, Fn
-    )
+
+    if USE_DASK:
+        nafs = subgrid_to_facet_1_dask_array(
+            subgrid, nsubgrid, nfacet, xM_yN_size, xM_size, facet_off, N, Fn
+        )
+    else:
+        nafs = subgrid_to_facet_1(
+            subgrid, nsubgrid, nfacet, xM_yN_size, xM_size, facet_off, N, Fn
+        )
 
     # - redistribution of FNjSi here -
     log.info("Intermediate data: %s %s", nafs.shape, nafs.size)

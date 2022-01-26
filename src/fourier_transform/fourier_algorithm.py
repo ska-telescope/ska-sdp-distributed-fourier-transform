@@ -8,9 +8,6 @@ import numpy
 import dask.array
 
 
-USE_DASK = os.getenv("USE_DASK", False) == "True"
-
-
 # TODO: need to merge the functions with _a in their name to their equivalents from Crocodile
 #   Crocodile functions are below the _a ones
 def slice_a(fill_val, axis_val, dims, axis):
@@ -254,33 +251,47 @@ def make_subgrid_and_facet(
     """
     FG = fft(G)
 
-    if USE_DASK:
-        subgrid = dask.array.from_array(
-            [
-                _ith_subgrid_facet_element(G, subgrid_A[i], subgrid_off[i], xA_size)
-                for i in range(nsubgrid)
-            ],
-            chunks=(1, xA_size),
-        ).astype(complex)
+    subgrid = numpy.empty((nsubgrid, xA_size), dtype=complex)
+    for i in range(nsubgrid):
+        subgrid[i] = _ith_subgrid_facet_element(
+            G, subgrid_A[i], subgrid_off[i], xA_size
+        )
 
-        facet = dask.array.from_array(
-            [
-                _ith_subgrid_facet_element(FG, facet_B[j], facet_off[j], yB_size)
-                for j in range(nfacet)
-            ],
-            chunks=(1, yB_size),
-        ).astype(complex)
+    facet = numpy.empty((nfacet, yB_size), dtype=complex)
+    for j in range(nfacet):
+        facet[j] = _ith_subgrid_facet_element(FG, facet_B[j], facet_off[j], yB_size)
 
-    else:
-        subgrid = numpy.empty((nsubgrid, xA_size), dtype=complex)
-        for i in range(nsubgrid):
-            subgrid[i] = _ith_subgrid_facet_element(
-                G, subgrid_A[i], subgrid_off[i], xA_size
-            )
+    return subgrid, facet
 
-        facet = numpy.empty((nfacet, yB_size), dtype=complex)
-        for j in range(nfacet):
-            facet[j] = _ith_subgrid_facet_element(FG, facet_B[j], facet_off[j], yB_size)
+
+def make_subgrid_and_facet_dask_array(
+    G,
+    nsubgrid,
+    xA_size,
+    subgrid_A,
+    subgrid_off,
+    nfacet,
+    yB_size,
+    facet_B,
+    facet_off,
+):
+    FG = fft(G)
+
+    subgrid = dask.array.from_array(
+        [
+            _ith_subgrid_facet_element(G, subgrid_A[i], subgrid_off[i], xA_size)
+            for i in range(nsubgrid)
+        ],
+        chunks=(1, xA_size),
+    ).astype(complex)
+
+    facet = dask.array.from_array(
+        [
+            _ith_subgrid_facet_element(FG, facet_B[j], facet_off[j], yB_size)
+            for j in range(nfacet)
+        ],
+        chunks=(1, yB_size),
+    ).astype(complex)
 
     return subgrid, facet
 
@@ -320,26 +331,37 @@ def subgrid_range_1(
     return:
 
     """
-    if USE_DASK:
-        MiBjFj = facet_m0_trunc * extract_mid(
-            numpy.roll(BjFj, -offset_i * yP_size // N), xMxN_yP_size
-        ).rechunk(xMxN_yP_size)
-        MiBjFj_sum = extract_mid(MiBjFj, xM_yP_size).rechunk(xM_yP_size)
-        MiBjFj_sum[: xN_yP_size // 2] += MiBjFj[-xN_yP_size // 2 :]
-        MiBjFj_sum[-xN_yP_size // 2 :] += MiBjFj[: xN_yP_size // 2 :]
+    MiBjFj = facet_m0_trunc * extract_mid(
+        numpy.roll(BjFj, -offset_i * yP_size // N), xMxN_yP_size
+    )
+    MiBjFj_sum = extract_mid(MiBjFj, xM_yP_size)
+    MiBjFj_sum[: xN_yP_size // 2] += MiBjFj[-xN_yP_size // 2 :]
+    MiBjFj_sum[-xN_yP_size // 2 :] += MiBjFj[: xN_yP_size // 2 :]
 
-        result = Fn * extract_mid(fft(MiBjFj_sum), xM_yN_size).rechunk(xM_yN_size)
+    result = Fn * extract_mid(fft(MiBjFj_sum), xM_yN_size)
 
-    else:
-        MiBjFj = facet_m0_trunc * extract_mid(
-            numpy.roll(BjFj, -offset_i * yP_size // N), xMxN_yP_size
-        )
-        MiBjFj_sum = extract_mid(MiBjFj, xM_yP_size)
-        MiBjFj_sum[: xN_yP_size // 2] += MiBjFj[-xN_yP_size // 2 :]
-        MiBjFj_sum[-xN_yP_size // 2 :] += MiBjFj[: xN_yP_size // 2 :]
+    return result
 
-        result = Fn * extract_mid(fft(MiBjFj_sum), xM_yN_size)
 
+def subgrid_range_1_dask_array(
+    BjFj,
+    facet_m0_trunc,
+    offset_i,
+    yP_size,
+    N,
+    xMxN_yP_size,
+    xN_yP_size,
+    xM_yP_size,
+    xM_yN_size,
+    Fn,
+):
+    MiBjFj = facet_m0_trunc * extract_mid(
+        numpy.roll(BjFj, -offset_i * yP_size // N), xMxN_yP_size
+    ).rechunk(xMxN_yP_size)
+    MiBjFj_sum = extract_mid(MiBjFj, xM_yP_size).rechunk(xM_yP_size)
+    MiBjFj_sum[: xN_yP_size // 2] += MiBjFj[-xN_yP_size // 2 :]
+    MiBjFj_sum[-xN_yP_size // 2 :] += MiBjFj[: xN_yP_size // 2 :]
+    result = Fn * extract_mid(fft(MiBjFj_sum), xM_yN_size).rechunk(xM_yN_size)
     return result
 
 
@@ -381,40 +403,49 @@ def facets_to_subgrid_1(
     return: RNjMiBjFj
 
     """
-    if USE_DASK:
-        RNjMiBjFj = dask.array.from_array(
-            [
-                [
-                    subgrid_range_1(
-                        ifft(pad_mid(facet[i] * Fb, yP_size).rechunk(yP_size)),
-                        facet_m0_trunc,
-                        subgrid_off[j],
-                        yP_size,
-                        N,
-                        xMxN_yP_size,
-                        xN_yP_size,
-                        xM_yP_size,
-                        xM_yN_size,
-                        Fn,
-                    )
-                    for i in range(nfacet)
-                ]
-                for j in range(nsubgrid)
-            ],
-            chunks=(1, 1, xM_yN_size),
-        ).astype(dtype)
-        # TODO: compute should not happen here; for now dask is implemented until this point
-        RNjMiBjFj = RNjMiBjFj.compute()
+    RNjMiBjFj = numpy.empty((nsubgrid, nfacet, xM_yN_size), dtype=dtype)
+    for j in range(nfacet):
+        BjFj = ifft(pad_mid(facet[j] * Fb, yP_size))
+        for i in range(nsubgrid):
+            RNjMiBjFj[i, j] = subgrid_range_1(
+                BjFj,
+                facet_m0_trunc,
+                subgrid_off[i],
+                yP_size,
+                N,
+                xMxN_yP_size,
+                xN_yP_size,
+                xM_yP_size,
+                xM_yN_size,
+                Fn,
+            )
 
-    else:
-        RNjMiBjFj = numpy.empty((nsubgrid, nfacet, xM_yN_size), dtype=dtype)
-        for j in range(nfacet):
-            BjFj = ifft(pad_mid(facet[j] * Fb, yP_size))
-            for i in range(nsubgrid):
-                RNjMiBjFj[i, j] = subgrid_range_1(
-                    BjFj,
+    return RNjMiBjFj
+
+
+def facets_to_subgrid_1_dask_array(
+    facet,
+    nsubgrid,
+    nfacet,
+    xM_yN_size,
+    Fb,
+    Fn,
+    yP_size,
+    facet_m0_trunc,
+    subgrid_off,
+    N,
+    xMxN_yP_size,
+    xN_yP_size,
+    xM_yP_size,
+    dtype,
+):
+    RNjMiBjFj = dask.array.from_array(
+        [
+            [
+                subgrid_range_1_dask_array(
+                    ifft(pad_mid(facet[i] * Fb, yP_size).rechunk(yP_size)),
                     facet_m0_trunc,
-                    subgrid_off[i],
+                    subgrid_off[j],
                     yP_size,
                     N,
                     xMxN_yP_size,
@@ -423,7 +454,14 @@ def facets_to_subgrid_1(
                     xM_yN_size,
                     Fn,
                 )
-
+                for i in range(nfacet)
+            ]
+            for j in range(nsubgrid)
+        ],
+        chunks=(1, 1, xM_yN_size),
+    ).astype(dtype)
+    # TODO: compute should not happen here; for now dask is implemented until this point
+    RNjMiBjFj = RNjMiBjFj.compute()
     return RNjMiBjFj
 
 
@@ -473,36 +511,39 @@ def subgrid_to_facet_1(
 
     return:
     """
-    if USE_DASK:
-        FNjSi = dask.array.from_array(
+    FNjSi = numpy.empty((nsubgrid, nfacet, xM_yN_size), dtype=complex)
+    for i in range(nsubgrid):
+        FSi = fft(pad_mid(subgrid[i], xM_size))
+        for j in range(nfacet):
+            FNjSi[i, j] = extract_mid(
+                numpy.roll(FSi, -facet_off[j] * xM_size // N), xM_yN_size
+            )
+    result = Fn * FNjSi
+
+    return result
+
+
+def subgrid_to_facet_1_dask_array(
+    subgrid, nsubgrid, nfacet, xM_yN_size, xM_size, facet_off, N, Fn
+):
+    FNjSi = dask.array.from_array(
+        [
             [
-                [
-                    extract_mid(
-                        numpy.roll(
-                            fft(pad_mid(subgrid[j], xM_size).rechunk(xM_size)),
-                            -facet_off[i] * xM_size // N,
-                        ),
-                        xM_yN_size,
-                    )
-                    for i in range(nfacet)
-                ]
-                for j in range(nsubgrid)
-            ]
-        )
-        result = Fn * FNjSi
-        # TODO: compute should not happen here; for now dask is implemented until this point
-        result = result.compute()
-
-    else:
-        FNjSi = numpy.empty((nsubgrid, nfacet, xM_yN_size), dtype=complex)
-        for i in range(nsubgrid):
-            FSi = fft(pad_mid(subgrid[i], xM_size))
-            for j in range(nfacet):
-                FNjSi[i, j] = extract_mid(
-                    numpy.roll(FSi, -facet_off[j] * xM_size // N), xM_yN_size
+                extract_mid(
+                    numpy.roll(
+                        fft(pad_mid(subgrid[j], xM_size).rechunk(xM_size)),
+                        -facet_off[i] * xM_size // N,
+                    ),
+                    xM_yN_size,
                 )
-        result = Fn * FNjSi
-
+                for i in range(nfacet)
+            ]
+            for j in range(nsubgrid)
+        ]
+    )
+    result = Fn * FNjSi
+    # TODO: compute should not happen here; for now dask is implemented until this point
+    result = result.compute()
     return result
 
 
