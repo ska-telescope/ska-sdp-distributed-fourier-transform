@@ -447,6 +447,8 @@ def test_accuracy_subgrid_to_facet(
     Fn,
     xs=252,
     ys=252,
+    to_plot=True,
+    fig_name=None
 ):
     """
 
@@ -545,9 +547,15 @@ def test_accuracy_subgrid_to_facet(
         err_mean_img += numpy.abs(approx - facet_2[j0, j1]) ** 2 / nfacet ** 2
 
     x = numpy.log(numpy.sqrt(err_mean_img)) / numpy.log(10)
-    display_plots(x)  # pylab.savefig("plot_test_accuracy_subgrid_to_facet_2d.png")
     log.info(
         "RMSE: %s (image: %s)",
         numpy.sqrt(numpy.mean(err_mean)),
         numpy.sqrt(numpy.mean(err_mean_img)),
     )
+
+    if to_plot:
+        if fig_name:
+            full_name = f"{fig_name}_test_accuracy_subgrid_to_facet_2d"
+        else:
+            full_name = None
+        display_plots(x, fig_name=full_name)

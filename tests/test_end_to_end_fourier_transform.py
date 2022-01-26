@@ -26,8 +26,6 @@ from src.fourier_transform_2d_dask import main as main_2d
 log = logging.getLogger("fourier-logger")
 log.setLevel(logging.WARNING)
 
-# TODO: 2d tests are failing!!! results are different
-
 
 def _compare_images(expected, result):
     with open(expected, "rb") as f1, open(result, "rb") as f2:
@@ -116,10 +114,10 @@ def test_end_to_end_2d_dask():
         call("6 subgrids, 4 facets needed to cover"),
         call("%s x %s subgrids %s x %s facets", 6, 6, 4, 4),
         call("Mean grid absolute: %s", 0.2523814510844513),
-        # (facet to subgrid)
+        # facet to subgrid
         call("RMSE: %s (image: %s)", 3.6351180911901923e-08, 6.834022011437562e-06),
         call("RMSE: %s (image: %s)", 1.8993992558912768e-17, 3.5708706010756e-15),
-        # (subgrid to facet) - not yet added to tested code
+        # subgrid to facet - not yet added to tested code
         # call("RMSE: %s (image: %s)", 1.9503554118423179e-07, 4.992909854316334e-05),
         # call("RMSE: %s (image: %s)", 3.1048924152453573e-13, 7.948524583028115e-11),
     ]
@@ -145,11 +143,11 @@ def test_end_to_end_2d_dask_plot():
         "test_data/reference_data/plot_n.png": f"{fig_prefix}_n.png",
         "test_data/reference_data/plot_fn.png": f"{fig_prefix}_fn.png",
         "test_data/reference_data/plot_xm.png": f"{fig_prefix}_xm.png",
-        # "test_data/reference_data/plot_error_mean_facet_to_subgrid_2d.png":
-        #     f"{fig_prefix}_error_mean_facet_to_subgrid_2d.png",
-        # "test_data/reference_data/plot_error_mean_image_facet_to_subgrid_2d.png":
-        #     f"{fig_prefix}_error_mean_image_facet_to_subgrid_2d.png",
+        # facet to subgrid
+        "test_data/reference_data/plot_error_mean_facet_to_subgrid_2d.png": f"{fig_prefix}_error_mean_facet_to_subgrid_2d.png",
+        "test_data/reference_data/plot_error_mean_image_facet_to_subgrid_2d.png": f"{fig_prefix}_error_mean_image_facet_to_subgrid_2d.png",
         "test_data/reference_data/plot_test_accuracy_facet_to_subgrid_2d.png": f"{fig_prefix}_test_accuracy_facet_to_subgrid_2d.png",
+        # subgrid to facet -- not yet added to tested code
         # "test_data/reference_data/plot_error_mean_subgrid_to_facet_2d.png":
         #     f"{fig_prefix}_error_mean_subgrid_to_facet_2d.png",
         # "test_data/reference_data/plot_error_mean_image_subgrid_to_facet_2d.png":
