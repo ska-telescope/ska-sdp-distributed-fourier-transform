@@ -448,7 +448,7 @@ def test_accuracy_subgrid_to_facet(
     xs=252,
     ys=252,
     to_plot=True,
-    fig_name=None
+    fig_name=None,
 ):
     """
 

@@ -46,7 +46,7 @@ TARGET_PARS = {
     "fov": 0.75,
     "N": 1024,  # total image size
     "Nx": 4,  # subgrid spacing: it tells you what subgrid offsets are permissible:
-              # here it is saying that they need to be divisible by 4.
+    # here it is saying that they need to be divisible by 4.
     "yB_size": 256,  # true usable image size (facet)
     "yN_size": 320,  # padding needed to transfer the data?
     "yP_size": 512,  # padded (rough) image size (facet)

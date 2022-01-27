@@ -376,9 +376,7 @@ if add_sources:
 else:
     # without sources
     G_2 = (
-            numpy.exp(2j * numpy.pi * numpy.random.rand(N, N))
-            * numpy.random.rand(N, N)
-            / 2
+        numpy.exp(2j * numpy.pi * numpy.random.rand(N, N)) * numpy.random.rand(N, N) / 2
     )
     FG_2 = fft(G_2)
 

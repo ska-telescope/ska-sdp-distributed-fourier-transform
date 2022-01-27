@@ -1,6 +1,4 @@
 """Distributed Fourier Transform Module."""
-import os
-
 import scipy.special
 import scipy.signal
 import numpy
