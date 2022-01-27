@@ -13,16 +13,16 @@ from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
 from src.fourier_transform.fourier_algorithm import (
     make_subgrid_and_facet,
     facets_to_subgrid_1d,
-    redistribute_subgrid_1d,
-    subgrid_to_facet_1,
-    subgrid_to_facet_2,
+    reconstruct_subgrid_1d,
+    subgrid_to_facet_1d,
+    reconstruct_facet_1d,
     get_actual_work_terms,
     calculate_pswf,
     generate_mask,
-    subgrid_to_facet_1_dask_array,
+    subgrid_to_facet_1d_dask_array,
     facets_to_subgrid_1d_dask_array,
     make_subgrid_and_facet_dask_array,
-    redistribute_subgrid_1d_dask_array,
+    reconstruct_subgrid_1d_dask_array, reconstruct_facet_1d_dask_array,
 )
 from src.fourier_transform.utils import (
     whole,
@@ -87,6 +87,184 @@ xM_size = TARGET_PARS["xM_size"]
 ALPHA = 0
 
 
+def _algorithm_with_dask_array(
+    G,
+    nsubgrid,
+    nfacet,
+    subgrid_A,
+    facet_B,
+    subgrid_off,
+    facet_off,
+    xMxN_yP_size,
+    xN_yP_size,
+    xM_yP_size,
+    xM_yN_size,
+    Fb,
+    Fn,
+    facet_m0_trunc,
+    dtype,
+):
+    subgrid, facet = make_subgrid_and_facet_dask_array(
+        G,
+        nsubgrid,
+        xA_size,
+        subgrid_A,
+        subgrid_off,
+        nfacet,
+        yB_size,
+        facet_B,
+        facet_off,
+    )
+
+    # ==============================================
+    log.info("\n== RUN: Facet to subgrid")
+    # With a few more slight optimisations we arrive at a compact representation for our algorithm.
+    # For reference, what we are computing here is:
+    log.info("Facet data: %s %s", facet.shape, facet.size)
+
+    nmbfs = facets_to_subgrid_1d_dask_array(
+        facet,
+        nsubgrid,
+        nfacet,
+        xM_yN_size,
+        Fb,
+        Fn,
+        yP_size,
+        facet_m0_trunc,
+        subgrid_off,
+        N,
+        xMxN_yP_size,
+        xN_yP_size,
+        xM_yP_size,
+        dtype,
+    )
+    # - redistribution of nmbfs here -
+    log.info("Redistributed data: %s %s", nmbfs.shape, nmbfs.size)
+
+    approx_subgrid = reconstruct_subgrid_1d_dask_array(
+        nmbfs, xM_size, nfacet, facet_off, N, subgrid_A, xA_size, nsubgrid
+    )
+    log.info("Reconstructed subgrids: %s %s", approx_subgrid.shape, approx_subgrid.size)
+
+    # ==============================================
+    log.info("\n== RUN: Subgrid to facet")
+    log.info("Subgrid data: %s %s", subgrid.shape, subgrid.size)
+
+    nafs = subgrid_to_facet_1d_dask_array(
+        subgrid, nsubgrid, nfacet, xM_yN_size, xM_size, facet_off, N, Fn
+    )
+    # - redistribution of FNjSi here -
+    log.info("Intermediate data: %s %s", nafs.shape, nafs.size)
+
+    approx_facet = reconstruct_facet_1d_dask_array(
+        nafs,
+        nfacet,
+        yB_size,
+        nsubgrid,
+        xMxN_yP_size,
+        xM_yP_size,
+        xN_yP_size,
+        facet_m0_trunc,
+        yP_size,
+        subgrid_off,
+        N,
+        Fb,
+        facet_B,
+    )
+    log.info("Reconstructed facets: %s %s", approx_facet.shape, approx_facet.size)
+
+    return subgrid, facet, approx_subgrid, approx_facet
+
+
+def _algorithm_in_serial(
+    G,
+    nsubgrid,
+    nfacet,
+    subgrid_A,
+    facet_B,
+    subgrid_off,
+    facet_off,
+    xMxN_yP_size,
+    xN_yP_size,
+    xM_yP_size,
+    xM_yN_size,
+    Fb,
+    Fn,
+    facet_m0_trunc,
+    dtype,
+):
+    subgrid, facet = make_subgrid_and_facet(
+        G,
+        nsubgrid,
+        xA_size,
+        subgrid_A,
+        subgrid_off,
+        nfacet,
+        yB_size,
+        facet_B,
+        facet_off,
+    )
+
+    # ==============================================
+    log.info("\n== RUN: Facet to subgrid")
+    # With a few more slight optimisations we arrive at a compact representation for our algorithm.
+    # For reference, what we are computing here is:
+    log.info("Facet data: %s %s", facet.shape, facet.size)
+
+    nmbfs = facets_to_subgrid_1d(
+        facet,
+        nsubgrid,
+        nfacet,
+        xM_yN_size,
+        Fb,
+        Fn,
+        yP_size,
+        facet_m0_trunc,
+        subgrid_off,
+        N,
+        xMxN_yP_size,
+        xN_yP_size,
+        xM_yP_size,
+        dtype,
+    )
+    # - redistribution of nmbfs here -
+    log.info("Redistributed data: %s %s", nmbfs.shape, nmbfs.size)
+
+    approx_subgrid = reconstruct_subgrid_1d(
+        nmbfs, xM_size, nfacet, facet_off, N, subgrid_A, xA_size, nsubgrid
+    )
+    log.info("Reconstructed subgrids: %s %s", approx_subgrid.shape, approx_subgrid.size)
+
+    # ==============================================
+    log.info("\n== RUN: Subgrid to facet")
+    log.info("Subgrid data: %s %s", subgrid.shape, subgrid.size)
+
+    nafs = subgrid_to_facet_1d(
+        subgrid, nsubgrid, nfacet, xM_yN_size, xM_size, facet_off, N, Fn
+    )
+    # - redistribution of FNjSi here -
+    log.info("Intermediate data: %s %s", nafs.shape, nafs.size)
+
+    approx_facet = reconstruct_facet_1d(
+        nafs,
+        nfacet,
+        yB_size,
+        nsubgrid,
+        xMxN_yP_size,
+        xM_yP_size,
+        xN_yP_size,
+        facet_m0_trunc,
+        yP_size,
+        subgrid_off,
+        N,
+        Fb,
+        facet_B,
+    )
+    log.info("Reconstructed facets: %s %s", approx_facet.shape, approx_facet.size)
+
+    return subgrid, facet, approx_subgrid, approx_facet
+
+
 def main(to_plot=True, fig_name=None):
     """
     :param to_plot: run plotting?
@@ -121,6 +299,8 @@ def main(to_plot=True, fig_name=None):
     xMxN_yP_size = xM_yP_size + int(2 * numpy.ceil(xN_size * yP_size / N / 2))
     assert (xM_size * yN_size) % N == 0
     xM_yN_size = xM_size * yN_size // N
+
+    xN_yP_size = xMxN_yP_size - xM_yP_size
 
     log.info(
         f"xN_size={xN_size:.1f} xM_yP_size={xM_yP_size}, xMxN_yP_size={xMxN_yP_size}, xM_yN_size={xM_yN_size}"
@@ -165,90 +345,45 @@ def main(to_plot=True, fig_name=None):
     subgrid_A = generate_mask(N, nsubgrid, xA_size, subgrid_off)
 
     G = numpy.random.rand(N) - 0.5
-
-    if USE_DASK:
-        subgrid, facet = make_subgrid_and_facet_dask_array(
-            G,
-            nsubgrid,
-            xA_size,
-            subgrid_A,
-            subgrid_off,
-            nfacet,
-            yB_size,
-            facet_B,
-            facet_off,
-        )
-    else:
-        subgrid, facet = make_subgrid_and_facet(
-            G,
-            nsubgrid,
-            xA_size,
-            subgrid_A,
-            subgrid_off,
-            nfacet,
-            yB_size,
-            facet_B,
-            facet_off,
-        )
-
-    log.info("\n== RUN: Facet to subgrid")
-    # With a few more slight optimisations we arrive at a compact representation for our algorithm.
-    # For reference, what we are computing here is:
-
     dtype = numpy.complex128
-    xN_yP_size = xMxN_yP_size - xM_yP_size
-
-    log.info("Facet data: %s %s", facet.shape, facet.size)
 
     if USE_DASK:
-        nmbfs = facets_to_subgrid_1d_dask_array(
-            facet,
+        subgrid, facet, approx_subgrid, approx_facet = _algorithm_with_dask_array(
+            G,
             nsubgrid,
             nfacet,
-            xM_yN_size,
-            Fb,
-            Fn,
-            yP_size,
-            facet_m0_trunc,
+            subgrid_A,
+            facet_B,
             subgrid_off,
-            N,
+            facet_off,
             xMxN_yP_size,
             xN_yP_size,
             xM_yP_size,
+            xM_yN_size,
+            Fb,
+            Fn,
+            facet_m0_trunc,
             dtype,
-        )
-        # - redistribution of nmbfs here -
-        log.info("Redistributed data: %s %s", nmbfs.shape, nmbfs.size)
-
-        approx_subgrid = redistribute_subgrid_1d_dask_array(
-            nmbfs, xM_size, nfacet, facet_off, N, subgrid_A, xA_size, nsubgrid
         )
 
     else:
-        nmbfs = facets_to_subgrid_1d(
-            facet,
+        subgrid, facet, approx_subgrid, approx_facet = _algorithm_in_serial(
+            G,
             nsubgrid,
             nfacet,
-            xM_yN_size,
-            Fb,
-            Fn,
-            yP_size,
-            facet_m0_trunc,
+            subgrid_A,
+            facet_B,
             subgrid_off,
-            N,
+            facet_off,
             xMxN_yP_size,
             xN_yP_size,
             xM_yP_size,
+            xM_yN_size,
+            Fb,
+            Fn,
+            facet_m0_trunc,
             dtype,
         )
-        # - redistribution of nmbfs here -
-        log.info("Redistributed data: %s %s", nmbfs.shape, nmbfs.size)
-
-        approx_subgrid = redistribute_subgrid_1d(
-            nmbfs, xM_size, nfacet, facet_off, N, subgrid_A, xA_size, nsubgrid
-        )
-
-    log.info("Reconstructed subgrids: %s %s", approx_subgrid.shape, approx_subgrid.size)
 
     calculate_and_plot_errors_subgrid_1d(
         approx_subgrid,
@@ -260,44 +395,6 @@ def main(to_plot=True, fig_name=None):
         to_plot=to_plot,
         fig_name=fig_name,
     )
-
-    #  By feeding the implementation single-pixel inputs we can create a full error map.
-
-    log.info("\n== RUN: Subgrid to facet")
-    log.info("Subgrid data: %s %s", subgrid.shape, subgrid.size)
-
-    if USE_DASK:
-        nafs = subgrid_to_facet_1_dask_array(
-            subgrid, nsubgrid, nfacet, xM_yN_size, xM_size, facet_off, N, Fn
-        )
-    else:
-        nafs = subgrid_to_facet_1(
-            subgrid, nsubgrid, nfacet, xM_yN_size, xM_size, facet_off, N, Fn
-        )
-
-    # - redistribution of FNjSi here -
-    log.info("Intermediate data: %s %s", nafs.shape, nafs.size)
-    approx_facet = numpy.array(
-        [
-            subgrid_to_facet_2(
-                nafs,
-                j,
-                yB_size,
-                nsubgrid,
-                xMxN_yP_size,
-                xM_yP_size,
-                xN_yP_size,
-                facet_m0_trunc,
-                yP_size,
-                subgrid_off,
-                N,
-                Fb,
-                facet_B,
-            )
-            for j in range(nfacet)
-        ]
-    )
-    log.info("Reconstructed facets: %s %s", approx_facet.shape, approx_facet.size)
 
     calculate_and_plot_errors_facet_1d(
         approx_facet,

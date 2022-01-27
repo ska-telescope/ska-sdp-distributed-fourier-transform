@@ -185,6 +185,7 @@ def calculate_and_plot_errors_subgrid_1d(
         err_sum_img += numpy.abs(fft(error)) ** 2 / nsubgrid
 
     if to_plot:
+        #  By feeding the implementation single-pixel inputs we can create a full error map.
         mark_range("$x_A$", -xA, xA, ax=ax1)
         pylab.grid()
         if fig_name is None:
