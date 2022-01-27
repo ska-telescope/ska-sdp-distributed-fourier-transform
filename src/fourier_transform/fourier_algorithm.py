@@ -5,6 +5,8 @@ import numpy
 
 import dask.array
 
+# TODO: ideally we'd like to merge the 1D functions with their 2D equivalent,
+#   which then can be used for both versions
 
 # TODO: need to merge the functions with _a in their name to their equivalents from Crocodile
 #   Crocodile functions are below the _a ones
@@ -119,7 +121,7 @@ def fft(a, axis=None):
     :param axis: int or shape tuple, optional
         Axes over which to calculate.  Defaults to None, which shifts all axes.
         (doc from numpy.fft.ifftshift docstring)
-    :returns: `uv` grid
+    :return: `uv` grid
     """
     if len(a.shape) == 1:
         return numpy.fft.fftshift(numpy.fft.fft(numpy.fft.ifftshift(a)))
@@ -132,7 +134,7 @@ def ifft(a):
     """Fourier transformation from grid to image space
 
     :param a: `uv` grid to transform
-    :returns: an image in `lm` coordinate space
+    :return: an image in `lm` coordinate space
     """
     if len(a.shape) == 1:
         return numpy.fft.fftshift(numpy.fft.ifft(numpy.fft.ifftshift(a)))
@@ -212,7 +214,7 @@ def anti_aliasing_function(shape, m, c):
         pswf[0] = 0  # zap NaN
         return pswf
 
-    # 2D Prolate spheroidal angular function is seperable
+    # 2D Prolate spheroidal angular function is separable
     return numpy.outer(
         anti_aliasing_function(shape[0], m, c), anti_aliasing_function(shape[1], m, c)
     )
@@ -231,21 +233,19 @@ def make_subgrid_and_facet(
     facet_off,
 ):
     """
+    Calculate the actual subgrids and facets.
 
-    Calculate the actual subgrids and facets
+    :param G: "ground truth", the actual input data
+    :param nsubgrid: number of subgrid
+    :param xA_size: true usable subgrid size
+    :param subgrid_A: subgrid mask
+    :param subgrid_off: subgrid offset
+    :param nfacet: number of facet
+    :param yB_size: true usable image size (facet)
+    :param facet_B: facet mask
+    :param facet_off: facet offset
 
-    :param G: x
-    :param nsubgrid: Number of subgrid
-    :param xA_size: x
-    :param subgrid_A: Subgrid A
-    :param subgrid_off: Subgrid off
-    :param nfacet: Number of facet
-    :param yB_size: Effective facet size
-    :param facet_B: Facet B
-    :param facet_off: Facet off
-
-    :return: subgrid and facet
-
+    :return: tuple of two numpy.ndarray (subgrid, facet)
     """
     FG = fft(G)
 
@@ -273,6 +273,22 @@ def make_subgrid_and_facet_dask_array(
     facet_B,
     facet_off,
 ):
+    """
+    Calculate the actual subgrids and facets. Same as make_subgrid_and_facet
+    but implemented using dask.array.
+
+    :param G: "ground truth", the actual input data
+    :param nsubgrid: number of subgrid
+    :param xA_size: true usable subgrid size
+    :param subgrid_A: subgrid mask
+    :param subgrid_off: subgrid offset
+    :param nfacet: number of facet
+    :param yB_size: true usable image size (facet)
+    :param facet_B: facet mask
+    :param facet_off: facet offset
+
+    :return: tuple of two dask.array (subgrid, facet)
+    """
     FG = fft(G)
 
     subgrid = dask.array.from_array(
@@ -299,7 +315,7 @@ def _ith_subgrid_facet_element(true_image, mask_i, offset_i, true_usable_size):
     return result
 
 
-def subgrid_range_1(
+def extract_subgrid_1d(
     BjFj,
     facet_m0_trunc,
     offset_i,
@@ -312,22 +328,20 @@ def subgrid_range_1(
     Fn,
 ):
     """
-    Subgrid range 1
+    Extract subgrid for 1D version.
 
-    param BjFj:
-    param i:
-    param facet_m0_trunc:
-    param subgrid_off:
-    param yP_size: Facet size, padded for m convolution (internal)
-    param N: Total image size on a side
-    param xMxN_yP_size:
-    param xN_yP_size:
-    param xM_yP_size:
-    param xM_yN_size:
-    param Fn:
+    :param BjFj: TODO ???
+    :param facet_m0_trunc: ask truncated to a facet (image space)
+    :param offset_i: ith offset value (subgrid)
+    :param yP_size: facet size, padded for m convolution (internal)
+    :param N: total image size on a side
+    :param xMxN_yP_size: TODO: ???
+    :param xN_yP_size: TODO: ???
+    :param xM_yP_size: (padded subgrid size * padded image size (facet)) / N
+    :param xM_yN_size: (padded subgrid size * padding) / N
+    :param Fn: Fourier transform of gridding function
 
-    return:
-
+    :return: single_subgrid: the extracted subgrid contribution
     """
     MiBjFj = facet_m0_trunc * extract_mid(
         numpy.roll(BjFj, -offset_i * yP_size // N), xMxN_yP_size
@@ -336,12 +350,12 @@ def subgrid_range_1(
     MiBjFj_sum[: xN_yP_size // 2] += MiBjFj[-xN_yP_size // 2 :]
     MiBjFj_sum[-xN_yP_size // 2 :] += MiBjFj[: xN_yP_size // 2 :]
 
-    result = Fn * extract_mid(fft(MiBjFj_sum), xM_yN_size)
+    single_subgrid = Fn * extract_mid(fft(MiBjFj_sum), xM_yN_size)
 
-    return result
+    return single_subgrid
 
 
-def subgrid_range_1_dask_array(
+def extract_subgrid_1d_dask_array(
     BjFj,
     facet_m0_trunc,
     offset_i,
@@ -353,17 +367,36 @@ def subgrid_range_1_dask_array(
     xM_yN_size,
     Fn,
 ):
+    """
+    Extract subgrid for 1D version. Same as extract_subgrid_1d
+    but implemented using dask.array.
+
+    :param BjFj: TODO ???
+    :param facet_m0_trunc: mask truncated to a facet (image space)
+    :param offset_i: ith offset value (subgrid)
+    :param yP_size: facet size, padded for m convolution (internal)
+    :param N: total image size on a side
+    :param xMxN_yP_size: TODO: ???
+    :param xN_yP_size: TODO: ???
+    :param xM_yP_size: (padded subgrid size * padded image size (facet)) / N
+    :param xM_yN_size: (padded subgrid size * padding) / N
+    :param Fn: Fourier transform of gridding function
+
+    :return: single_subgrid: the extracted subgrid contribution
+    """
     MiBjFj = facet_m0_trunc * extract_mid(
         numpy.roll(BjFj, -offset_i * yP_size // N), xMxN_yP_size
     ).rechunk(xMxN_yP_size)
     MiBjFj_sum = extract_mid(MiBjFj, xM_yP_size).rechunk(xM_yP_size)
     MiBjFj_sum[: xN_yP_size // 2] += MiBjFj[-xN_yP_size // 2 :]
     MiBjFj_sum[-xN_yP_size // 2 :] += MiBjFj[: xN_yP_size // 2 :]
-    result = Fn * extract_mid(fft(MiBjFj_sum), xM_yN_size).rechunk(xM_yN_size)
-    return result
+
+    single_subgrid = Fn * extract_mid(fft(MiBjFj_sum), xM_yN_size).rechunk(xM_yN_size)
+
+    return single_subgrid
 
 
-def facets_to_subgrid_1(
+def facets_to_subgrid_1d(
     facet,
     nsubgrid,
     nfacet,
@@ -380,32 +413,30 @@ def facets_to_subgrid_1(
     dtype,
 ):
     """
+    Facet to subgrid 1D algorithm.
 
-    Facet to subgrid 1.
+    :param facet: numpy array of facets
+    :param nsubgrid: number of subgrid
+    :param nfacet: number of facet
+    :param xM_yN_size: (padded subgrid size * padding) / N
+    :param Fb: Fourier transform of grid correction function
+    :param Fn: Fourier transform of gridding function
+    :param yP_size: padded (rough) image size (facet)
+    :param facet_m0_trunc: mask truncated to a facet (image space)
+    :param subgrid_off: subgrid offset
+    :param N: total image size on a side
+    :param xMxN_yP_size: TODO: ???
+    :param xN_yP_size: TODO: ???
+    :param xM_yP_size: (padded subgrid size * padded image size (facet)) / N
+    :param dtype: data type
 
-    param facet: Facet
-    param nsubgrid: Number of subgrid
-    param nfacet: Number of facet
-    param xM_yN_size:
-    param Fb:
-    param Fn:
-    param yP_size:
-    param facet_m0_trunc:
-    param subgrid_off: Subgrid off
-    param N: Total image size on a side
-    param xMxN_yP_size:
-    param xN_yP_size:
-    param xM_yP_size:
-    param dtype: D type
-
-    return: RNjMiBjFj
-
+    :return: RNjMiBjFj: subgrid array determined from input facet array
     """
     RNjMiBjFj = numpy.empty((nsubgrid, nfacet, xM_yN_size), dtype=dtype)
     for j in range(nfacet):
-        BjFj = ifft(pad_mid(facet[j] * Fb, yP_size))
+        BjFj = ifft(pad_mid(facet[j] * Fb, yP_size))  # prepare facet
         for i in range(nsubgrid):
-            RNjMiBjFj[i, j] = subgrid_range_1(
+            RNjMiBjFj[i, j] = extract_subgrid_1d(  # extract subgrid
                 BjFj,
                 facet_m0_trunc,
                 subgrid_off[i],
@@ -421,7 +452,7 @@ def facets_to_subgrid_1(
     return RNjMiBjFj
 
 
-def facets_to_subgrid_1_dask_array(
+def facets_to_subgrid_1d_dask_array(
     facet,
     nsubgrid,
     nfacet,
@@ -437,11 +468,37 @@ def facets_to_subgrid_1_dask_array(
     xM_yP_size,
     dtype,
 ):
+    """
+    Facet to subgrid 1D algorithm. Same as facets_to_subgrid_1d
+    but implemented using dask.array.
+
+    TODO: need to remove .compute from this function
+        as the whole pipeline will be daskified.
+
+    :param facet: numpy array of facets
+    :param nsubgrid: number of subgrid
+    :param nfacet: number of facet
+    :param xM_yN_size: (padded subgrid size * padding) / N
+    :param Fb: Fourier transform of grid correction function
+    :param Fn: Fourier transform of gridding function
+    :param yP_size: padded (rough) image size (facet)
+    :param facet_m0_trunc: mask truncated to a facet (image space)
+    :param subgrid_off: subgrid offset
+    :param N: total image size on a side
+    :param xMxN_yP_size: TODO: ???
+    :param xN_yP_size: TODO: ???
+    :param xM_yP_size: (padded subgrid size * padded image size (facet)) / N
+    :param dtype: data type
+
+    :return: RNjMiBjFj: subgrid array determined from input facet array
+    """
     RNjMiBjFj = dask.array.from_array(
         [
             [
-                subgrid_range_1_dask_array(
-                    ifft(pad_mid(facet[i] * Fb, yP_size).rechunk(yP_size)),
+                extract_subgrid_1d_dask_array(
+                    ifft(
+                        pad_mid(facet[i] * Fb, yP_size).rechunk(yP_size)
+                    ),  # prepare facet
                     facet_m0_trunc,
                     subgrid_off[j],
                     yP_size,
@@ -458,38 +515,62 @@ def facets_to_subgrid_1_dask_array(
         ],
         chunks=(1, 1, xM_yN_size),
     ).astype(dtype)
-    # TODO: compute should not happen here; for now dask is implemented until this point
-    RNjMiBjFj = RNjMiBjFj.compute()
     return RNjMiBjFj
 
 
-def facets_to_subgrid_2(
+def redistribute_subgrid_1d(
     nmbfs, xM_size, nfacet, facet_off, N, subgrid_A, xA_size, nsubgrid
 ):
     """
-    Facet to subgrid 2
+    Redistribute the subgrid array calculated by facets_to_subgrid_1d.
+    TODO: is this correct? what's actually done here? Name is probably incorrect
+    TODO: why are we doing this? how is the result different from the result of facets_to_subgrid_1d?
 
-    param nmbfs:
-    param i:
-    param xM_size:
-    param nfacet: Number of facet
-    param facet_off: Facet off
-    param N: total image size on a side
-    param subgrid_A: Subgrid A
-    param xA_size:
+    :param nmbfs: subgrid array calculated from facets by facets_to_subgrid_1d
+    :param xM_size: padded (rough) subgrid size
+    :param nfacet: number of facet
+    :param facet_off: facet offset
+    :param N: total image size on a side
+    :param subgrid_A: subgrid mask
+    :param xA_size: true usable subgrid size
 
-    return:
+    :return: approximate subgrid
     """
-    result = numpy.ndarray((nsubgrid, xA_size), dtype=complex)
+    approx_subgrid = numpy.ndarray((nsubgrid, xA_size), dtype=complex)
     for i in range(nsubgrid):
         approx = numpy.zeros(xM_size, dtype=complex)
         for j in range(nfacet):
             approx += numpy.roll(
                 pad_mid(nmbfs[i, j], xM_size), facet_off[j] * xM_size // N
             )
-        result[i, :] = subgrid_A[i] * extract_mid(ifft(approx), xA_size)
+        approx_subgrid[i, :] = subgrid_A[i] * extract_mid(ifft(approx), xA_size)
 
-    return result
+    return approx_subgrid
+
+
+def redistribute_subgrid_1d_dask_array(
+    nmbfs, xM_size, nfacet, facet_off, N, subgrid_A, xA_size, nsubgrid
+):
+    """
+    Redistribute the subgrid array calculated by facets_to_subgrid_1d.
+    Same as redistribute_subgrid_1d but using dask.array.
+    TODO: same questions as for redistribute_subgrid_1d
+
+    :param nmbfs: subgrid array calculated from facets by facets_to_subgrid_1d
+    :param xM_size: padded (rough) subgrid size
+    :param nfacet: number of facet
+    :param facet_off: facet offset
+    :param N: total image size on a side
+    :param subgrid_A: subgrid mask
+    :param xA_size: true usable subgrid size
+
+    :return: approximate subgrid
+    """
+    # TODO: implement
+    nmbfs = nmbfs.compute()
+    return redistribute_subgrid_1d(
+        nmbfs, xM_size, nfacet, facet_off, N, subgrid_A, xA_size, nsubgrid
+    )
 
 
 def subgrid_to_facet_1(
@@ -498,16 +579,16 @@ def subgrid_to_facet_1(
     """
     Subgrid to facet 1
 
-    param subgrid: Subgtid
-    param nsubgrid: Number of subgrid
-    param nfacet: Number of facet
-    param xM_yN_size:
-    param xM_size:
-    param facet_off: Facet off
-    param N: Total image size on a side
-    param Fn:
+    :param subgrid: Subgtid
+    :param nsubgrid: Number of subgrid
+    :param nfacet: Number of facet
+    :param xM_yN_size:
+    :param xM_size:
+    :param facet_off: Facet off
+    :param N: Total image size on a side
+    :param Fn:
 
-    return:
+    :return:
     """
     FNjSi = numpy.empty((nsubgrid, nfacet, xM_yN_size), dtype=complex)
     for i in range(nsubgrid):
@@ -564,21 +645,21 @@ def subgrid_to_facet_2(
 
     Subgrid to facet 2
 
-    param nafs:
-    param j:
-    param yB_size: Effective facet size
-    param nsubgrid:
-    param xMxN_yP_size:
-    param xM_yP_size:
-    param xN_yP_size:
-    param facet_m0_trunc:
-    param yP_size: Facet size, padded for m convolution (internal)
-    param subgrid_off: Subgrid off
-    param N: Total image size on a side
-    param Fb:
-    param facet_B: Facet B
+    :param nafs:
+    :param j:
+    :param yB_size: Effective facet size
+    :param nsubgrid:
+    :param xMxN_yP_size:
+    :param xM_yP_size:
+    :param xN_yP_size:
+    :param facet_m0_trunc:
+    :param yP_size: Facet size, padded for m convolution (internal)
+    :param subgrid_off: Subgrid off
+    :param N: Total image size on a side
+    :param Fb:
+    :param facet_B: Facet B
 
-    return:
+    :return:
     """
     approx = numpy.zeros(yB_size, dtype=complex)
     for i in range(nsubgrid):
@@ -615,19 +696,19 @@ def subgrid_range_2(
     """
     Subgrid Range 2
 
-    param xMxN_yP_size:
-    param xM_yP_size:
-    param i:
-    param j:
-    param nafs:
-    param xN_yP_size:
-    param facet_m0_trunc:
-    param yP_size: Facet size, padded for m convolution (internal)
-    param subgrid_off: Subgrid off
-    param yB_size: Effective facet size
-    param N: Total image size on a side
+    :param xMxN_yP_size:
+    :param xM_yP_size:
+    :param i:
+    :param j:
+    :param nafs:
+    :param xN_yP_size:
+    :param facet_m0_trunc:
+    :param yP_size: Facet size, padded for m convolution (internal)
+    :param subgrid_off: Subgrid off
+    :param yB_size: Effective facet size
+    :param N: Total image size on a side
 
-    return:
+    :return:
     """
     NjSi = numpy.zeros(xMxN_yP_size, dtype=complex)
     NjSi_mid = extract_mid(NjSi, xM_yP_size)
@@ -674,19 +755,19 @@ def extract_subgrid(
 ):
     """
 
-    param BF:
-    param i:
-    param axis: Axis
-    param subgrid_off:
-    param yP_size: Facet size, padded for m convolution (internal)
-    param xMxN_yP_size:
-    param facet_m0_trunc:
-    param xM_yP_size:
-    param Fn:
-    param xM_yN_size:
-    param N: Total image size on a side
+    :param BF:
+    :param i:
+    :param axis: Axis
+    :param subgrid_off:
+    :param yP_size: Facet size, padded for m convolution (internal)
+    :param xMxN_yP_size:
+    :param facet_m0_trunc:
+    :param xM_yP_size:
+    :param Fn:
+    :param xM_yN_size:
+    :param N: Total image size on a side
 
-    return:
+    :return:
     """
     dims = len(BF.shape)
     BF_mid = extract_mid_a(
@@ -700,6 +781,7 @@ def extract_subgrid(
     slc2 = slice_a(slice(None), slice(-xN_yP_size // 2, None), dims, axis)
     MBF_sum[slc1] += MBF[slc2]
     MBF_sum[slc2] += MBF[slc1]
+
     return broadcast_a(Fn, len(BF.shape), axis) * extract_mid_a(
         fft_a(MBF_sum, axis), xM_yN_size, axis
     )
@@ -709,10 +791,10 @@ def extract_subgrid(
 def prepare_subgrid(subgrid, xM_size):
     """
     Initial shared work per subgrid - no reason to do this per-axis, so always do it for all
-    param subgrid: Subgrid
-    param xM_size: Subgrid size, padded for transfer (internal)
+    :param subgrid: Subgrid
+    :param xM_size: Subgrid size, padded for transfer (internal)
 
-    return: the FS term
+    :return: the FS term
     """
     return fft(pad_mid(subgrid, xM_size))
 
@@ -721,16 +803,16 @@ def extract_facet_contribution(FSi, Fn, facet_off, j, xM_size, N, xM_yN_size, ax
     """
     Extract contribution of subgrid to a facet
 
-    param Fsi:
-    param Fn:
-    param facet_off:
-    param j: Index on the facet
-    param xM_size: Subgrid size, padded for transfer (internal)
-    param N: Total image size on a side
-    param xM_yN_size:
-    param axis: Axis
+    :param Fsi:
+    :param Fn:
+    :param facet_off:
+    :param j: Index on the facet
+    :param xM_size: Subgrid size, padded for transfer (internal)
+    :param N: Total image size on a side
+    :param xM_yN_size:
+    :param axis: Axis
 
-    return: Contribution of facet on the subgrid
+    :return: Contribution of facet on the subgrid
 
     """
 
@@ -754,18 +836,18 @@ def add_subgrid_contribution(
     """
     Add subgrid contribution to a facet
 
-    param MiNjSi_sum:
-    param NjSi:
-    param i:
-    param facet_m0_trunc:
-    param subgrid_off:
-    param xMxN_yP_size:
-    param xM_yP_size:
-    param yP_size:
-    param N:
-    param axis:
+    :param MiNjSi_sum:
+    :param NjSi:
+    :param i:
+    :param facet_m0_trunc:
+    :param subgrid_off:
+    :param xMxN_yP_size:
+    :param xM_yP_size:
+    :param yP_size:
+    :param N:
+    :param axis:
 
-    return MiNjSi_sum:
+    :return MiNjSi_sum:
 
     """
     dims = len(MiNjSi_sum.shape)
@@ -790,14 +872,14 @@ def finish_facet(MiNjSi_sum, Fb, facet_B, yB_size, j, axis):
     """
     Obtain finished facet
 
-    param MiNjSi_sum:
-    param Fb:
-    param facet_B:
-    param yB_size:
-    param j:
-    param axis:
+    :param MiNjSi_sum:
+    :param Fb:
+    :param facet_B:
+    :param yB_size:
+    :param j:
+    :param axis:
 
-    return: The finished facet (in BMNAF term)
+    :return: The finished facet (in BMNAF term)
     """
     return extract_mid_a(fft_a(MiNjSi_sum, axis), yB_size, axis) * broadcast_a(
         Fb * facet_B[j], len(MiNjSi_sum.shape), axis
@@ -805,12 +887,49 @@ def finish_facet(MiNjSi_sum, Fb, facet_B, yB_size, j, axis):
 
 
 # COMMON 1D and 2D FUNCTIONS -- SETTING UP FOR ALGORITHM TO RUN
+def calculate_pswf(yN_size, alpha, W):
+    """
+    Calculate PSWF (prolate-spheroidal wave function) at the
+    full required resolution (facet size)
 
-# TODO: what exactly are the things we return here? + needs docstring
+    :param yN_size: needed padding
+    :param alpha: TODO: ???, int
+    :param W: PSWF parameter (grid-space support), float
+    """
+    pswf = anti_aliasing_function(yN_size, alpha, numpy.pi * W / 2).real
+    pswf /= numpy.prod(
+        numpy.arange(2 * alpha - 1, 0, -2, dtype=float)
+    )  # double factorial
+    return pswf
+
+
 def get_actual_work_terms(
     pswf, xM, xMxN_yP_size, yB_size, yN_size, xM_size, N, yP_size
 ):
-    # Calculate actual work terms to use. We need both $n$ and $b$ in image space
+    """
+    Get gridding-related functions.
+    Calculate actual work terms to use. We need both $n$ and $b$ in image space
+    In case of gridding: "n": gridding function (except that we have it in image space here)
+                         "b": grid correction function.
+
+    :param pswf: prolate-spheroidal wave function
+    :param xM: TODO ???
+    :param xMxN_yP_size: TODO ???
+    :param yB_size: rue usable image size (facet)
+    :param yN_size: needed padding
+    :param xM_size: padded (rough) subgrid size
+    :param N: total image size in one direction
+    :param yP_size: padded (rough) image size (facet)
+
+    :return:
+        Fb: Fourier transform of grid correction function
+        Fn: Fourier transform of gridding function
+        facet_m0_trunc: mask truncated to a facet (image space)
+
+    Note (Peter W): The reason they're single functions (i.e. we only compute one Fn, Fb and m0
+    instead of one per facet/subgrid) is that we assume that they are all the same function,
+    just shifted in grid and image space respectively (to the positions of the subgrids and facets)
+    """
     Fb = 1 / extract_mid(pswf, yB_size)
     Fn = pswf[(yN_size // 2) % int(1 / 2 / xM) :: int(1 / 2 / xM)]
     facet_m0_trunc = pswf * numpy.sinc(coordinates(yN_size) * xM_size / N * yN_size)
@@ -823,21 +942,17 @@ def get_actual_work_terms(
     return Fb, Fn, facet_m0_trunc
 
 
-def calculate_pswf(yN_size, alpha, W):
-    # Calculate PSWF at the full required resolution (facet size)
-    pswf = anti_aliasing_function(yN_size, alpha, numpy.pi * W / 2).real
-    pswf /= numpy.prod(
-        numpy.arange(2 * alpha - 1, 0, -2, dtype=float)
-    )  # double factorial
-    return pswf
-
-
 def generate_mask(n_image, ndata_point, true_usable_size, offset):
     """
-    :param n_image: N
-    :param ndata_point: nsubgrid, nfacet
-    :param true_usable_size: xA_size, yB_size
-    :param offset: subgrid_off, facet_off
+    Determine the appropriate A/B masks for cutting the subgrid/facet out.
+    We are aiming for full coverage here: Every pixel is part of exactly one subgrid / facet.
+
+    :param n_image: total image size in one side (N)
+    :param ndata_point: number of data points (nsubgrid or nfacet)
+    :param true_usable_size: true usable size (xA_size or yB_size)
+    :param offset: TODO: ??? (subgrid_off or facet_off)
+
+    :return: mask: subgrid_A or facet_B
     """
     mask = numpy.zeros((ndata_point, true_usable_size), dtype=int)
     subgrid_border = (offset + numpy.hstack([offset[1:], [n_image + offset[0]]])) // 2
@@ -849,4 +964,4 @@ def generate_mask(n_image, ndata_point, true_usable_size, offset):
         ), "xA / yB not large enough to cover subgrids / facets!"
         mask[i, left:right] = 1
 
-    return mask  # subgrid_A, facet_B
+    return mask

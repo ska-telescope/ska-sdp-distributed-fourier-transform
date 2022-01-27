@@ -12,16 +12,17 @@ from matplotlib import pylab
 from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
 from src.fourier_transform.fourier_algorithm import (
     make_subgrid_and_facet,
-    facets_to_subgrid_1,
-    facets_to_subgrid_2,
+    facets_to_subgrid_1d,
+    redistribute_subgrid_1d,
     subgrid_to_facet_1,
     subgrid_to_facet_2,
     get_actual_work_terms,
     calculate_pswf,
     generate_mask,
     subgrid_to_facet_1_dask_array,
-    facets_to_subgrid_1_dask_array,
+    facets_to_subgrid_1d_dask_array,
     make_subgrid_and_facet_dask_array,
+    redistribute_subgrid_1d_dask_array,
 )
 from src.fourier_transform.utils import (
     whole,
@@ -60,7 +61,7 @@ pylab.rcParams["image.cmap"] = "viridis"
 # }
 
 TARGET_PARS = {
-    "W": 13.25,
+    "W": 13.25,  # PSWF parameter (grid-space support)
     "fov": 0.75,
     "N": 1024,  # total image size
     "Nx": 4,  # subgrid spacing: it tells you what subgrid offsets are permissible:
@@ -200,7 +201,7 @@ def main(to_plot=True, fig_name=None):
     log.info("Facet data: %s %s", facet.shape, facet.size)
 
     if USE_DASK:
-        nmbfs = facets_to_subgrid_1_dask_array(
+        nmbfs = facets_to_subgrid_1d_dask_array(
             facet,
             nsubgrid,
             nfacet,
@@ -216,8 +217,15 @@ def main(to_plot=True, fig_name=None):
             xM_yP_size,
             dtype,
         )
+        # - redistribution of nmbfs here -
+        log.info("Redistributed data: %s %s", nmbfs.shape, nmbfs.size)
+
+        approx_subgrid = redistribute_subgrid_1d_dask_array(
+            nmbfs, xM_size, nfacet, facet_off, N, subgrid_A, xA_size, nsubgrid
+        )
+
     else:
-        nmbfs = facets_to_subgrid_1(
+        nmbfs = facets_to_subgrid_1d(
             facet,
             nsubgrid,
             nfacet,
@@ -233,13 +241,12 @@ def main(to_plot=True, fig_name=None):
             xM_yP_size,
             dtype,
         )
+        # - redistribution of nmbfs here -
+        log.info("Redistributed data: %s %s", nmbfs.shape, nmbfs.size)
 
-    # - redistribution of nmbfs here -
-    log.info("Redistributed data: %s %s", nmbfs.shape, nmbfs.size)
-
-    approx_subgrid = facets_to_subgrid_2(
-        nmbfs, xM_size, nfacet, facet_off, N, subgrid_A, xA_size, nsubgrid
-    )
+        approx_subgrid = redistribute_subgrid_1d(
+            nmbfs, xM_size, nfacet, facet_off, N, subgrid_A, xA_size, nsubgrid
+        )
 
     log.info("Reconstructed subgrids: %s %s", approx_subgrid.shape, approx_subgrid.size)
 

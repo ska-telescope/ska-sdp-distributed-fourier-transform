@@ -177,7 +177,7 @@ dtype = numpy.complex128
 xN_yP_size = xMxN_yP_size - xM_yP_size
 
 print("Facet data:", facet.shape, facet.size)
-nmbfs = facets_to_subgrid_1(
+nmbfs = facets_to_subgrid_1d(
     facet,
     nsubgrid,
     nfacet,
@@ -196,7 +196,7 @@ nmbfs = facets_to_subgrid_1(
 
 # - redistribution of nmbfs here -
 print("Redistributed data:", nmbfs.shape, nmbfs.size)
-approx_subgrid = facets_to_subgrid_2(
+approx_subgrid = redistribute_subgrid_1d(
     nmbfs, xM_size, nfacet, facet_off, N, subgrid_A, xA_size, nsubgrid
 )
 print("Reconstructed subgrids:", approx_subgrid.shape, approx_subgrid.size)
