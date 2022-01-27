@@ -4,6 +4,8 @@
 import math
 import time
 import itertools
+import logging
+import sys
 from matplotlib import pylab
 
 from fourier_algorithm import *
@@ -15,6 +17,10 @@ from src.fourier_transform.utils import (
     test_accuracy_subgrid_to_facet,
     test_accuracy_facet_to_subgrid,
 )
+
+log = logging.getLogger("fourier-logger")
+log.setLevel(logging.INFO)
+log.addHandler(logging.StreamHandler(sys.stdout))
 
 # Fixing seed of numpy random
 numpy.random.seed(123456789)
@@ -99,6 +105,7 @@ mark_range("$x_n$", -xN, xN)
 pylab.xlim(-2 * int(xN_size) / N, (2 * int(xN_size) - 1) / N)
 pylab.grid()
 pylab.show()
+# pylab.savefig("plot_n.png")
 pylab.semilogy(coordinates(yN_size) * yN_size, pswf)
 pylab.legend(["$\\mathcal{F}[n]$"])
 mark_range("$y_B$", -yB, yB)
@@ -106,7 +113,7 @@ pylab.xlim(-N // 2, N // 2 - 1)
 mark_range("$y_n$", -yN, yN)
 pylab.grid()
 pylab.show()
-
+# pylab.savefig("plot_fn.png")
 
 # Calculate actual work terms to use. We need both $n$ and $b$ in image space.
 Fb = 1 / extract_mid(pswf, yB_size)
@@ -122,6 +129,7 @@ pylab.semilogy(coordinates(xMxN_yP_size) / yP_size * xMxN_yP_size, facet_m0_trun
 mark_range("xM", -xM, xM)
 pylab.grid()
 pylab.show()
+# pylab.savefig("plot_xm.png")
 
 ## Layout subgrids + facets
 
@@ -188,11 +196,8 @@ nmbfs = facets_to_subgrid_1(
 
 # - redistribution of nmbfs here -
 print("Redistributed data:", nmbfs.shape, nmbfs.size)
-approx_subgrid = numpy.array(
-    [
-        facets_to_subgrid_2(nmbfs, i, xM_size, nfacet, facet_off, N, subgrid_A, xA_size)
-        for i in range(nsubgrid)
-    ]
+approx_subgrid = facets_to_subgrid_2(
+    nmbfs, xM_size, nfacet, facet_off, N, subgrid_A, xA_size, nsubgrid
 )
 print("Reconstructed subgrids:", approx_subgrid.shape, approx_subgrid.size)
 
@@ -210,9 +215,11 @@ for i in range(nsubgrid):
 mark_range("$x_A$", -xA, xA, ax=ax1)
 pylab.grid()
 pylab.show()
+# pylab.savefig("plot_error_facet_to_subgrid_1d.png")
 mark_range("$N/2$", -N / 2, N / 2, ax=ax2)
 pylab.grid()
 pylab.show()
+# pylab.savefig("plot_empty_n_per_2_1d.png")
 print(
     "RMSE:",
     numpy.sqrt(numpy.mean(err_sum)),
@@ -285,6 +292,7 @@ mark_range("$y_B$", -yB, yB, ax=ax2)
 mark_range("$0.5$", -0.5, 0.5, ax=ax1)
 
 pylab.show()
+# pylab.savefig("plot_error_subgrid_to_facet_1d.png")
 
 # @interact_manual
 # def generate_error_map_2():
@@ -348,23 +356,33 @@ print(nsubgrid, "x", nsubgrid, "subgrids,", nfacet, "x", nfacet, "facets")
 subgrid_2 = numpy.empty((nsubgrid, nsubgrid, xA_size, xA_size), dtype=complex)
 facet_2 = numpy.empty((nfacet, nfacet, yB_size, yB_size), dtype=complex)
 
-G_2 = numpy.exp(2j * numpy.pi * numpy.random.rand(N, N)) * numpy.random.rand(N, N) / 2
-FG_2 = fft(G_2)
+# adding sources
+add_sources = True
+if add_sources:
+    FG_2 = numpy.zeros((N, N))
+    source_count = 1000
+    sources = [
+        (
+            numpy.random.randint(-N // 2, N // 2 - 1),
+            numpy.random.randint(-N // 2, N // 2 - 1),
+            numpy.random.rand() * N * N / numpy.sqrt(source_count) / 2,
+        )
+        for _ in range(source_count)
+    ]
+    for x, y, i in sources:
+        FG_2[y + N // 2, x + N // 2] += i
+    G_2 = ifft(FG_2)
 
-FG_2 = numpy.zeros((N, N))
-source_count = 1000
-sources = [
-    (
-        numpy.random.randint(-N // 2, N // 2 - 1),
-        numpy.random.randint(-N // 2, N // 2 - 1),
-        numpy.random.rand() * N * N / numpy.sqrt(source_count) / 2,
+else:
+    # without sources
+    G_2 = (
+            numpy.exp(2j * numpy.pi * numpy.random.rand(N, N))
+            * numpy.random.rand(N, N)
+            / 2
     )
-    for _ in range(source_count)
-]
-for x, y, i in sources:
-    FG_2[y + N // 2, x + N // 2] += i
-G_2 = ifft(FG_2)
-print("Mean grid absolute:", numpy.mean(numpy.abs(G_2)))
+    FG_2 = fft(G_2)
+
+print("Mean grid absolute: ", numpy.mean(numpy.abs(G_2)))
 
 for i0, i1 in itertools.product(range(nsubgrid), range(nsubgrid)):
     subgrid_2[i0, i1] = extract_mid(
@@ -511,9 +529,11 @@ for i0, i1 in itertools.product(range(nsubgrid), range(nsubgrid)):
 pylab.imshow(numpy.log(numpy.sqrt(err_mean)) / numpy.log(10))
 pylab.colorbar()
 pylab.show()
+# pylab.savefig("plot_error_mean_facet_to_subgrid_2d.png")
 pylab.imshow(numpy.log(numpy.sqrt(err_mean_img)) / numpy.log(10))
 pylab.colorbar()
 pylab.show()
+# pylab.savefig("plot_error_mean_image_facet_to_subgrid_2d.png")
 print(
     "RMSE:",
     numpy.sqrt(numpy.mean(err_mean)),
@@ -663,9 +683,11 @@ for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
 pylab.imshow(numpy.log(numpy.sqrt(err_mean)) / numpy.log(10))
 pylab.colorbar()
 pylab.show()
+# pylab.savefig("plot_error_mean_subgrid_to_facet_2d.png")
 pylab.imshow(numpy.log(numpy.sqrt(err_mean_img)) / numpy.log(10))
 pylab.colorbar()
 pylab.show()
+# pylab.savefig("plot_error_mean_image_subgrid_to_facet_2d.png")
 print(
     "RMSE:",
     numpy.sqrt(numpy.mean(err_mean)),

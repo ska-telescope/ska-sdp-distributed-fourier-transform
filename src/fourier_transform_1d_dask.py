@@ -2,11 +2,14 @@
 # coding: utf-8
 import logging
 import math
+import os
+
 import numpy
 import sys
 
 from matplotlib import pylab
 
+from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
 from src.fourier_transform.fourier_algorithm import (
     make_subgrid_and_facet,
     facets_to_subgrid_1,
@@ -15,15 +18,20 @@ from src.fourier_transform.fourier_algorithm import (
     subgrid_to_facet_2,
     get_actual_work_terms,
     calculate_pswf,
-    generate_mask_for_subgrid_facet,
+    generate_mask,
+    subgrid_to_facet_1_dask_array,
+    facets_to_subgrid_1_dask_array,
+    make_subgrid_and_facet_dask_array,
 )
 from src.fourier_transform.utils import (
     whole,
     plot_1,
     plot_2,
-    plot_errors_subgrid_1D,
-    plot_errors_facet_1D,
+    calculate_and_plot_errors_subgrid_1d,
+    calculate_and_plot_errors_facet_1d,
 )
+
+USE_DASK = os.getenv("USE_DASK", False) == "True"
 
 log = logging.getLogger("fourier-logger")
 log.setLevel(logging.INFO)
@@ -55,7 +63,8 @@ TARGET_PARS = {
     "W": 13.25,
     "fov": 0.75,
     "N": 1024,  # total image size
-    "Nx": 4,  # ??
+    "Nx": 4,  # subgrid spacing: it tells you what subgrid offsets are permissible:
+    # here it is saying that they need to be divisible by 4.
     "yB_size": 256,  # true usable image size (facet)
     "yN_size": 320,  # padding needed to transfer the data?
     "yP_size": 512,  # padded (rough) image size (facet)
@@ -77,7 +86,12 @@ xM_size = TARGET_PARS["xM_size"]
 ALPHA = 0
 
 
-def main():
+def main(to_plot=True, fig_name=None):
+    """
+    :param to_plot: run plotting?
+    :param fig_name: If given, figures will be saved with this prefix into PNG files.
+                     If to_plot is set to False, fig_name doesn't have an effect.
+    """
     log.info("== Chosen configuration")
     for n in [
         "W",
@@ -120,13 +134,16 @@ def main():
     log.info("\n== Calculate PSWF")
     pswf = calculate_pswf(yN_size, ALPHA, W)
 
-    plot_1(pswf, xN, xN_size, yB, yN, N, yN_size)
+    if to_plot:
+        plot_1(pswf, xN, xN_size, yB, yN, N, yN_size, fig_name=fig_name)
 
     # Calculate actual work terms to use. We need both $n$ and $b$ in image space.
     Fb, Fn, facet_m0_trunc = get_actual_work_terms(
         pswf, xM, xMxN_yP_size, yB_size, yN_size, xM_size, N, yP_size
     )
-    plot_2(facet_m0_trunc, xM, xMxN_yP_size, yP_size)
+
+    if to_plot:
+        plot_2(facet_m0_trunc, xM, xMxN_yP_size, yP_size, fig_name=fig_name)
 
     log.info("\n== Generate layout (factes and subgrids")
     # Layout subgrids + facets
@@ -143,22 +160,35 @@ def main():
     # Determine subgrid/facet offsets and the appropriate A/B masks for cutting them out.
     # We are aiming for full coverage here: Every pixel is part of exactly one subgrid / facet.
 
-    facet_B, subgrid_A = generate_mask_for_subgrid_facet(
-        facet_off, nfacet, nsubgrid, subgrid_off, xA_size, N, yB_size
-    )
+    facet_B = generate_mask(N, nfacet, yB_size, facet_off)
+    subgrid_A = generate_mask(N, nsubgrid, xA_size, subgrid_off)
 
     G = numpy.random.rand(N) - 0.5
-    subgrid, facet = make_subgrid_and_facet(
-        G,
-        nsubgrid,
-        xA_size,
-        subgrid_A,
-        subgrid_off,
-        nfacet,
-        yB_size,
-        facet_B,
-        facet_off,
-    )
+
+    if USE_DASK:
+        subgrid, facet = make_subgrid_and_facet_dask_array(
+            G,
+            nsubgrid,
+            xA_size,
+            subgrid_A,
+            subgrid_off,
+            nfacet,
+            yB_size,
+            facet_B,
+            facet_off,
+        )
+    else:
+        subgrid, facet = make_subgrid_and_facet(
+            G,
+            nsubgrid,
+            xA_size,
+            subgrid_A,
+            subgrid_off,
+            nfacet,
+            yB_size,
+            facet_B,
+            facet_off,
+        )
 
     log.info("\n== RUN: Facet to subgrid")
     # With a few more slight optimisations we arrive at a compact representation for our algorithm.
@@ -168,44 +198,75 @@ def main():
     xN_yP_size = xMxN_yP_size - xM_yP_size
 
     log.info("Facet data: %s %s", facet.shape, facet.size)
-    nmbfs = facets_to_subgrid_1(
-        facet,
-        nsubgrid,
-        nfacet,
-        xM_yN_size,
-        Fb,
-        Fn,
-        yP_size,
-        facet_m0_trunc,
-        subgrid_off,
-        N,
-        xMxN_yP_size,
-        xN_yP_size,
-        xM_yP_size,
-        dtype,
-    )
+
+    if USE_DASK:
+        nmbfs = facets_to_subgrid_1_dask_array(
+            facet,
+            nsubgrid,
+            nfacet,
+            xM_yN_size,
+            Fb,
+            Fn,
+            yP_size,
+            facet_m0_trunc,
+            subgrid_off,
+            N,
+            xMxN_yP_size,
+            xN_yP_size,
+            xM_yP_size,
+            dtype,
+        )
+    else:
+        nmbfs = facets_to_subgrid_1(
+            facet,
+            nsubgrid,
+            nfacet,
+            xM_yN_size,
+            Fb,
+            Fn,
+            yP_size,
+            facet_m0_trunc,
+            subgrid_off,
+            N,
+            xMxN_yP_size,
+            xN_yP_size,
+            xM_yP_size,
+            dtype,
+        )
 
     # - redistribution of nmbfs here -
     log.info("Redistributed data: %s %s", nmbfs.shape, nmbfs.size)
-    approx_subgrid = numpy.array(
-        [
-            facets_to_subgrid_2(
-                nmbfs, i, xM_size, nfacet, facet_off, N, subgrid_A, xA_size
-            )
-            for i in range(nsubgrid)
-        ]
+
+    approx_subgrid = facets_to_subgrid_2(
+        nmbfs, xM_size, nfacet, facet_off, N, subgrid_A, xA_size, nsubgrid
     )
+
     log.info("Reconstructed subgrids: %s %s", approx_subgrid.shape, approx_subgrid.size)
 
-    plot_errors_subgrid_1D(approx_subgrid, nsubgrid, subgrid, xA, xA_size, N)
+    calculate_and_plot_errors_subgrid_1d(
+        approx_subgrid,
+        nsubgrid,
+        subgrid,
+        xA,
+        xA_size,
+        N,
+        to_plot=to_plot,
+        fig_name=fig_name,
+    )
 
     #  By feeding the implementation single-pixel inputs we can create a full error map.
 
     log.info("\n== RUN: Subgrid to facet")
     log.info("Subgrid data: %s %s", subgrid.shape, subgrid.size)
-    nafs = subgrid_to_facet_1(
-        subgrid, nsubgrid, nfacet, xM_yN_size, xM_size, facet_off, N, Fn
-    )
+
+    if USE_DASK:
+        nafs = subgrid_to_facet_1_dask_array(
+            subgrid, nsubgrid, nfacet, xM_yN_size, xM_size, facet_off, N, Fn
+        )
+    else:
+        nafs = subgrid_to_facet_1(
+            subgrid, nsubgrid, nfacet, xM_yN_size, xM_size, facet_off, N, Fn
+        )
 
     # - redistribution of FNjSi here -
     log.info("Intermediate data: %s %s", nafs.shape, nafs.size)
@@ -231,8 +292,20 @@ def main():
     )
     log.info("Reconstructed facets: %s %s", approx_facet.shape, approx_facet.size)
 
-    plot_errors_facet_1D(approx_facet, facet, nfacet, xA, xM, yB, yB_size)
+    calculate_and_plot_errors_facet_1d(
+        approx_facet,
+        facet,
+        nfacet,
+        xA,
+        xM,
+        yB,
+        yB_size,
+        to_plot=to_plot,
+        fig_name=fig_name,
+    )
 
 
 if __name__ == "__main__":
-    main()
+    # client, current_env_var = set_up_dask()
+    main(to_plot=False)
+    # tear_down_dask(client, current_env_var)

@@ -16,3 +16,6 @@ Sphinx
 astropy
 h5py
 json-tricks
+dask
+distributed
+bokeh

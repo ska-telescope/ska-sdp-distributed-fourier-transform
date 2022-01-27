@@ -30,7 +30,8 @@ def whole(xs):
 def mark_range(
     lbl, x0, x1=None, y0=None, y1=None, ax=None, x_offset=1 / 200, linestyle="--"
 ):
-    """Helper for marking ranges in a graph.
+    """
+    Helper for marking ranges in a graph.
 
     :param lbl: label
     :param x0: X0
@@ -39,7 +40,6 @@ def mark_range(
     :param ax: Ax
     :param x_offset: X offset
     :param linestyle: Linestyle
-
     """
     if ax is None:
         ax = pylab.gca()
@@ -65,14 +65,18 @@ def mark_range(
     ax.annotate(lbl, (x1 + x_offset * wdt, lbl_y))
 
 
-def display_plots(x, legend=None, grid=False, xlim=None):
-    """Display plots using pylab
-
-    param x: X values
-    param legend: Legend
-    param grid: Grid
-    param xlim: X axis limitation
+def display_plots(x, legend=None, grid=False, xlim=None, fig_name=None):
     """
+    Display plots using pylab
+
+    :param x: X values
+    :param legend: Legend
+    :param grid: Grid
+    :param xlim: X axis limitation
+    :param fig_name: partial name or prefix (can include path) if figure is saved
+                     if None, pylab.show() is called instead
+    """
+    pylab.clf()
     pylab.rcParams["figure.figsize"] = 16, 8
     pylab.rcParams["image.cmap"] = "viridis"
     if grid:
@@ -83,11 +87,25 @@ def display_plots(x, legend=None, grid=False, xlim=None):
         pylab.xlim(xlim)
     pylab.imshow(x)
     pylab.colorbar()
-    pylab.show()
+    if fig_name is None:
+        pylab.show()
+    else:
+        pylab.savefig(f"{fig_name}.png")
 
 
 # TODO: needs better name; used both for 1D and 2D
-def plot_1(pswf, xN, xN_size, yB, yN, N, yN_size):
+def plot_1(pswf, xN, xN_size, yB, yN, N, yN_size, fig_name=None):
+    """
+    :param pswf: prolate-spheroidal wave function
+    :param xN:
+    :param xN_size:
+    :param yB:
+    :param yN:
+    :param yN_size:
+    :param fig_name: partial name or prefix (can include path) if figure is saved
+                     if None, pylab.show() is called instead
+    """
+    pylab.clf()
     pylab.semilogy(
         coordinates(4 * int(xN_size)) * 4 * xN_size / N,
         extract_mid(numpy.abs(ifft(pad_mid(pswf, N))), 4 * int(xN_size)),
@@ -96,41 +114,92 @@ def plot_1(pswf, xN, xN_size, yB, yN, N, yN_size):
     mark_range("$x_n$", -xN, xN)
     pylab.xlim(-2 * int(xN_size) / N, (2 * int(xN_size) - 1) / N)
     pylab.grid()
-    pylab.show()
+    if fig_name is None:
+        pylab.show()
+    else:
+        pylab.savefig(f"{fig_name}_n.png")
+
+    pylab.clf()
     pylab.semilogy(coordinates(yN_size) * yN_size, pswf)
     pylab.legend(["$\\mathcal{F}[n]$"])
     mark_range("$y_B$", -yB, yB)
     pylab.xlim(-N // 2, N // 2 - 1)
     mark_range("$y_n$", -yN, yN)
     pylab.grid()
-    pylab.show()
+    if fig_name is None:
+        pylab.show()
+    else:
+        pylab.savefig(f"{fig_name}_fn.png")
 
 
 # TODO: needs better name; used both for 1D and 2D
-def plot_2(facet_m0_trunc, xM, xMxN_yP_size, yP_size):
+def plot_2(facet_m0_trunc, xM, xMxN_yP_size, yP_size, fig_name=None):
+    """
+    :param facet_m0_trunc:
+    :param xM:
+    :param xMxN_yP_size:
+    :param yP_size:
+    :param fig_name: partial name or prefix (can include path) if figure is saved
+                     if None, pylab.show() is called instead
+    """
+    pylab.clf()
     pylab.semilogy(coordinates(xMxN_yP_size) / yP_size * xMxN_yP_size, facet_m0_trunc)
     mark_range("xM", -xM, xM)
     pylab.grid()
-    pylab.show()
+    if fig_name is None:
+        pylab.show()
+    else:
+        pylab.savefig(f"{fig_name}_xm.png")
 
 
-def plot_errors_subgrid_1D(approx_subgrid, nsubgrid, subgrid, xA, xA_size, N):
+def calculate_and_plot_errors_subgrid_1d(
+    approx_subgrid, nsubgrid, subgrid, xA, xA_size, N, to_plot=True, fig_name=None
+):
+    """
+    Facet to subgrid error terms. Log and plot them.
+
+    :param approx_subgrid:
+    :param nsubgrid:
+    :param subgrid:
+    :param xA:
+    :param xA_size:
+    :param N:
+    :param to_plot: plot results?
+    :param fig_name: partial name or prefix (can include path) if figure is saved
+                     if None, pylab.show() is called instead
+    """
     # Let us look at the error terms:
-    fig = pylab.figure(figsize=(16, 8))
-    ax1, ax2 = fig.add_subplot(211), fig.add_subplot(212)
-    err_sum = err_sum_img = 0
+    if to_plot:
+        pylab.clf()
+        fig = pylab.figure(figsize=(16, 8))
+        ax1, ax2 = fig.add_subplot(211), fig.add_subplot(212)
+
+    err_sum = 0
+    err_sum_img = 0
     for i in range(nsubgrid):
         error = approx_subgrid[i] - subgrid[i]
-        ax1.semilogy(xA * 2 * coordinates(xA_size), numpy.abs(error))
-        ax2.semilogy(N * coordinates(xA_size), numpy.abs(fft(error)))
+        if to_plot:
+            ax1.semilogy(xA * 2 * coordinates(xA_size), numpy.abs(error))
+            ax2.semilogy(N * coordinates(xA_size), numpy.abs(fft(error)))
         err_sum += numpy.abs(error) ** 2 / nsubgrid
         err_sum_img += numpy.abs(fft(error)) ** 2 / nsubgrid
-    mark_range("$x_A$", -xA, xA, ax=ax1)
-    pylab.grid()
-    pylab.show()
-    mark_range("$N/2$", -N / 2, N / 2, ax=ax2)
-    pylab.grid()
-    pylab.show()
+
+    if to_plot:
+        mark_range("$x_A$", -xA, xA, ax=ax1)
+        pylab.grid()
+        if fig_name is None:
+            pylab.show()
+        else:
+            pylab.savefig(f"{fig_name}_error_facet_to_subgrid_1d.png")
+
+        pylab.clf()
+        mark_range("$N/2$", -N / 2, N / 2, ax=ax2)
+        pylab.grid()
+        if fig_name is None:
+            pylab.show()
+        else:
+            pylab.savefig(f"{fig_name}_empty_n_per_2_1d.png")
+
     log.info(
         "RMSE: %s (image: %s)",
         numpy.sqrt(numpy.mean(err_sum)),
@@ -138,33 +207,56 @@ def plot_errors_subgrid_1D(approx_subgrid, nsubgrid, subgrid, xA, xA_size, N):
     )
 
 
-def plot_errors_facet_1D(approx_facet, facet, nfacet, xA, xM, yB, yB_size):
-    fig = pylab.figure(figsize=(16, 8))
-    ax1, ax2 = fig.add_subplot(211), fig.add_subplot(212)
-    err_sum = err_sum_img = 0
+def calculate_and_plot_errors_facet_1d(
+    approx_facet, facet, nfacet, xA, xM, yB, yB_size, to_plot=True, fig_name=None
+):
+    if to_plot:
+        pylab.clf()
+        fig = pylab.figure(figsize=(16, 8))
+        ax1, ax2 = fig.add_subplot(211), fig.add_subplot(212)
+
+    err_sum = 0
+    err_sum_img = 0
     for j in range(nfacet):
         error = approx_facet[j] - facet[j]
         err_sum += numpy.abs(ifft(error)) ** 2
         err_sum_img += numpy.abs(error) ** 2
-        ax1.semilogy(coordinates(yB_size), numpy.abs(ifft(error)))
-        ax2.semilogy(yB_size * coordinates(yB_size), numpy.abs(error))
+        if to_plot:
+            ax1.semilogy(coordinates(yB_size), numpy.abs(ifft(error)))
+            ax2.semilogy(yB_size * coordinates(yB_size), numpy.abs(error))
+
     log.info(
         "RMSE: %s (image: %s)",
         numpy.sqrt(numpy.mean(err_sum)),
         numpy.sqrt(numpy.mean(err_sum_img)),
     )
-    mark_range("$x_A$", -xA, xA, ax=ax1)
-    mark_range("$x_M$", -xM, xM, ax=ax1)
-    mark_range("$y_B$", -yB, yB, ax=ax2)
-    mark_range("$0.5$", -0.5, 0.5, ax=ax1)
-    pylab.show()
+
+    if to_plot:
+        mark_range("$x_A$", -xA, xA, ax=ax1)
+        mark_range("$x_M$", -xM, xM, ax=ax1)
+        mark_range("$y_B$", -yB, yB, ax=ax2)
+        mark_range("$0.5$", -0.5, 0.5, ax=ax1)
+        if fig_name is None:
+            pylab.show()
+        else:
+            pylab.savefig(f"{fig_name}_error_subgrid_to_facet_1d.png")
 
 
-def plot_errors_2D(
-    NMBF_NMBF, facet_off, nfacet, nsubgrid, subgrid_2, subgrid_A, xM_size, N, xA_size
+def calculate_and_plot_errors_2d(
+    NMBF_NMBF,
+    facet_off,
+    nfacet,
+    nsubgrid,
+    subgrid_2,
+    subgrid_A,
+    xM_size,
+    N,
+    xA_size,
+    to_plot=True,
+    fig_name=None,
 ):
-    pylab.rcParams["figure.figsize"] = 16, 8
-    err_mean = err_mean_img = 0
+    err_mean = 0
+    err_mean_img = 0
     for i0, i1 in itertools.product(range(nsubgrid), range(nsubgrid)):
         approx = numpy.zeros((xM_size, xM_size), dtype=complex)
         for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
@@ -177,17 +269,31 @@ def plot_errors_2D(
         approx *= numpy.outer(subgrid_A[i0], subgrid_A[i1])
         err_mean += numpy.abs(approx - subgrid_2[i0, i1]) ** 2 / nsubgrid ** 2
         err_mean_img += numpy.abs(fft(approx - subgrid_2[i0, i1])) ** 2 / nsubgrid ** 2
-    pylab.imshow(numpy.log(numpy.sqrt(err_mean)) / numpy.log(10))
-    pylab.colorbar()
-    pylab.show()
-    pylab.imshow(numpy.log(numpy.sqrt(err_mean_img)) / numpy.log(10))
-    pylab.colorbar()
-    pylab.show()
+
     log.info(
         "RMSE: %s (image: %s)",
         numpy.sqrt(numpy.mean(err_mean)),
         numpy.sqrt(numpy.mean(err_mean_img)),
     )
+
+    if to_plot:
+        pylab.clf()
+        pylab.figure(figsize=(16, 8))
+        pylab.imshow(numpy.log(numpy.sqrt(err_mean)) / numpy.log(10))
+        pylab.colorbar()
+        if fig_name is None:
+            pylab.show()
+        else:
+            pylab.savefig(f"{fig_name}_error_mean_facet_to_subgrid_2d.png")
+
+        pylab.clf()
+        pylab.figure(figsize=(16, 8))
+        pylab.imshow(numpy.log(numpy.sqrt(err_mean_img)) / numpy.log(10))
+        pylab.colorbar()
+        if fig_name is None:
+            pylab.show()
+        else:
+            pylab.savefig(f"{fig_name}_error_mean_image_facet_to_subgrid_2d.png")
 
 
 # TODO: refactor this; it repeats a lot of code from the 2D case - what's the difference?
@@ -211,6 +317,8 @@ def test_accuracy_facet_to_subgrid(
     Fn,
     xs=252,
     ys=252,
+    to_plot=True,
+    fig_name=None,
 ):
     """
 
@@ -303,16 +411,20 @@ def test_accuracy_facet_to_subgrid(
         approx *= numpy.outer(subgrid_A[i0], subgrid_A[i1])
         err_mean += numpy.abs(approx - subgrid_2[i0, i1]) ** 2 / nsubgrid ** 2
         err_mean_img += numpy.abs(fft(approx - subgrid_2[i0, i1])) ** 2 / nsubgrid ** 2
-    # pylab.imshow(numpy.log(numpy.sqrt(err_mean)) / numpy.log(10)); pylab.colorbar(); pylab.show()
     x = numpy.log(numpy.sqrt(err_mean_img)) / numpy.log(10)
-    display_plots(x)
-    print(
-        "RMSE:",
+
+    log.info(
+        "RMSE: %s (image: %s)",
         numpy.sqrt(numpy.mean(err_mean)),
-        "(image:",
         numpy.sqrt(numpy.mean(err_mean_img)),
-        ")",
     )
+
+    if to_plot:
+        if fig_name:
+            full_name = f"{fig_name}_test_accuracy_facet_to_subgrid_2d"
+        else:
+            full_name = None
+        display_plots(x, fig_name=full_name)
 
 
 def test_accuracy_subgrid_to_facet(
@@ -335,6 +447,8 @@ def test_accuracy_subgrid_to_facet(
     Fn,
     xs=252,
     ys=252,
+    to_plot=True,
+    fig_name=None
 ):
     """
 
@@ -433,11 +547,15 @@ def test_accuracy_subgrid_to_facet(
         err_mean_img += numpy.abs(approx - facet_2[j0, j1]) ** 2 / nfacet ** 2
 
     x = numpy.log(numpy.sqrt(err_mean_img)) / numpy.log(10)
-    display_plots(x)
-    print(
-        "RMSE:",
+    log.info(
+        "RMSE: %s (image: %s)",
         numpy.sqrt(numpy.mean(err_mean)),
-        "(image:",
         numpy.sqrt(numpy.mean(err_mean_img)),
-        ")",
     )
+
+    if to_plot:
+        if fig_name:
+            full_name = f"{fig_name}_test_accuracy_subgrid_to_facet_2d"
+        else:
+            full_name = None
+        display_plots(x, fig_name=full_name)

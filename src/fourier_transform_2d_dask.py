@@ -17,13 +17,13 @@ from src.fourier_transform.fourier_algorithm import (
     extract_subgrid,
     get_actual_work_terms,
     calculate_pswf,
-    generate_mask_for_subgrid_facet,
+    generate_mask,
 )
 from src.fourier_transform.utils import (
     whole,
     plot_1,
     plot_2,
-    plot_errors_2D,
+    calculate_and_plot_errors_2d,
     test_accuracy_facet_to_subgrid,
 )
 
@@ -45,7 +45,8 @@ TARGET_PARS = {
     "W": 13.25,
     "fov": 0.75,
     "N": 1024,  # total image size
-    "Nx": 4,  # ??
+    "Nx": 4,  # subgrid spacing: it tells you what subgrid offsets are permissible:
+              # here it is saying that they need to be divisible by 4.
     "yB_size": 256,  # true usable image size (facet)
     "yN_size": 320,  # padding needed to transfer the data?
     "yP_size": 512,  # padded (rough) image size (facet)
@@ -68,7 +69,12 @@ TARGET_ERR = 1e-5
 ALPHA = 0
 
 
-def main():
+def main(to_plot=True, fig_name=None):
+    """
+    :param to_plot: run plotting?
+    :param fig_name: If given, figures will be saved with this prefix into PNG files.
+                     If to_plot is set to False, fig_name doesn't have an effect.
+    """
     log.info("== Chosen configuration")
     for n in [
         "W",
@@ -111,13 +117,16 @@ def main():
     log.info("\n== Calculate PSWF")
     pswf = calculate_pswf(yN_size, ALPHA, W)
 
-    plot_1(pswf, xN, xN_size, yB, yN, N, yN_size)
+    if to_plot:
+        plot_1(pswf, xN, xN_size, yB, yN, N, yN_size, fig_name=fig_name)
 
     # Calculate actual work terms to use. We need both $n$ and $b$ in image space.
     Fb, Fn, facet_m0_trunc = get_actual_work_terms(
         pswf, xM, xMxN_yP_size, yB_size, yN_size, xM_size, N, yP_size
     )
-    plot_2(facet_m0_trunc, xM, xMxN_yP_size, yP_size)
+
+    if to_plot:
+        plot_2(facet_m0_trunc, xM, xMxN_yP_size, yP_size, fig_name=fig_name)
 
     log.info("\n== Generate layout (factes and subgrids")
     # Layout subgrids + facets
@@ -134,9 +143,8 @@ def main():
     # Determine subgrid/facet offsets and the appropriate A/B masks for cutting them out.
     # We are aiming for full coverage here: Every pixel is part of exactly one subgrid / facet.
 
-    facet_B, subgrid_A = generate_mask_for_subgrid_facet(
-        facet_off, nfacet, nsubgrid, subgrid_off, xA_size, N, yB_size
-    )
+    facet_B = generate_mask(N, nfacet, yB_size, facet_off)
+    subgrid_A = generate_mask(N, nsubgrid, xA_size, subgrid_off)
 
     # ## 2D case
     #
@@ -319,7 +327,7 @@ def main():
                 )
     log.info("%s s", time.time() - t)
 
-    plot_errors_2D(
+    calculate_and_plot_errors_2d(
         NMBF_NMBF,
         facet_off,
         nfacet,
@@ -329,6 +337,8 @@ def main():
         xM_size,
         N,
         xA_size,
+        to_plot=to_plot,
+        fig_name=fig_name,
     )
 
     test_accuracy_facet_to_subgrid(
@@ -351,8 +361,14 @@ def main():
         Fn,
         xs=252,
         ys=252,
+        to_plot=to_plot,
+        fig_name=fig_name,
     )
 
 
 if __name__ == "__main__":
     main()
+
+
+# TODO: add the subgrid-to-facet 2d bit
+#  --> created by Celeste; code reference is at the end of test_algorithm.py
