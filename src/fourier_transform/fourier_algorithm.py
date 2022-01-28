@@ -8,6 +8,7 @@ import dask.array
 # TODO: ideally we'd like to merge the 1D functions with their 2D equivalent,
 #   which then can be used for both versions
 
+
 # TODO: need to merge the functions with _a in their name to their equivalents from Crocodile
 #   Crocodile functions are below the _a ones
 def slice_a(fill_val, axis_val, dims, axis):
@@ -330,13 +331,15 @@ def extract_subgrid_1d(
     """
     Extract subgrid for 1D version.
 
-    :param BjFj: TODO ???
-    :param facet_m0_trunc: ask truncated to a facet (image space)
+    :param BjFj: Prepared facet data (i.e. multiplied by b, padded to yP_size, Fourier transformed)
+    :param facet_m0_trunc: mask truncated to a facet (image space)
     :param offset_i: ith offset value (subgrid)
-    :param yP_size: facet size, padded for m convolution (internal)
+    :param yP_size: facet size, padded for m convolution (internal; it's len(BjFj))
     :param N: total image size on a side
-    :param xMxN_yP_size: TODO: ???
-    :param xN_yP_size: TODO: ???
+    :param xMxN_yP_size: length of the region to be cut out of the prepared facet data.
+                         i.e. len(facet_m0_trunc)
+    :param xN_yP_size: remainder of the padded facet region after the cut-out region has been subtracetd of it
+                       i.e. xMxN_yP_size - xM_yP_size
     :param xM_yP_size: (padded subgrid size * padded image size (facet)) / N
     :param xM_yN_size: (padded subgrid size * padding) / N
     :param Fn: Fourier transform of gridding function
@@ -371,13 +374,15 @@ def extract_subgrid_1d_dask_array(
     Extract subgrid for 1D version. Same as extract_subgrid_1d
     but implemented using dask.array.
 
-    :param BjFj: TODO ???
+    :param BjFj: Prepared facet data (i.e. multiplied by b, padded to yP_size, Fourier transformed)
     :param facet_m0_trunc: mask truncated to a facet (image space)
     :param offset_i: ith offset value (subgrid)
-    :param yP_size: facet size, padded for m convolution (internal)
+    :param yP_size: facet size, padded for m convolution (internal; it's len(BjFj))
     :param N: total image size on a side
-    :param xMxN_yP_size: TODO: ???
-    :param xN_yP_size: TODO: ???
+    :param xMxN_yP_size: length of the region to be cut out of the prepared facet data.
+                         i.e. len(facet_m0_trunc)
+    :param xN_yP_size: remainder of the padded facet region after the cut-out region has been subtracetd of it
+                       i.e. xMxN_yP_size - xM_yP_size
     :param xM_yP_size: (padded subgrid size * padded image size (facet)) / N
     :param xM_yN_size: (padded subgrid size * padding) / N
     :param Fn: Fourier transform of gridding function
@@ -425,12 +430,14 @@ def facets_to_subgrid_1d(
     :param facet_m0_trunc: mask truncated to a facet (image space)
     :param subgrid_off: subgrid offset
     :param N: total image size on a side
-    :param xMxN_yP_size: TODO: ???
-    :param xN_yP_size: TODO: ???
+    :param xMxN_yP_size: length of the region to be cut out of the prepared facet data.
+                         i.e. len(facet_m0_trunc)
+    :param xN_yP_size: remainder of the padded facet region after the cut-out region has been subtracetd of it
+                       i.e. xMxN_yP_size - xM_yP_size
     :param xM_yP_size: (padded subgrid size * padded image size (facet)) / N
     :param dtype: data type
 
-    :return: RNjMiBjFj: subgrid array determined from input facet array
+    :return: RNjMiBjFj: array of contributions of this facet to different subgrids
     """
     RNjMiBjFj = numpy.empty((nsubgrid, nfacet, xM_yN_size), dtype=dtype)
     for j in range(nfacet):
@@ -472,9 +479,6 @@ def facets_to_subgrid_1d_dask_array(
     Facet to subgrid 1D algorithm. Returns redistributed subgrid data.
     Same as facets_to_subgrid_1d but implemented using dask.array.
 
-    TODO: need to remove .compute from this function
-        as the whole pipeline will be daskified.
-
     :param facet: numpy array of facets
     :param nsubgrid: number of subgrid
     :param nfacet: number of facet
@@ -485,12 +489,14 @@ def facets_to_subgrid_1d_dask_array(
     :param facet_m0_trunc: mask truncated to a facet (image space)
     :param subgrid_off: subgrid offset
     :param N: total image size on a side
-    :param xMxN_yP_size: TODO: ???
-    :param xN_yP_size: TODO: ???
+    :param xMxN_yP_size: length of the region to be cut out of the prepared facet data.
+                         i.e. len(facet_m0_trunc)
+    :param xN_yP_size: remainder of the padded facet region after the cut-out region has been subtracetd of it
+                       i.e. xMxN_yP_size - xM_yP_size
     :param xM_yP_size: (padded subgrid size * padded image size (facet)) / N
     :param dtype: data type
 
-    :return: RNjMiBjFj: subgrid array determined from input facet array
+    :return: RNjMiBjFj: array of contributions of this facet to different subgrids
     """
     RNjMiBjFj = dask.array.from_array(
         [
@@ -664,10 +670,12 @@ def add_subgrid_contribution_1d(
     """
     Add subgrid contribution to a single facet.
 
-    :param xMxN_yP_size: TODO: ???
+    :param xMxN_yP_size: length of the region to be cut out of the prepared facet data.
+                         i.e. len(facet_m0_trunc)
     :param xM_yP_size: (padded subgrid size * padded image size (facet)) / N
     :param nafs_ij: redistributed facet array [i:j] element
-    :param xN_yP_size: TODO: ???
+    :param xN_yP_size: remainder of the padded facet region after the cut-out region has been subtracetd of it
+                       i.e. xMxN_yP_size - xM_yP_size
     :param facet_m0_trunc: mask truncated to a facet (image space)
     :param yP_size: facet size padded for m convolution (internal)
     :param subgrid_off_i: subgrid offset [i]th element
@@ -705,10 +713,12 @@ def add_subgrid_contribution_1d_dask_array(
     Add subgrid contribution to a single facet.
     Same as add_subgrid_contribution_1d but implemented with dask.array.
 
-    :param xMxN_yP_size: TODO: ???
+    :param xMxN_yP_size: length of the region to be cut out of the prepared facet data.
+                         i.e. len(facet_m0_trunc)
     :param xM_yP_size: (padded subgrid size * padded image size (facet)) / N
     :param nafs_ij: redistributed facet array [i:j] element
-    :param xN_yP_size: TODO: ???
+    :param xN_yP_size: remainder of the padded facet region after the cut-out region has been subtracetd of it
+                       i.e. xMxN_yP_size - xM_yP_size
     :param facet_m0_trunc: mask truncated to a facet (image space)
     :param yP_size: facet size padded for m convolution (internal)
     :param subgrid_off_i: subgrid offset [i]th element
@@ -755,9 +765,11 @@ def reconstruct_facet_1d(
     :param nfacet: number of facets
     :param yB_size: true usable image size (facet)
     :param nsubgrid: number of subgrids
-    :param xMxN_yP_size: TODO: ???
+    :param xMxN_yP_size: length of the region to be cut out of the prepared facet data.
+                         i.e. len(facet_m0_trunc)
     :param xM_yP_size: (padded subgrid size * padded image size (facet)) / N
-    :param xN_yP_size: TODO: ???
+    :param xN_yP_size: remainder of the padded facet region after the cut-out region has been subtracetd of it
+                       i.e. xMxN_yP_size - xM_yP_size
     :param facet_m0_trunc: mask truncated to a facet (image space)
     :param yP_size: facet size padded for m convolution (internal)
     :param subgrid_off: subgrid offset
@@ -813,9 +825,11 @@ def reconstruct_facet_1d_dask_array(
     :param nfacet: number of facets
     :param yB_size: true usable image size (facet)
     :param nsubgrid: number of subgrids
-    :param xMxN_yP_size: TODO: ???
+    :param xMxN_yP_size: length of the region to be cut out of the prepared facet data.
+                         i.e. len(facet_m0_trunc)
     :param xM_yP_size: (padded subgrid size * padded image size (facet)) / N
-    :param xN_yP_size: TODO: ???
+    :param xN_yP_size: remainder of the padded facet region after the cut-out region has been subtracetd of it
+                       i.e. xMxN_yP_size - xM_yP_size
     :param facet_m0_trunc: mask truncated to a facet (image space)
     :param yP_size: facet size padded for m convolution (internal)
     :param subgrid_off: subgrid offset
@@ -886,7 +900,8 @@ def extract_subgrid(
     :param axis: Axis
     :param subgrid_off:
     :param yP_size: Facet size, padded for m convolution (internal)
-    :param xMxN_yP_size:
+    :param xMxN_yP_size: length of the region to be cut out of the prepared facet data.
+                         i.e. len(facet_m0_trunc)
     :param facet_m0_trunc:
     :param xM_yP_size:
     :param Fn:
@@ -967,7 +982,8 @@ def add_subgrid_contribution(
     :param i:
     :param facet_m0_trunc:
     :param subgrid_off:
-    :param xMxN_yP_size:
+    :param xMxN_yP_size: length of the region to be cut out of the prepared facet data.
+                         i.e. len(facet_m0_trunc)
     :param xM_yP_size:
     :param yP_size:
     :param N:
@@ -1040,7 +1056,8 @@ def get_actual_work_terms(
 
     :param pswf: prolate-spheroidal wave function
     :param xM: TODO ???
-    :param xMxN_yP_size: TODO ???
+    :param xMxN_yP_size: length of the region to be cut out of the prepared facet data.
+                         i.e. len(facet_m0_trunc)
     :param yB_size: rue usable image size (facet)
     :param yN_size: needed padding
     :param xM_size: padded (rough) subgrid size

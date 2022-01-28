@@ -298,9 +298,20 @@ def main(to_plot=True, fig_name=None):
 
     log.info("\n== Derived values")
     xN_size = N * W / yN_size
+
+    # Note from Peter: Note that this (xM_yP_size) is xM_yN_size * yP_size / yN_size.
+    # So could replace by yN_size, which would be the more fundamental entity.
+    # Generally - if you don't want to carry a structure around with all the derived values,
+    # it would probably best just to re-derive these entities from the fundamental sizes when required.
+    # I mean, the names basically tell you how to calculate them - x[a]_y[b]_size = x[a]_size * y[b]_size / N
+    # ^ Gabi: we will have to deal with the input params and derived values better,
+    #         this could be a way of refactoring + keeping them in a class that does the necessary calcs
     xM_yP_size = xM_size * yP_size // N
+
     xMxN_yP_size = xM_yP_size + int(2 * numpy.ceil(xN_size * yP_size / N / 2))
     assert (xM_size * yN_size) % N == 0
+
+    # same not as above xM_yP_size; N could be replaced xM_size
     xM_yN_size = xM_size * yN_size // N
 
     xN_yP_size = xMxN_yP_size - xM_yP_size
