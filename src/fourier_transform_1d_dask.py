@@ -7,9 +7,11 @@ import os
 import numpy
 import sys
 
+from distributed import performance_report
 from matplotlib import pylab
 
 from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
+
 from src.fourier_transform.fourier_algorithm import (
     make_subgrid_and_facet,
     facets_to_subgrid_1d,
@@ -31,8 +33,6 @@ from src.fourier_transform.utils import (
     calculate_and_plot_errors_subgrid_1d,
     calculate_and_plot_errors_facet_1d,
 )
-
-USE_DASK = os.getenv("USE_DASK", False) == "True"
 
 log = logging.getLogger("fourier-logger")
 log.setLevel(logging.INFO)
@@ -271,6 +271,9 @@ def main(to_plot=True, fig_name=None):
     :param fig_name: If given, figures will be saved with this prefix into PNG files.
                      If to_plot is set to False, fig_name doesn't have an effect.
     """
+
+    use_dask = os.getenv("USE_DASK", False) == "True"
+
     log.info("== Chosen configuration")
     for n in [
         "W",
@@ -347,7 +350,7 @@ def main(to_plot=True, fig_name=None):
     G = numpy.random.rand(N) - 0.5
     dtype = numpy.complex128
 
-    if USE_DASK:
+    if use_dask:
         subgrid, facet, approx_subgrid, approx_facet = _algorithm_with_dask_array(
             G,
             nsubgrid,
@@ -410,6 +413,11 @@ def main(to_plot=True, fig_name=None):
 
 
 if __name__ == "__main__":
-    # client, current_env_var = set_up_dask()
-    main(to_plot=False)
-    # tear_down_dask(client, current_env_var)
+
+    client, current_env_var = set_up_dask()
+    with performance_report(filename="dask-report.html"):
+        main(to_plot=False)
+    tear_down_dask(client, current_env_var)
+
+    # all above needs commenting and this uncommenting if want to run it without dask
+    # main(to_plot=False)
