@@ -517,8 +517,8 @@ for i0, i1 in itertools.product(range(nsubgrid), range(nsubgrid)):
         )
     approx = extract_mid(ifft(approx), xA_size)
     approx *= numpy.outer(subgrid_A[i0], subgrid_A[i1])
-    err_mean += numpy.abs(approx - subgrid_2[i0, i1]) ** 2 / nsubgrid ** 2
-    err_mean_img += numpy.abs(fft(approx - subgrid_2[i0, i1])) ** 2 / nsubgrid ** 2
+    err_mean += numpy.abs(approx - subgrid_2[i0, i1]) ** 2 / nsubgrid**2
+    err_mean_img += numpy.abs(fft(approx - subgrid_2[i0, i1])) ** 2 / nsubgrid**2
 pylab.imshow(numpy.log(numpy.sqrt(err_mean)) / numpy.log(10))
 pylab.colorbar()
 pylab.show()
@@ -670,8 +670,8 @@ for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
     approx = numpy.zeros((yB_size, yB_size), dtype=complex)
     approx += BMNAF_BMNAF[j0, j1]
 
-    err_mean += numpy.abs(ifft(approx - facet_2[j0, j1])) ** 2 / nfacet ** 2
-    err_mean_img += numpy.abs(approx - facet_2[j0, j1]) ** 2 / nfacet ** 2
+    err_mean += numpy.abs(ifft(approx - facet_2[j0, j1])) ** 2 / nfacet**2
+    err_mean_img += numpy.abs(approx - facet_2[j0, j1]) ** 2 / nfacet**2
 
 pylab.imshow(numpy.log(numpy.sqrt(err_mean)) / numpy.log(10))
 pylab.colorbar()
