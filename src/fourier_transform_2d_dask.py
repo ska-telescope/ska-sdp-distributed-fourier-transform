@@ -18,13 +18,19 @@ from src.fourier_transform.fourier_algorithm import (
     get_actual_work_terms,
     calculate_pswf,
     generate_mask,
+    prepare_subgrid,
+    extract_facet_contribution,
+    add_subgrid_contribution,
+    finish_facet,
 )
 from src.fourier_transform.utils import (
     whole,
     plot_1,
     plot_2,
-    calculate_and_plot_errors_2d,
+    errors_facet_to_subgrid_2d,
     test_accuracy_facet_to_subgrid,
+    test_accuracy_subgrid_to_facet,
+    errors_subgrid_to_facet_2d,
 )
 
 log = logging.getLogger("fourier-logger")
@@ -146,14 +152,6 @@ def main(to_plot=True, fig_name=None):
     facet_B = generate_mask(N, nfacet, yB_size, facet_off)
     subgrid_A = generate_mask(N, nsubgrid, xA_size, subgrid_off)
 
-    # ## 2D case
-    #
-    # All of this generalises to two dimensions in the way you would expect. Let us set up test data:
-
-    log.info("%s x %s subgrids %s x %s facets", nsubgrid, nsubgrid, nfacet, nfacet)
-    subgrid_2 = numpy.empty((nsubgrid, nsubgrid, xA_size, xA_size), dtype=complex)
-    facet_2 = numpy.empty((nfacet, nfacet, yB_size, yB_size), dtype=complex)
-
     # adding sources
     add_sources = True
     if add_sources:
@@ -181,6 +179,15 @@ def main(to_plot=True, fig_name=None):
         FG_2 = fft(G_2)
 
     log.info("Mean grid absolute: %s", numpy.mean(numpy.abs(G_2)))
+
+    # ==== Facet to Subgrid ====
+    log.info("Executing 2D facet-to-sugbrid algorithm")
+
+    # All of this generalises to two dimensions in the way you would expect. Let us set up test data:
+
+    log.info("%s x %s subgrids %s x %s facets", nsubgrid, nsubgrid, nfacet, nfacet)
+    subgrid_2 = numpy.empty((nsubgrid, nsubgrid, xA_size, xA_size), dtype=complex)
+    facet_2 = numpy.empty((nfacet, nfacet, yB_size, yB_size), dtype=complex)
 
     for i0, i1 in itertools.product(range(nsubgrid), range(nsubgrid)):
         subgrid_2[i0, i1] = extract_mid(
@@ -327,7 +334,7 @@ def main(to_plot=True, fig_name=None):
                 )
     log.info("%s s", time.time() - t)
 
-    calculate_and_plot_errors_2d(
+    errors_facet_to_subgrid_2d(
         NMBF_NMBF,
         facet_off,
         nfacet,
@@ -365,10 +372,93 @@ def main(to_plot=True, fig_name=None):
         fig_name=fig_name,
     )
 
+    # ==== Subgrid to Facet ====
+    log.info("Executing 2D subgrid-to-facet algorithm")
+    # Celeste: This is based on the original implementation by Peter,
+    # and has not involved data redistribution yet.
+
+    t = time.time()
+    naf_naf = numpy.empty(
+        (nsubgrid, nsubgrid, nfacet, nfacet, xM_yN_size, xM_yN_size), dtype=complex
+    )
+    for i0, i1 in itertools.product(range(nsubgrid), range(nsubgrid)):
+        AF_AF = prepare_subgrid(subgrid_2[i0, i1], xM_size)
+        for j0 in range(nfacet):
+            NAF_AF = extract_facet_contribution(
+                AF_AF, Fn, facet_off, j0, xM_size, N, xM_yN_size, 0
+            )
+            for j1 in range(nfacet):
+                naf_naf[i0, i1, j0, j1] = extract_facet_contribution(
+                    NAF_AF, Fn, facet_off, j1, xM_size, N, xM_yN_size, 1
+                )
+
+    BMNAF_BMNAF = numpy.empty((nfacet, nfacet, yB_size, yB_size), dtype=complex)
+    for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
+        MNAF_BMNAF = numpy.zeros((yP_size, yB_size), dtype=complex)
+        for i0 in range(nsubgrid):
+            NAF_MNAF = numpy.zeros((xM_yN_size, yP_size), dtype=complex)
+            for i1 in range(nsubgrid):
+                add_subgrid_contribution(
+                    NAF_MNAF,
+                    naf_naf[i0, i1, j0, j1],
+                    i1,
+                    facet_m0_trunc,
+                    subgrid_off,
+                    xMxN_yP_size,
+                    xM_yP_size,
+                    yP_size,
+                    N,
+                    1,
+                )
+            NAF_BMNAF = finish_facet(NAF_MNAF, Fb, facet_B, yB_size, j1, 1)
+            add_subgrid_contribution(
+                MNAF_BMNAF,
+                NAF_BMNAF,
+                i0,
+                facet_m0_trunc,
+                subgrid_off,
+                xMxN_yP_size,
+                xM_yP_size,
+                yP_size,
+                N,
+                0,
+            )
+        BMNAF_BMNAF[j0, j1] = finish_facet(MNAF_BMNAF, Fb, facet_B, yB_size, j0, 0)
+    print(time.time() - t, "s")
+
+    errors_subgrid_to_facet_2d(
+        BMNAF_BMNAF,
+        facet_2,
+        nfacet,
+        yB_size,
+        to_plot=to_plot,
+        fig_name=fig_name,
+    )
+
+    test_accuracy_subgrid_to_facet(
+        nsubgrid,
+        xA_size,
+        nfacet,
+        yB_size,
+        N,
+        subgrid_off,
+        subgrid_A,
+        facet_off,
+        facet_B,
+        xM_yN_size,
+        xM_size,
+        Fb,
+        yP_size,
+        xMxN_yP_size,
+        facet_m0_trunc,
+        xM_yP_size,
+        Fn,
+        xs=252,
+        ys=252,
+        to_plot=to_plot,
+        fig_name=fig_name,
+    )
+
 
 if __name__ == "__main__":
     main()
-
-
-# TODO: add the subgrid-to-facet 2d bit
-#  --> created by Celeste; code reference is at the end of test_algorithm.py

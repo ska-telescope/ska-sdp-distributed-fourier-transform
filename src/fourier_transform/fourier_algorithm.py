@@ -396,7 +396,9 @@ def facet_contribution_to_subgrid_1d_dask_array(
     MiBjFj_sum[: xN_yP_size // 2] += MiBjFj[-xN_yP_size // 2 :]
     MiBjFj_sum[-xN_yP_size // 2 :] += MiBjFj[: xN_yP_size // 2 :]
 
-    facet_in_a_subgrid = Fn * extract_mid(fft(MiBjFj_sum), xM_yN_size).rechunk(xM_yN_size)
+    facet_in_a_subgrid = Fn * extract_mid(fft(MiBjFj_sum), xM_yN_size).rechunk(
+        xM_yN_size
+    )
 
     return facet_in_a_subgrid
 
@@ -794,9 +796,7 @@ def reconstruct_facet_1d(
         # finally we do the sum (which results in approx);
         # In reconstruct_subgrid_1d we first do the sum, and then cut from xM_size to xA_size,
         # hence approx starts as a larger sized array in that case.
-        approx = numpy.zeros(
-            yB_size, dtype=complex
-        )
+        approx = numpy.zeros(yB_size, dtype=complex)
         for i in range(nsubgrid):
             approx += add_subgrid_contribution_1d(
                 xMxN_yP_size,

@@ -243,7 +243,29 @@ def calculate_and_plot_errors_facet_1d(
             pylab.savefig(f"{fig_name}_error_subgrid_to_facet_1d.png")
 
 
-def calculate_and_plot_errors_2d(
+def _plot_error(err_mean, err_mean_img, fig_name, direction):
+    """
+    :param direction: either "facet_to_subgrid" or "subgrid_to_facet"; used for plot naming
+    """
+    pylab.clf()
+    pylab.figure(figsize=(16, 8))
+    pylab.imshow(numpy.log(numpy.sqrt(err_mean)) / numpy.log(10))
+    pylab.colorbar()
+    if fig_name is None:
+        pylab.show()
+    else:
+        pylab.savefig(f"{fig_name}_error_mean_{direction}_2d.png")
+    pylab.clf()
+    pylab.figure(figsize=(16, 8))
+    pylab.imshow(numpy.log(numpy.sqrt(err_mean_img)) / numpy.log(10))
+    pylab.colorbar()
+    if fig_name is None:
+        pylab.show()
+    else:
+        pylab.savefig(f"{fig_name}_error_mean_image_{direction}_2d.png")
+
+
+def errors_facet_to_subgrid_2d(
     NMBF_NMBF,
     facet_off,
     nfacet,
@@ -278,23 +300,29 @@ def calculate_and_plot_errors_2d(
     )
 
     if to_plot:
-        pylab.clf()
-        pylab.figure(figsize=(16, 8))
-        pylab.imshow(numpy.log(numpy.sqrt(err_mean)) / numpy.log(10))
-        pylab.colorbar()
-        if fig_name is None:
-            pylab.show()
-        else:
-            pylab.savefig(f"{fig_name}_error_mean_facet_to_subgrid_2d.png")
+        _plot_error(err_mean, err_mean_img, fig_name, "facet_to_subgrid")
 
-        pylab.clf()
-        pylab.figure(figsize=(16, 8))
-        pylab.imshow(numpy.log(numpy.sqrt(err_mean_img)) / numpy.log(10))
-        pylab.colorbar()
-        if fig_name is None:
-            pylab.show()
-        else:
-            pylab.savefig(f"{fig_name}_error_mean_image_facet_to_subgrid_2d.png")
+
+def errors_subgrid_to_facet_2d(
+    BMNAF_BMNAF, facet_2, nfacet, yB_size, to_plot=True, fig_name=None
+):
+    err_mean = 0
+    err_mean_img = 0
+    for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
+        approx = numpy.zeros((yB_size, yB_size), dtype=complex)
+        approx += BMNAF_BMNAF[j0, j1]
+
+        err_mean += numpy.abs(ifft(approx - facet_2[j0, j1])) ** 2 / nfacet**2
+        err_mean_img += numpy.abs(approx - facet_2[j0, j1]) ** 2 / nfacet**2
+
+    log.info(
+        "RMSE: %s (image: %s)",
+        numpy.sqrt(numpy.mean(err_mean)),
+        numpy.sqrt(numpy.mean(err_mean_img)),
+    )
+
+    if to_plot:
+        _plot_error(err_mean, err_mean_img, fig_name, "subgrid_to_facet")
 
 
 # TODO: refactor this; it repeats a lot of code from the 2D case - what's the difference?

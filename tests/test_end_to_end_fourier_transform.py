@@ -118,8 +118,8 @@ def test_end_to_end_2d_dask():
         call("RMSE: %s (image: %s)", 3.6351180911901923e-08, 6.834022011437562e-06),
         call("RMSE: %s (image: %s)", 1.8993992558912768e-17, 3.5708706010756e-15),
         # subgrid to facet - not yet added to tested code
-        # call("RMSE: %s (image: %s)", 1.9503554118423179e-07, 4.992909854316334e-05),
-        # call("RMSE: %s (image: %s)", 3.1048924152453573e-13, 7.948524583028115e-11),
+        call("RMSE: %s (image: %s)", 1.9066529538510885e-07, 4.881031561858787e-05),
+        call("RMSE: %s (image: %s)", 3.1048924152453573e-13, 7.948524583028115e-11),
     ]
 
     with patch("logging.Logger.info") as mock_log:
@@ -148,12 +148,9 @@ def test_end_to_end_2d_dask_plot():
         "test_data/reference_data/plot_error_mean_image_facet_to_subgrid_2d.png": f"{fig_prefix}_error_mean_image_facet_to_subgrid_2d.png",
         "test_data/reference_data/plot_test_accuracy_facet_to_subgrid_2d.png": f"{fig_prefix}_test_accuracy_facet_to_subgrid_2d.png",
         # subgrid to facet -- not yet added to tested code
-        # "test_data/reference_data/plot_error_mean_subgrid_to_facet_2d.png":
-        #     f"{fig_prefix}_error_mean_subgrid_to_facet_2d.png",
-        # "test_data/reference_data/plot_error_mean_image_subgrid_to_facet_2d.png":
-        #     f"{fig_prefix}_error_mean_image_subgrid_to_facet_2d.png",
-        # "test_data/reference_data/plot_test_accuracy_subgrid_to_facet_2d.png":
-        #     f"{fig_prefix}_test_accuracy_subgrid_to_facet_2d.png",
+        "test_data/reference_data/plot_error_mean_subgrid_to_facet_2d.png": f"{fig_prefix}_error_mean_subgrid_to_facet_2d.png",
+        "test_data/reference_data/plot_error_mean_image_subgrid_to_facet_2d.png": f"{fig_prefix}_error_mean_image_subgrid_to_facet_2d.png",
+        "test_data/reference_data/plot_test_accuracy_subgrid_to_facet_2d.png": f"{fig_prefix}_test_accuracy_subgrid_to_facet_2d.png",
     }
 
     main_2d(to_plot=True, fig_name=fig_prefix)
