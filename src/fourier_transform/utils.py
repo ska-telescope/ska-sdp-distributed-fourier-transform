@@ -61,7 +61,7 @@ def mark_range(
         lbl_y = (y0 * 7 + y1) / 8
     else:
         # Some type of log scale
-        lbl_y = (y0 ** 7 * y1) ** (1 / 8)
+        lbl_y = (y0**7 * y1) ** (1 / 8)
     ax.annotate(lbl, (x1 + x_offset * wdt, lbl_y))
 
 
@@ -185,6 +185,7 @@ def calculate_and_plot_errors_subgrid_1d(
         err_sum_img += numpy.abs(fft(error)) ** 2 / nsubgrid
 
     if to_plot:
+        #  By feeding the implementation single-pixel inputs we can create a full error map.
         mark_range("$x_A$", -xA, xA, ax=ax1)
         pylab.grid()
         if fig_name is None:
@@ -267,8 +268,8 @@ def calculate_and_plot_errors_2d(
             )
         approx = extract_mid(ifft(approx), xA_size)
         approx *= numpy.outer(subgrid_A[i0], subgrid_A[i1])
-        err_mean += numpy.abs(approx - subgrid_2[i0, i1]) ** 2 / nsubgrid ** 2
-        err_mean_img += numpy.abs(fft(approx - subgrid_2[i0, i1])) ** 2 / nsubgrid ** 2
+        err_mean += numpy.abs(approx - subgrid_2[i0, i1]) ** 2 / nsubgrid**2
+        err_mean_img += numpy.abs(fft(approx - subgrid_2[i0, i1])) ** 2 / nsubgrid**2
 
     log.info(
         "RMSE: %s (image: %s)",
@@ -409,8 +410,8 @@ def test_accuracy_facet_to_subgrid(
             )
         approx = extract_mid(ifft(approx), xA_size)
         approx *= numpy.outer(subgrid_A[i0], subgrid_A[i1])
-        err_mean += numpy.abs(approx - subgrid_2[i0, i1]) ** 2 / nsubgrid ** 2
-        err_mean_img += numpy.abs(fft(approx - subgrid_2[i0, i1])) ** 2 / nsubgrid ** 2
+        err_mean += numpy.abs(approx - subgrid_2[i0, i1]) ** 2 / nsubgrid**2
+        err_mean_img += numpy.abs(fft(approx - subgrid_2[i0, i1])) ** 2 / nsubgrid**2
     x = numpy.log(numpy.sqrt(err_mean_img)) / numpy.log(10)
 
     log.info(
@@ -448,7 +449,7 @@ def test_accuracy_subgrid_to_facet(
     xs=252,
     ys=252,
     to_plot=True,
-    fig_name=None
+    fig_name=None,
 ):
     """
 
@@ -543,8 +544,8 @@ def test_accuracy_subgrid_to_facet(
     for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
         approx = numpy.zeros((yB_size, yB_size), dtype=complex)
         approx += BMNAF_BMNAF[j0, j1]
-        err_mean += numpy.abs(ifft(approx - facet_2[j0, j1])) ** 2 / nfacet ** 2
-        err_mean_img += numpy.abs(approx - facet_2[j0, j1]) ** 2 / nfacet ** 2
+        err_mean += numpy.abs(ifft(approx - facet_2[j0, j1])) ** 2 / nfacet**2
+        err_mean_img += numpy.abs(approx - facet_2[j0, j1]) ** 2 / nfacet**2
 
     x = numpy.log(numpy.sqrt(err_mean_img)) / numpy.log(10)
     log.info(

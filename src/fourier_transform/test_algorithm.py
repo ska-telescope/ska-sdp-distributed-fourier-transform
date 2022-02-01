@@ -177,7 +177,7 @@ dtype = numpy.complex128
 xN_yP_size = xMxN_yP_size - xM_yP_size
 
 print("Facet data:", facet.shape, facet.size)
-nmbfs = facets_to_subgrid_1(
+nmbfs = facets_to_subgrid_1d(
     facet,
     nsubgrid,
     nfacet,
@@ -196,7 +196,7 @@ nmbfs = facets_to_subgrid_1(
 
 # - redistribution of nmbfs here -
 print("Redistributed data:", nmbfs.shape, nmbfs.size)
-approx_subgrid = facets_to_subgrid_2(
+approx_subgrid = reconstruct_subgrid_1d(
     nmbfs, xM_size, nfacet, facet_off, N, subgrid_A, xA_size, nsubgrid
 )
 print("Reconstructed subgrids:", approx_subgrid.shape, approx_subgrid.size)
@@ -241,31 +241,26 @@ print(
 # As usual, this is entirely dual: In the previous case we had a signal limited by $y_B$ and needed the result of the convolution up to $y_N$, whereas now we have a signal bounded by $y_N$, but need the convolution result up to $y_B$. This cancels out - therefore we are okay with the same choice of $y_P$.
 
 print("Subgrid data:", subgrid.shape, subgrid.size)
-nafs = subgrid_to_facet_1(
+nafs = subgrid_to_facet_1d(
     subgrid, nsubgrid, nfacet, xM_yN_size, xM_size, facet_off, N, Fn
 )
 
 # - redistribution of FNjSi here -
 print("Intermediate data:", nafs.shape, nafs.size)
-approx_facet = numpy.array(
-    [
-        subgrid_to_facet_2(
-            nafs,
-            j,
-            yB_size,
-            nsubgrid,
-            xMxN_yP_size,
-            xM_yP_size,
-            xN_yP_size,
-            facet_m0_trunc,
-            yP_size,
-            subgrid_off,
-            N,
-            Fb,
-            facet_B,
-        )
-        for j in range(nfacet)
-    ]
+approx_facet = reconstruct_facet_1d(
+    nafs,
+    nfacet,
+    yB_size,
+    nsubgrid,
+    xMxN_yP_size,
+    xM_yP_size,
+    xN_yP_size,
+    facet_m0_trunc,
+    yP_size,
+    subgrid_off,
+    N,
+    Fb,
+    facet_B,
 )
 print("Reconstructed facets:", approx_facet.shape, approx_facet.size)
 
@@ -376,9 +371,7 @@ if add_sources:
 else:
     # without sources
     G_2 = (
-            numpy.exp(2j * numpy.pi * numpy.random.rand(N, N))
-            * numpy.random.rand(N, N)
-            / 2
+        numpy.exp(2j * numpy.pi * numpy.random.rand(N, N)) * numpy.random.rand(N, N) / 2
     )
     FG_2 = fft(G_2)
 
@@ -524,8 +517,8 @@ for i0, i1 in itertools.product(range(nsubgrid), range(nsubgrid)):
         )
     approx = extract_mid(ifft(approx), xA_size)
     approx *= numpy.outer(subgrid_A[i0], subgrid_A[i1])
-    err_mean += numpy.abs(approx - subgrid_2[i0, i1]) ** 2 / nsubgrid ** 2
-    err_mean_img += numpy.abs(fft(approx - subgrid_2[i0, i1])) ** 2 / nsubgrid ** 2
+    err_mean += numpy.abs(approx - subgrid_2[i0, i1]) ** 2 / nsubgrid**2
+    err_mean_img += numpy.abs(fft(approx - subgrid_2[i0, i1])) ** 2 / nsubgrid**2
 pylab.imshow(numpy.log(numpy.sqrt(err_mean)) / numpy.log(10))
 pylab.colorbar()
 pylab.show()
@@ -568,7 +561,7 @@ test_accuracy_facet_to_subgrid(
 ### This is based on the original implementation by Peter, and has not involved data redistribution yet.
 
 # Verify that this is consistent with the previous implementation
-nafs = subgrid_to_facet_1(
+nafs = subgrid_to_facet_1d(
     subgrid, nsubgrid, nfacet, xM_yN_size, xM_size, facet_off, N, Fn
 )
 for i in range(nsubgrid):
@@ -581,7 +574,7 @@ for i in range(nsubgrid):
 
 approx_facet = numpy.array(
     [
-        subgrid_to_facet_2(
+        reconstruct_facet_1d(
             nafs,
             j,
             yB_size,
@@ -677,8 +670,8 @@ for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
     approx = numpy.zeros((yB_size, yB_size), dtype=complex)
     approx += BMNAF_BMNAF[j0, j1]
 
-    err_mean += numpy.abs(ifft(approx - facet_2[j0, j1])) ** 2 / nfacet ** 2
-    err_mean_img += numpy.abs(approx - facet_2[j0, j1]) ** 2 / nfacet ** 2
+    err_mean += numpy.abs(ifft(approx - facet_2[j0, j1])) ** 2 / nfacet**2
+    err_mean_img += numpy.abs(approx - facet_2[j0, j1]) ** 2 / nfacet**2
 
 pylab.imshow(numpy.log(numpy.sqrt(err_mean)) / numpy.log(10))
 pylab.colorbar()
