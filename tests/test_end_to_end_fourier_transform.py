@@ -14,7 +14,17 @@ import logging
 import os
 from unittest.mock import patch, call
 
+import numpy
+from numpy.testing import assert_array_almost_equal
+
 from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
+
+from tests.test_data.reference_data.ref_data import (
+    EXPECTED_NONZERO_SUBGRID_1D,
+    EXPECTED_NONZERO_FACET_1D,
+    EXPECTED_NONZERO_APPROX_SUBGRID_1D,
+    EXPECTED_NONZERO_APPROX_FACET_1D,
+)
 
 # client, current_env_var = set_up_dask()
 client = None
@@ -36,6 +46,46 @@ def _compare_images(expected, result):
         except AssertionError:
             log.error("Assertion Failed: %s, %s", expected, result)
             raise AssertionError
+
+
+def test_end_to_end_1d_dask():
+    """
+    Reference/expected values generated with numpy.random.seed(123456789)
+    """
+    result_subgrid, result_facet, result_approx_subgrid, result_approx_facet = main_1d(
+        to_plot=False
+    )
+
+    # check array shapes
+    assert result_subgrid.shape == (6, 188)
+    assert result_facet.shape == (4, 256)
+    assert result_approx_subgrid.shape == result_subgrid.shape
+    assert result_approx_facet.shape == result_facet.shape
+
+    # check array values
+    assert_array_almost_equal(
+        result_subgrid[numpy.where(result_subgrid != 0)],
+        EXPECTED_NONZERO_SUBGRID_1D,
+        decimal=9,
+    )
+    assert_array_almost_equal(
+        result_facet[numpy.where(result_facet != 0)].round(8),
+        EXPECTED_NONZERO_FACET_1D,
+        decimal=7,
+    )
+    assert_array_almost_equal(
+        result_approx_subgrid[numpy.where(result_approx_subgrid != 0)],
+        EXPECTED_NONZERO_APPROX_SUBGRID_1D,
+        decimal=9,
+    )
+    assert_array_almost_equal(
+        result_approx_facet[numpy.where(result_approx_facet != 0)].round(8),
+        EXPECTED_NONZERO_APPROX_FACET_1D,
+        decimal=7,
+    )
+
+    if client:
+        tear_down_dask(client, current_env_var)
 
 
 def test_end_to_end_1d_dask_logging():
@@ -100,7 +150,7 @@ def test_end_to_end_1d_dask_plot():
         tear_down_dask(client, current_env_var)
 
 
-def test_end_to_end_2d_dask():
+def test_end_to_end_2d_dask_logging():
     """
     Test that the logged information matches the
     expected listed in test_data/reference_data/README.md
