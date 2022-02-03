@@ -3,21 +3,23 @@ import functools
 import dask
 from distributed import Client
 
+def dask_wrapper(func):
+    @functools.wraps(func)  # preserves information about the original function
+    def wrapper(*args, **kwargs):
+        try:
+            use_dask = kwargs["use_dask"]
+            nout = kwargs["nout"]
+        except KeyError:
+            use_dask = False
+            nout = None
 
-def dask_wrapper(use_dask=True):
-    def decorator_dask(func):
-        @functools.wraps(func)  # preserves information about the original function
-        def wrapper(*args, **kwargs):
-            if use_dask:
-                result = dask.delayed(func)(*args, **kwargs)
-            else:
-                result = func(*args, **kwargs)
-            return result
+        if use_dask:
+            result = dask.delayed(func, nout=nout)(*args, **kwargs)
+        else:
+            result = func(*args, **kwargs)
+        return result
 
-        return wrapper
-
-    return decorator_dask
-
+    return wrapper
 
 def set_up_dask():
     current_env_var = os.getenv("USE_DASK")
@@ -25,7 +27,6 @@ def set_up_dask():
     client = Client()  # set up local cluster on your laptop
     print(client.dashboard_link)
     return client, current_env_var
-
 
 def tear_down_dask(client, original_env_var):
     client.close()
