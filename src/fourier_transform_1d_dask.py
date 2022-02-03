@@ -176,6 +176,7 @@ def _algorithm_with_dask_array(
 
     return subgrid, facet, approx_subgrid, approx_facet
 
+
 def _algorithm_with_dask_delayed(
     G,
     nsubgrid,
@@ -236,7 +237,15 @@ def _algorithm_with_dask_delayed(
     log.info("Redistributed data: %s %s", nmbfs.shape, nmbfs.size)
 
     approx_subgrid = reconstruct_subgrid_1d(
-        nmbfs, xM_size, nfacet, facet_off, N, subgrid_A, xA_size, nsubgrid, use_dask=True
+        nmbfs,
+        xM_size,
+        nfacet,
+        facet_off,
+        N,
+        subgrid_A,
+        xA_size,
+        nsubgrid,
+        use_dask=True,
     )
     approx_subgrid = numpy.array(dask.compute(*approx_subgrid))
     log.info("Reconstructed subgrids: %s %s", approx_subgrid.shape, approx_subgrid.size)
@@ -266,12 +275,13 @@ def _algorithm_with_dask_delayed(
         N,
         Fb,
         facet_B,
-        use_dask=True
+        use_dask=True,
     )
     approx_facet = numpy.array(dask.compute(*approx_facet))
     log.info("Reconstructed facets: %s %s", approx_facet.shape, approx_facet.size)
 
     return subgrid, facet, approx_subgrid, approx_facet
+
 
 def _algorithm_in_serial(
     G,
@@ -333,7 +343,15 @@ def _algorithm_in_serial(
     log.info("Redistributed data: %s %s", nmbfs.shape, nmbfs.size)
 
     approx_subgrid = reconstruct_subgrid_1d(
-        nmbfs, xM_size, nfacet, facet_off, N, subgrid_A, xA_size, nsubgrid, use_dask=False,
+        nmbfs,
+        xM_size,
+        nfacet,
+        facet_off,
+        N,
+        subgrid_A,
+        xA_size,
+        nsubgrid,
+        use_dask=False,
     )
     log.info("Reconstructed subgrids: %s %s", approx_subgrid.shape, approx_subgrid.size)
 
@@ -342,7 +360,15 @@ def _algorithm_in_serial(
     log.info("Subgrid data: %s %s", subgrid.shape, subgrid.size)
 
     nafs = subgrid_to_facet_1d(
-        subgrid, nsubgrid, nfacet, xM_yN_size, xM_size, facet_off, N, Fn, use_dask=False,
+        subgrid,
+        nsubgrid,
+        nfacet,
+        xM_yN_size,
+        xM_size,
+        facet_off,
+        N,
+        Fn,
+        use_dask=False,
     )
     # - redistribution of FNjSi here -
     log.info("Intermediate data: %s %s", nafs.shape, nafs.size)
@@ -361,7 +387,7 @@ def _algorithm_in_serial(
         N,
         Fb,
         facet_B,
-        use_dask=False
+        use_dask=False,
     )
     log.info("Reconstructed facets: %s %s", approx_facet.shape, approx_facet.size)
 
