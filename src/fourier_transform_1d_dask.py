@@ -248,6 +248,7 @@ def _algorithm_with_dask_delayed(
         use_dask=True,
     )
     approx_subgrid = numpy.array(dask.compute(*approx_subgrid))
+
     log.info("Reconstructed subgrids: %s %s", approx_subgrid.shape, approx_subgrid.size)
 
     # ==============================================
@@ -278,6 +279,7 @@ def _algorithm_with_dask_delayed(
         use_dask=True,
     )
     approx_facet = numpy.array(dask.compute(*approx_facet))
+
     log.info("Reconstructed facets: %s %s", approx_facet.shape, approx_facet.size)
 
     return subgrid, facet, approx_subgrid, approx_facet
