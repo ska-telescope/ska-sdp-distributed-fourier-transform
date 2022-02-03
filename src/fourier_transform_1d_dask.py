@@ -377,8 +377,6 @@ def main(to_plot=True, fig_name=None, use_dask=False, dask_option="array"):
     :param dask_option: Dask optimisation option -- array or delayed
     """
 
-    #use_dask = os.getenv("USE_DASK", False) == "True"
-
     log.info("== Chosen configuration")
     for n in [
         "W",

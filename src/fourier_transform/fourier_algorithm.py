@@ -737,6 +737,7 @@ def subgrid_to_facet_1d_dask_array(
 
     return distributed_facet
 
+@dask_wrapper
 def add_subgrid_contribution_1d(
     xMxN_yP_size,
     xM_yP_size,
