@@ -3,7 +3,10 @@
 import itertools
 import logging
 import math
+import os
 import time
+
+import dask
 import numpy
 import sys
 
@@ -22,6 +25,7 @@ from src.fourier_transform.fourier_algorithm import (
     extract_facet_contribution,
     add_subgrid_contribution,
     finish_facet,
+    make_subgrid_and_facet,
 )
 from src.fourier_transform.utils import (
     whole,
@@ -75,12 +79,200 @@ TARGET_ERR = 1e-5
 ALPHA = 0
 
 
+def _algorithm_in_serial(
+    G_2,
+    FG_2,
+    nsubgrid,
+    nfacet,
+    subgrid_A,
+    facet_B,
+    subgrid_off,
+    facet_off,
+    Fb,
+    Fn,
+    facet_m0_trunc,
+    xM_yP_size,
+    xMxN_yP_size,
+    xM_yN_size,
+):
+    subgrid_2, facet_2 = make_subgrid_and_facet(
+        G_2,
+        FG_2,
+        nsubgrid,
+        xA_size,
+        subgrid_A,
+        subgrid_off,
+        nfacet,
+        yB_size,
+        facet_B,
+        facet_off,
+        dims=2,
+    )
+
+    # RUN FACET -> SUBGRID ALGORITHM
+
+    # 3 Approaches:
+    #   - they differ in when facet is prepared and which axis is run first
+    #   - they all give the same result, but with a different speed
+    #   - #1 is slowest, because that prepares all facets first, which substantially increases their size
+    #     and hence, puts a large amount of data into the following loops
+
+    t = time.time()
+    NMBF_NMBF = facet_to_subgrid_2d_method_1(
+        Fb,
+        Fn,
+        facet_2,
+        facet_m0_trunc,
+        nfacet,
+        nsubgrid,
+        subgrid_off,
+        xM_yN_size,
+        xM_yP_size,
+        xMxN_yP_size,
+    )
+    log.info("%s s", time.time() - t)
+
+    t = time.time()
+    facet_to_subgrid_2d_method_2(
+        Fb,
+        Fn,
+        NMBF_NMBF,
+        facet_2,
+        facet_m0_trunc,
+        nfacet,
+        nsubgrid,
+        subgrid_off,
+        xM_yN_size,
+        xM_yP_size,
+        xMxN_yP_size,
+    )
+    log.info("%s s", time.time() - t)
+
+    t = time.time()
+    facet_to_subgrid_2d_method_3(
+        Fb,
+        Fn,
+        NMBF_NMBF,
+        facet_2,
+        facet_m0_trunc,
+        nfacet,
+        nsubgrid,
+        subgrid_off,
+        xM_yN_size,
+        xM_yP_size,
+        xMxN_yP_size,
+    )
+    log.info("%s s", time.time() - t)
+
+    return subgrid_2, facet_2, NMBF_NMBF
+
+
+def _algorithm_with_dask_delayed(
+    G_2,
+    FG_2,
+    nsubgrid,
+    nfacet,
+    subgrid_A,
+    facet_B,
+    subgrid_off,
+    facet_off,
+    Fb,
+    Fn,
+    facet_m0_trunc,
+    xM_yP_size,
+    xMxN_yP_size,
+    xM_yN_size,
+):
+    subgrid_2, facet_2 = make_subgrid_and_facet(
+        G_2,
+        FG_2,
+        nsubgrid,
+        xA_size,
+        subgrid_A,
+        subgrid_off,
+        nfacet,
+        yB_size,
+        facet_B,
+        facet_off,
+        dims=2,
+        use_dask=True,
+    )
+    # RUN FACET -> SUBGRID ALGORITHM
+
+    # 3 Approaches:
+    #   - they differ in when facet is prepared and which axis is run first
+    #   - they all give the same result, but with a different speed
+    #   - #1 is slowest, because that prepares all facets first, which substantially increases their size
+    #     and hence, puts a large amount of data into the following loops
+
+    t = time.time()
+    NMBF_NMBF = facet_to_subgrid_2d_method_1(
+        Fb,
+        Fn,
+        facet_2,
+        facet_m0_trunc,
+        nfacet,
+        nsubgrid,
+        subgrid_off,
+        xM_yN_size,
+        xM_yP_size,
+        xMxN_yP_size,
+        use_dask=True,
+    )
+    log.info("%s s", time.time() - t)
+
+    t = time.time()
+    facet_to_subgrid_2d_method_2(
+        Fb,
+        Fn,
+        NMBF_NMBF,
+        facet_2,
+        facet_m0_trunc,
+        nfacet,
+        nsubgrid,
+        subgrid_off,
+        xM_yN_size,
+        xM_yP_size,
+        xMxN_yP_size,
+        use_dask=True,
+    )
+    log.info("%s s", time.time() - t)
+
+    t = time.time()
+    facet_to_subgrid_2d_method_3(
+        Fb,
+        Fn,
+        NMBF_NMBF,
+        facet_2,
+        facet_m0_trunc,
+        nfacet,
+        nsubgrid,
+        subgrid_off,
+        xM_yN_size,
+        xM_yP_size,
+        xMxN_yP_size,
+        use_dask=True,
+    )
+    log.info("%s s", time.time() - t)
+
+    # subgrid_2 = dask.compute(subgrid_2)
+    # facet_2 = dask.compute(facet_2)
+    NMBF_NMBF = dask.compute(NMBF_NMBF)
+    subgrid_2 = numpy.array(subgrid_2[0])
+    facet_2 = numpy.array(facet_2[0])
+    NMBF_NMBF = numpy.array(NMBF_NMBF[0])
+
+    return subgrid_2, facet_2, NMBF_NMBF
+
+
 def main(to_plot=True, fig_name=None):
     """
     :param to_plot: run plotting?
     :param fig_name: If given, figures will be saved with this prefix into PNG files.
                      If to_plot is set to False, fig_name doesn't have an effect.
     """
+    use_dask = os.getenv("USE_DASK", False) == "True"
+
     log.info("== Chosen configuration")
     for n in [
         "W",
@@ -186,153 +378,42 @@ def main(to_plot=True, fig_name=None):
     # All of this generalises to two dimensions in the way you would expect. Let us set up test data:
 
     log.info("%s x %s subgrids %s x %s facets", nsubgrid, nsubgrid, nfacet, nfacet)
-    subgrid_2 = numpy.empty((nsubgrid, nsubgrid, xA_size, xA_size), dtype=complex)
-    facet_2 = numpy.empty((nfacet, nfacet, yB_size, yB_size), dtype=complex)
 
-    for i0, i1 in itertools.product(range(nsubgrid), range(nsubgrid)):
-        subgrid_2[i0, i1] = extract_mid(
-            numpy.roll(G_2, (-subgrid_off[i0], -subgrid_off[i1]), (0, 1)), xA_size
+    if use_dask:
+        subgrid_2, facet_2, NMBF_NMBF = _algorithm_with_dask_delayed(
+            G_2,
+            FG_2,
+            nsubgrid,
+            nfacet,
+            subgrid_A,
+            facet_B,
+            subgrid_off,
+            facet_off,
+            Fb,
+            Fn,
+            facet_m0_trunc,
+            xM_yP_size,
+            xMxN_yP_size,
+            xM_yN_size,
         )
-        subgrid_2[i0, i1] *= numpy.outer(subgrid_A[i0], subgrid_A[i1])
-    for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
-        facet_2[j0, j1] = extract_mid(
-            numpy.roll(FG_2, (-facet_off[j0], -facet_off[j1]), (0, 1)), yB_size
+
+    else:
+        subgrid_2, facet_2, NMBF_NMBF = _algorithm_in_serial(
+            G_2,
+            FG_2,
+            nsubgrid,
+            nfacet,
+            subgrid_A,
+            facet_B,
+            subgrid_off,
+            facet_off,
+            Fb,
+            Fn,
+            facet_m0_trunc,
+            xM_yP_size,
+            xMxN_yP_size,
+            xM_yN_size,
         )
-        facet_2[j0, j1] *= numpy.outer(facet_B[j0], facet_B[j1])
-
-    # RUN FACET -> SUBGRID ALGORITHM
-
-    # 3 Approaches:
-    #   - they differ in when facet is prepared and which axis is run first
-    #   - they all give the same result, but with a different speed
-    #   - #1 is slowest, because that prepares all facets first, which substantially increases their size
-    #     and hence, puts a large amount of data into the following loops
-
-    # Approach 1: do prepare_facet step across both axes first, then go into the loop
-    #             over subgrids horizontally (axis=0) and within that, loop over subgrids
-    #             vertically (axis=1) and do the extract_subgrid step in these two directions
-    # Gabi ^ Peter v
-    # Having those operations separately means that we can shuffle things around quite a bit
-    # without affecting the result. The obvious first choice might be to do all facet-preparation
-    # up-front, as this allows us to share the computation across all subgrids:
-    t = time.time()
-    NMBF_NMBF = numpy.empty(
-        (nsubgrid, nsubgrid, nfacet, nfacet, xM_yN_size, xM_yN_size), dtype=complex
-    )
-    for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
-        BF_F = prepare_facet(facet_2[j0, j1], 0, Fb, yP_size)
-        BF_BF = prepare_facet(BF_F, 1, Fb, yP_size)
-        for i0 in range(nsubgrid):
-            NMBF_BF = extract_subgrid(
-                BF_BF,
-                i0,
-                0,
-                subgrid_off,
-                yP_size,
-                xMxN_yP_size,
-                facet_m0_trunc,
-                xM_yP_size,
-                Fn,
-                xM_yN_size,
-                N,
-            )
-            for i1 in range(nsubgrid):
-                NMBF_NMBF[i0, i1, j0, j1] = extract_subgrid(
-                    NMBF_BF,
-                    i1,
-                    1,
-                    subgrid_off,
-                    yP_size,
-                    xMxN_yP_size,
-                    facet_m0_trunc,
-                    xM_yP_size,
-                    Fn,
-                    xM_yN_size,
-                    N,
-                )
-    log.info("%s s", time.time() - t)
-
-    # Approach 2: First, do prepare_facet on the horizontal axis (axis=0), then
-    #             for loop for the horizontal subgrid direction, and do extract_subgrid
-    #             within same loop do prepare_facet in the vertical case (axis=1), then
-    #             go into the fila subgrid loop in the vertical dir and do extract_subgrid for that
-    # Gabi ^ Peter v
-    # # However, remember that `prepare_facet` increases the amount of data involved, which in turn
-    # means that we need to shuffle more data through subsequent computations.
-    # #
-    # # Therefore it is actually more efficient to first do the subgrid-specific reduction, and *then*
-    # continue with the (constant) facet preparation along the other axis. We can tackle both axes in
-    # whatever order we like, it doesn't make a difference for the result:
-    t = time.time()
-    for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
-        BF_F = prepare_facet(facet_2[j0, j1], 0, Fb, yP_size)
-        for i0 in range(nsubgrid):
-            NMBF_F = extract_subgrid(
-                BF_F,
-                i0,
-                0,
-                subgrid_off,
-                yP_size,
-                xMxN_yP_size,
-                facet_m0_trunc,
-                xM_yP_size,
-                Fn,
-                xM_yN_size,
-                N,
-            )
-            NMBF_BF = prepare_facet(NMBF_F, 1, Fb, yP_size)
-            for i1 in range(nsubgrid):
-                NMBF_NMBF[i0, i1, j0, j1] = extract_subgrid(
-                    NMBF_BF,
-                    i1,
-                    1,
-                    subgrid_off,
-                    yP_size,
-                    xMxN_yP_size,
-                    facet_m0_trunc,
-                    xM_yP_size,
-                    Fn,
-                    xM_yN_size,
-                    N,
-                )
-    log.info("%s s", time.time() - t)
-
-    # Approach 3: same as 2, but starts with the vertical direction (axis=1)
-    #             and finishes with the horizontal (axis=0) axis
-    # Gabi ^
-    t = time.time()
-    for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
-        F_BF = prepare_facet(facet_2[j0, j1], 1, Fb, yP_size)
-        for i1 in range(nsubgrid):
-            F_NMBF = extract_subgrid(
-                F_BF,
-                i1,
-                1,
-                subgrid_off,
-                yP_size,
-                xMxN_yP_size,
-                facet_m0_trunc,
-                xM_yP_size,
-                Fn,
-                xM_yN_size,
-                N,
-            )
-            BF_NMBF = prepare_facet(F_NMBF, 0, Fb, yP_size)
-            for i0 in range(nsubgrid):
-                NMBF_NMBF[i0, i1, j0, j1] = extract_subgrid(
-                    BF_NMBF,
-                    i0,
-                    0,
-                    subgrid_off,
-                    yP_size,
-                    xMxN_yP_size,
-                    facet_m0_trunc,
-                    xM_yP_size,
-                    Fn,
-                    xM_yN_size,
-                    N,
-                )
-    log.info("%s s", time.time() - t)
 
     errors_facet_to_subgrid_2d(
         NMBF_NMBF,
@@ -378,52 +459,20 @@ def main(to_plot=True, fig_name=None):
     # and has not involved data redistribution yet.
 
     t = time.time()
-    naf_naf = numpy.empty(
-        (nsubgrid, nsubgrid, nfacet, nfacet, xM_yN_size, xM_yN_size), dtype=complex
+    BMNAF_BMNAF = subgrid_to_facet_algorithm(
+        Fb,
+        Fn,
+        facet_B,
+        facet_m0_trunc,
+        facet_off,
+        nfacet,
+        nsubgrid,
+        subgrid_2,
+        subgrid_off,
+        xM_yN_size,
+        xM_yP_size,
+        xMxN_yP_size,
     )
-    for i0, i1 in itertools.product(range(nsubgrid), range(nsubgrid)):
-        AF_AF = prepare_subgrid(subgrid_2[i0, i1], xM_size)
-        for j0 in range(nfacet):
-            NAF_AF = extract_facet_contribution(
-                AF_AF, Fn, facet_off, j0, xM_size, N, xM_yN_size, 0
-            )
-            for j1 in range(nfacet):
-                naf_naf[i0, i1, j0, j1] = extract_facet_contribution(
-                    NAF_AF, Fn, facet_off, j1, xM_size, N, xM_yN_size, 1
-                )
-
-    BMNAF_BMNAF = numpy.empty((nfacet, nfacet, yB_size, yB_size), dtype=complex)
-    for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
-        MNAF_BMNAF = numpy.zeros((yP_size, yB_size), dtype=complex)
-        for i0 in range(nsubgrid):
-            NAF_MNAF = numpy.zeros((xM_yN_size, yP_size), dtype=complex)
-            for i1 in range(nsubgrid):
-                add_subgrid_contribution(
-                    NAF_MNAF,
-                    naf_naf[i0, i1, j0, j1],
-                    i1,
-                    facet_m0_trunc,
-                    subgrid_off,
-                    xMxN_yP_size,
-                    xM_yP_size,
-                    yP_size,
-                    N,
-                    1,
-                )
-            NAF_BMNAF = finish_facet(NAF_MNAF, Fb, facet_B, yB_size, j1, 1)
-            add_subgrid_contribution(
-                MNAF_BMNAF,
-                NAF_BMNAF,
-                i0,
-                facet_m0_trunc,
-                subgrid_off,
-                xMxN_yP_size,
-                xM_yP_size,
-                yP_size,
-                N,
-                0,
-            )
-        BMNAF_BMNAF[j0, j1] = finish_facet(MNAF_BMNAF, Fb, facet_B, yB_size, j0, 0)
     print(time.time() - t, "s")
 
     errors_subgrid_to_facet_2d(
@@ -458,6 +507,248 @@ def main(to_plot=True, fig_name=None):
         to_plot=to_plot,
         fig_name=fig_name,
     )
+
+
+def subgrid_to_facet_algorithm(
+    Fb,
+    Fn,
+    facet_B,
+    facet_m0_trunc,
+    facet_off,
+    nfacet,
+    nsubgrid,
+    subgrid_2,
+    subgrid_off,
+    xM_yN_size,
+    xM_yP_size,
+    xMxN_yP_size,
+):
+    naf_naf = numpy.empty(
+        (nsubgrid, nsubgrid, nfacet, nfacet, xM_yN_size, xM_yN_size), dtype=complex
+    )
+    for i0, i1 in itertools.product(range(nsubgrid), range(nsubgrid)):
+        AF_AF = prepare_subgrid(subgrid_2[i0, i1], xM_size)
+        for j0 in range(nfacet):
+            NAF_AF = extract_facet_contribution(
+                AF_AF, Fn, facet_off, j0, xM_size, N, xM_yN_size, 0
+            )
+            for j1 in range(nfacet):
+                naf_naf[i0, i1, j0, j1] = extract_facet_contribution(
+                    NAF_AF, Fn, facet_off, j1, xM_size, N, xM_yN_size, 1
+                )
+    BMNAF_BMNAF = numpy.empty((nfacet, nfacet, yB_size, yB_size), dtype=complex)
+    for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
+        MNAF_BMNAF = numpy.zeros((yP_size, yB_size), dtype=complex)
+        for i0 in range(nsubgrid):
+            NAF_MNAF = numpy.zeros((xM_yN_size, yP_size), dtype=complex)
+            for i1 in range(nsubgrid):
+                add_subgrid_contribution(
+                    NAF_MNAF,
+                    naf_naf[i0, i1, j0, j1],
+                    i1,
+                    facet_m0_trunc,
+                    subgrid_off,
+                    xMxN_yP_size,
+                    xM_yP_size,
+                    yP_size,
+                    N,
+                    1,
+                )
+            NAF_BMNAF = finish_facet(NAF_MNAF, Fb, facet_B, yB_size, j1, 1)
+            add_subgrid_contribution(
+                MNAF_BMNAF,
+                NAF_BMNAF,
+                i0,
+                facet_m0_trunc,
+                subgrid_off,
+                xMxN_yP_size,
+                xM_yP_size,
+                yP_size,
+                N,
+                0,
+            )
+        BMNAF_BMNAF[j0, j1] = finish_facet(MNAF_BMNAF, Fb, facet_B, yB_size, j0, 0)
+    return BMNAF_BMNAF
+
+
+def facet_to_subgrid_2d_method_3(
+    Fb,
+    Fn,
+    NMBF_NMBF,
+    facet_2,
+    facet_m0_trunc,
+    nfacet,
+    nsubgrid,
+    subgrid_off,
+    xM_yN_size,
+    xM_yP_size,
+    xMxN_yP_size,
+    use_dask=False,
+):
+    # Approach 3: same as 2, but starts with the vertical direction (axis=1)
+    #             and finishes with the horizontal (axis=0) axis
+    # Gabi ^
+    for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
+        F_BF = prepare_facet(facet_2[j0][j1], 1, Fb, yP_size, use_dask=use_dask, nout=1)
+        for i1 in range(nsubgrid):
+            F_NMBF = extract_subgrid(
+                F_BF,
+                i1,
+                1,
+                subgrid_off,
+                yP_size,
+                xMxN_yP_size,
+                facet_m0_trunc,
+                xM_yP_size,
+                Fn,
+                xM_yN_size,
+                N,
+                use_dask=use_dask,
+                nout=1,
+            )
+            BF_NMBF = prepare_facet(F_NMBF, 0, Fb, yP_size, use_dask=use_dask, nout=1)
+            for i0 in range(nsubgrid):
+                NMBF_NMBF[i0][i1][j0][j1] = extract_subgrid(
+                    BF_NMBF,
+                    i0,
+                    0,
+                    subgrid_off,
+                    yP_size,
+                    xMxN_yP_size,
+                    facet_m0_trunc,
+                    xM_yP_size,
+                    Fn,
+                    xM_yN_size,
+                    N,
+                    use_dask=use_dask,
+                    nout=1,
+                )
+
+
+def facet_to_subgrid_2d_method_2(
+    Fb,
+    Fn,
+    NMBF_NMBF,
+    facet_2,
+    facet_m0_trunc,
+    nfacet,
+    nsubgrid,
+    subgrid_off,
+    xM_yN_size,
+    xM_yP_size,
+    xMxN_yP_size,
+    use_dask=False,
+):
+    # Approach 2: First, do prepare_facet on the horizontal axis (axis=0), then
+    #             for loop for the horizontal subgrid direction, and do extract_subgrid
+    #             within same loop do prepare_facet in the vertical case (axis=1), then
+    #             go into the fila subgrid loop in the vertical dir and do extract_subgrid for that
+    # Gabi ^ Peter v
+    # # However, remember that `prepare_facet` increases the amount of data involved, which in turn
+    # means that we need to shuffle more data through subsequent computations.
+    # #
+    # # Therefore it is actually more efficient to first do the subgrid-specific reduction, and *then*
+    # continue with the (constant) facet preparation along the other axis. We can tackle both axes in
+    # whatever order we like, it doesn't make a difference for the result:
+    for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
+        BF_F = prepare_facet(facet_2[j0][j1], 0, Fb, yP_size, use_dask=use_dask, nout=1)
+        for i0 in range(nsubgrid):
+            NMBF_F = extract_subgrid(
+                BF_F,
+                i0,
+                0,
+                subgrid_off,
+                yP_size,
+                xMxN_yP_size,
+                facet_m0_trunc,
+                xM_yP_size,
+                Fn,
+                xM_yN_size,
+                N,
+                use_dask=use_dask,
+                nout=1,
+            )
+            NMBF_BF = prepare_facet(NMBF_F, 1, Fb, yP_size, use_dask=use_dask, nout=1)
+            for i1 in range(nsubgrid):
+                NMBF_NMBF[i0][i1][j0][j1] = extract_subgrid(
+                    NMBF_BF,
+                    i1,
+                    1,
+                    subgrid_off,
+                    yP_size,
+                    xMxN_yP_size,
+                    facet_m0_trunc,
+                    xM_yP_size,
+                    Fn,
+                    xM_yN_size,
+                    N,
+                    use_dask=use_dask,
+                    nout=1,
+                )
+
+
+def facet_to_subgrid_2d_method_1(
+    Fb,
+    Fn,
+    facet_2,
+    facet_m0_trunc,
+    nfacet,
+    nsubgrid,
+    subgrid_off,
+    xM_yN_size,
+    xM_yP_size,
+    xMxN_yP_size,
+    use_dask=False,
+):
+    # Approach 1: do prepare_facet step across both axes first, then go into the loop
+    #             over subgrids horizontally (axis=0) and within that, loop over subgrids
+    #             vertically (axis=1) and do the extract_subgrid step in these two directions
+    # Gabi ^ Peter v
+    # Having those operations separately means that we can shuffle things around quite a bit
+    # without affecting the result. The obvious first choice might be to do all facet-preparation
+    # up-front, as this allows us to share the computation across all subgrids:
+    NMBF_NMBF = numpy.empty(
+        (nsubgrid, nsubgrid, nfacet, nfacet, xM_yN_size, xM_yN_size), dtype=complex
+    )
+    if use_dask:
+        NMBF_NMBF = NMBF_NMBF.tolist()
+
+    for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
+        BF_F = prepare_facet(facet_2[j0][j1], 0, Fb, yP_size, use_dask=use_dask, nout=1)
+        BF_BF = prepare_facet(BF_F, 1, Fb, yP_size, use_dask=use_dask, nout=1)
+        for i0 in range(nsubgrid):
+            NMBF_BF = extract_subgrid(
+                BF_BF,
+                i0,
+                0,
+                subgrid_off,
+                yP_size,
+                xMxN_yP_size,
+                facet_m0_trunc,
+                xM_yP_size,
+                Fn,
+                xM_yN_size,
+                N,
+                use_dask=use_dask,
+                nout=1,
+            )
+            for i1 in range(nsubgrid):
+                NMBF_NMBF[i0][i1][j0][j1] = extract_subgrid(
+                    NMBF_BF,
+                    i1,
+                    1,
+                    subgrid_off,
+                    yP_size,
+                    xMxN_yP_size,
+                    facet_m0_trunc,
+                    xM_yP_size,
+                    Fn,
+                    xM_yN_size,
+                    N,
+                    use_dask=use_dask,
+                    nout=1,
+                )
+    return NMBF_NMBF
 
 
 if __name__ == "__main__":

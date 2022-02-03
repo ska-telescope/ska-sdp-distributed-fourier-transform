@@ -6,6 +6,7 @@ import os
 
 import numpy
 import sys
+import dask
 
 from distributed import performance_report
 from matplotlib import pylab
@@ -26,6 +27,7 @@ from src.fourier_transform.fourier_algorithm import (
     make_subgrid_and_facet_dask_array,
     reconstruct_subgrid_1d_dask_array,
     reconstruct_facet_1d_dask_array,
+    fft,
 )
 from src.fourier_transform.utils import (
     whole,
@@ -194,8 +196,10 @@ def _algorithm_in_serial(
     facet_m0_trunc,
     dtype,
 ):
+    FG = fft(G)
     subgrid, facet = make_subgrid_and_facet(
         G,
+        FG,
         nsubgrid,
         xA_size,
         subgrid_A,
@@ -204,6 +208,7 @@ def _algorithm_in_serial(
         yB_size,
         facet_B,
         facet_off,
+        dims=1,
     )
 
     # ==============================================
@@ -380,6 +385,7 @@ def main(to_plot=True, fig_name=None):
             facet_m0_trunc,
             dtype,
         )
+        subgrid, facet, approx_subgrid, approx_facet = dask.compute(subgrid, facet, approx_subgrid, approx_facet)
 
     else:
         subgrid, facet, approx_subgrid, approx_facet = _algorithm_in_serial(
@@ -422,6 +428,8 @@ def main(to_plot=True, fig_name=None):
         to_plot=to_plot,
         fig_name=fig_name,
     )
+
+    return subgrid, facet, approx_subgrid, approx_facet
 
 
 if __name__ == "__main__":

@@ -1,9 +1,14 @@
 """Distributed Fourier Transform Module."""
+import itertools
+
 import scipy.special
 import scipy.signal
 import numpy
 
 import dask.array
+
+from src.fourier_transform.dask_wrapper import dask_wrapper
+
 
 # TODO: ideally we'd like to merge the 1D functions with their 2D equivalent,
 #   which then can be used for both versions
@@ -222,8 +227,19 @@ def anti_aliasing_function(shape, m, c):
 
 
 # 1D FOURIER ALGORITHM FUNCTIONS
+@dask_wrapper
+def _ith_subgrid_facet_element(
+    true_image, offset_i, true_usable_size, mask_element, axis=None, **kwargs
+):
+    result = mask_element * extract_mid(
+        numpy.roll(true_image, offset_i, axis), true_usable_size
+    )
+    return result
+
+
 def make_subgrid_and_facet(
     G,
+    FG,
     nsubgrid,
     xA_size,
     subgrid_A,
@@ -232,6 +248,8 @@ def make_subgrid_and_facet(
     yB_size,
     facet_B,
     facet_off,
+    dims,
+    use_dask=False,
 ):
     """
     Calculate the actual subgrids and facets.
@@ -245,20 +263,68 @@ def make_subgrid_and_facet(
     :param yB_size: effective facet size
     :param facet_B: facet mask
     :param facet_off: facet offset
+    :param dims: TODO
+    :param use_dask: run function with dask.delayed or not?
 
     :return: tuple of two numpy.ndarray (subgrid, facet)
     """
-    FG = fft(G)
+    if dims == 1:
+        subgrid = numpy.empty((nsubgrid, xA_size), dtype=complex)
+        for i in range(nsubgrid):
+            subgrid[i] = _ith_subgrid_facet_element(
+                G,
+                -subgrid_off[i],
+                xA_size,
+                subgrid_A[i],
+                axis=None,
+                use_dask=use_dask,
+                nout=1,
+            )
 
-    subgrid = numpy.empty((nsubgrid, xA_size), dtype=complex)
-    for i in range(nsubgrid):
-        subgrid[i] = _ith_subgrid_facet_element(
-            G, subgrid_A[i], subgrid_off[i], xA_size
-        )
+        facet = numpy.empty((nfacet, yB_size), dtype=complex)
+        for j in range(nfacet):
+            facet[j] = _ith_subgrid_facet_element(
+                FG,
+                -facet_off[j],
+                yB_size,
+                facet_B[j],
+                axis=None,
+                use_dask=use_dask,
+                nout=1,
+            )
 
-    facet = numpy.empty((nfacet, yB_size), dtype=complex)
-    for j in range(nfacet):
-        facet[j] = _ith_subgrid_facet_element(FG, facet_B[j], facet_off[j], yB_size)
+    elif dims == 2:
+        subgrid = numpy.empty((nsubgrid, nsubgrid, xA_size, xA_size), dtype=complex)
+        facet = numpy.empty((nfacet, nfacet, yB_size, yB_size), dtype=complex)
+
+        if use_dask:
+            subgrid = subgrid.tolist()
+            facet = facet.tolist()
+
+        for i0, i1 in itertools.product(range(nsubgrid), range(nsubgrid)):
+            subgrid[i0][i1] = _ith_subgrid_facet_element(
+                G,
+                (-subgrid_off[i0], -subgrid_off[i1]),
+                xA_size,
+                numpy.outer(subgrid_A[i0], subgrid_A[i1]),
+                axis=(0, 1),
+                use_dask=use_dask,
+                nout=1,
+            )
+
+        for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
+            facet[j0][j1] = _ith_subgrid_facet_element(
+                FG,
+                (-facet_off[j0], -facet_off[j1]),
+                yB_size,
+                numpy.outer(facet_B[j0], facet_B[j1]),
+                axis=(0, 1),
+                use_dask=use_dask,
+                nout=1,
+            )
+
+    else:
+        raise ValueError("Wrong dimensions. Only 1D and 2D are supported.")
 
     return subgrid, facet
 
@@ -276,25 +342,16 @@ def make_subgrid_and_facet_dask_array(
 ):
     """
     Calculate the actual subgrids and facets. Same as make_subgrid_and_facet
-    but implemented using dask.array.
-
-    :param G: "ground truth", the actual input data
-    :param nsubgrid: number of subgrid
-    :param xA_size: true usable subgrid size
-    :param subgrid_A: subgrid mask
-    :param subgrid_off: subgrid offset
-    :param nfacet: number of facet
-    :param yB_size: effective facet size
-    :param facet_B: facet mask
-    :param facet_off: facet offset
-
-    :return: tuple of two dask.array (subgrid, facet)
+    but implemented using dask.array. Consult that function for a full docstring.
+    Separating between 1D and 2D not yet implemented.
     """
     FG = fft(G)
 
     subgrid = dask.array.from_array(
         [
-            _ith_subgrid_facet_element(G, subgrid_A[i], subgrid_off[i], xA_size)
+            _ith_subgrid_facet_element(
+                G, -subgrid_off[i], xA_size, subgrid_A[i], axis=None
+            )
             for i in range(nsubgrid)
         ],
         chunks=(1, xA_size),
@@ -302,18 +359,15 @@ def make_subgrid_and_facet_dask_array(
 
     facet = dask.array.from_array(
         [
-            _ith_subgrid_facet_element(FG, facet_B[j], facet_off[j], yB_size)
+            _ith_subgrid_facet_element(
+                FG, -facet_off[j], yB_size, facet_B[j], axis=None
+            )
             for j in range(nfacet)
         ],
         chunks=(1, yB_size),
     ).astype(complex)
 
     return subgrid, facet
-
-
-def _ith_subgrid_facet_element(true_image, mask_i, offset_i, true_usable_size):
-    result = mask_i * extract_mid(numpy.roll(true_image, -offset_i), true_usable_size)
-    return result
 
 
 def facet_contribution_to_subgrid_1d(
@@ -876,7 +930,8 @@ def reconstruct_facet_1d_dask_array(
 
 
 # 2D FOURIER ALGORITHM FUNCTIONS (facet to subgrid)
-def prepare_facet(facet, axis, Fb, yP_size):
+@dask_wrapper
+def prepare_facet(facet, axis, Fb, yP_size, **kwargs):
     """
 
     param facet: Facet
@@ -892,6 +947,7 @@ def prepare_facet(facet, axis, Fb, yP_size):
     return BF
 
 
+@dask_wrapper
 def extract_subgrid(
     BF,
     i,
@@ -904,6 +960,7 @@ def extract_subgrid(
     Fn,
     xM_yN_size,
     N,
+    **kwargs
 ):
     """
     Extract the facet contribution of a subgrid.

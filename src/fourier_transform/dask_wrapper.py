@@ -4,19 +4,23 @@ import dask
 from distributed import Client
 
 
-def dask_wrapper(use_dask=True):
-    def decorator_dask(func):
-        @functools.wraps(func)  # preserves information about the original function
-        def wrapper(*args, **kwargs):
-            if use_dask:
-                result = dask.delayed(func)(*args, **kwargs)
-            else:
-                result = func(*args, **kwargs)
-            return result
+def dask_wrapper(func):
+    @functools.wraps(func)  # preserves information about the original function
+    def wrapper(*args, **kwargs):
+        try:
+            use_dask = kwargs["use_dask"]
+            nout = kwargs["nout"]
+        except KeyError:
+            use_dask = False
+            nout = None
 
-        return wrapper
+        if use_dask:
+            result = dask.delayed(func, nout=nout)(*args, **kwargs)
+        else:
+            result = func(*args, **kwargs)
+        return result
 
-    return decorator_dask
+    return wrapper
 
 
 def set_up_dask():
