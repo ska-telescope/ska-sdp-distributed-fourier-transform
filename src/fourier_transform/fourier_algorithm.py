@@ -1001,7 +1001,8 @@ def extract_subgrid(
 
 
 # 2D FOURIER ALGORITHM FUNCTIONS (subgrid to facet)
-def prepare_subgrid(subgrid, xM_size):
+@dask_wrapper
+def prepare_subgrid(subgrid, xM_size, **kwargs):
     """
     Initial shared work per subgrid - no reason to do this per-axis, so always do it for all
     :param subgrid: Subgrid
@@ -1012,7 +1013,8 @@ def prepare_subgrid(subgrid, xM_size):
     return fft(pad_mid(subgrid, xM_size))
 
 
-def extract_facet_contribution(FSi, Fn, facet_off, j, xM_size, N, xM_yN_size, axis):
+@dask_wrapper
+def extract_facet_contribution(FSi, Fn, facet_off, j, xM_size, N, xM_yN_size, axis, **kwargs):
     """
     Extract contribution of subgrid to a facet
 
@@ -1034,17 +1036,18 @@ def extract_facet_contribution(FSi, Fn, facet_off, j, xM_size, N, xM_yN_size, ax
     )
 
 
+@dask_wrapper
 def add_subgrid_contribution(
-    MiNjSi_sum,
+    dims,
     NjSi,
-    i,
     facet_m0_trunc,
-    subgrid_off,
+    subgrid_off_i,
     xMxN_yP_size,
     xM_yP_size,
     yP_size,
     N,
     axis,
+    **kwargs,
 ):
     """
     Add subgrid contribution to a facet
@@ -1064,25 +1067,22 @@ def add_subgrid_contribution(
     :return MiNjSi_sum:
 
     """
-    dims = len(MiNjSi_sum.shape)
-    MiNjSi = numpy.zeros_like(MiNjSi_sum)
-    NjSi_temp = extract_mid_a(MiNjSi, xMxN_yP_size, axis)
-    NjSi_mid = extract_mid_a(NjSi_temp, xM_yP_size, axis)
-    NjSi_mid[...] = ifft_a(
-        pad_mid_a(NjSi, xM_yP_size, axis), axis
-    )  # updates NjSi via reference!
     xN_yP_size = xMxN_yP_size - xM_yP_size
-    slc1 = slice_a(slice(None), slice(xN_yP_size // 2), dims, axis)
-    slc2 = slice_a(slice(None), slice(-xN_yP_size // 2, None), dims, axis)
+    NjSi_mid = ifft_a(pad_mid_a(NjSi, xM_yP_size, axis), axis)
+    NjSi_temp = pad_mid_a(NjSi_mid, xMxN_yP_size, axis)
+    slc1 = slice_a(slice(None), slice(xN_yP_size//2), dims, axis)
+    slc2 = slice_a(slice(None), slice(-xN_yP_size//2,None), dims, axis)
     NjSi_temp[slc1] = NjSi_mid[slc2]
     NjSi_temp[slc2] = NjSi_mid[slc1]
-    NjSi_temp[...] *= broadcast_a(facet_m0_trunc, len(NjSi.shape), axis)
-    MiNjSi_sum[...] += numpy.roll(
-        pad_mid_a(MiNjSi, yP_size, axis), subgrid_off[i] * yP_size // N, axis=axis
+    NjSi_temp = NjSi_temp * broadcast_a(facet_m0_trunc, len(NjSi.shape), axis)
+
+    return numpy.roll(
+        pad_mid_a(NjSi_temp, yP_size, axis), subgrid_off_i * yP_size // N, axis=axis
     )
 
 
-def finish_facet(MiNjSi_sum, Fb, facet_B, yB_size, j, axis):
+@dask_wrapper
+def finish_facet(MiNjSi_sum, Fb, facet_B, yB_size, j, axis, **kwargs):
     """
     Obtain finished facet
 

@@ -539,12 +539,11 @@ def test_accuracy_subgrid_to_facet(
         for i0 in range(nsubgrid):
             NAF_MNAF = numpy.zeros((xM_yN_size, yP_size), dtype=complex)
             for i1 in range(nsubgrid):
-                add_subgrid_contribution(
-                    NAF_MNAF,
+                NAF_MNAF = NAF_MNAF + add_subgrid_contribution(
+                    len(NAF_MNAF.shape),
                     NAF_NAF[i0, i1, j0, j1],
-                    i1,
                     facet_m0_trunc,
-                    subgrid_off,
+                    subgrid_off[i1],
                     xMxN_yP_size,
                     xM_yP_size,
                     yP_size,
@@ -552,12 +551,11 @@ def test_accuracy_subgrid_to_facet(
                     1,
                 )
             NAF_BMNAF = finish_facet(NAF_MNAF, Fb, facet_B, yB_size, j1, 1)
-            add_subgrid_contribution(
-                MNAF_BMNAF,
+            MNAF_BMNAF = MNAF_BMNAF + add_subgrid_contribution(
+                len(MNAF_BMNAF.shape),
                 NAF_BMNAF,
-                i0,
                 facet_m0_trunc,
-                subgrid_off,
+                subgrid_off[i0],
                 xMxN_yP_size,
                 xM_yP_size,
                 yP_size,
