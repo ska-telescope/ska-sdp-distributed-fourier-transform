@@ -638,7 +638,7 @@ def reconstruct_subgrid_1d(
         for i in range(nsubgrid):
             for j in range(nfacet):
                 approx[i] = approx[i] + add_padded_value(
-                    nmbfs[i, j], facet_off[j], xM_size, N, use_dask=use_dask, nout=1
+                    nmbfs[i][j], facet_off[j], xM_size, N, use_dask=use_dask, nout=1
                 )
             # TODO: Here we used dask array in order to avoid complications of ifft, but this is not optimal.
             approx_array = dask.array.from_delayed(approx[i], (xM_size,), dtype=complex)
@@ -915,7 +915,7 @@ def reconstruct_facet_1d(
                 approx[j] = approx[j] + add_subgrid_contribution_1d(
                     xMxN_yP_size,
                     xM_yP_size,
-                    nafs[i, j],
+                    nafs[i][j],
                     xN_yP_size,
                     facet_m0_trunc,
                     yP_size,

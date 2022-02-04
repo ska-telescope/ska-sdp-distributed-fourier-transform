@@ -209,11 +209,11 @@ def _algorithm_with_dask_delayed(
         1,
         use_dask=True,
     )
+    # We need to compute the subgrid and facet data since they are used later for fft/ifft
     subgrid = numpy.array(dask.compute(*subgrid))
     facet = numpy.array(dask.compute(*facet))
     # ==============================================
     log.info("\n== RUN: Facet to subgrid")
-    log.info("Facet data: %s %s", facet.shape, facet.size)
 
     nmbfs = facets_to_subgrid_1d(
         facet,
@@ -232,9 +232,6 @@ def _algorithm_with_dask_delayed(
         dtype,
         use_dask=True,
     )
-    nmbfs = numpy.array(dask.compute(*nmbfs))
-    # - redistribution of nmbfs here -
-    log.info("Redistributed data: %s %s", nmbfs.shape, nmbfs.size)
 
     approx_subgrid = reconstruct_subgrid_1d(
         nmbfs,
@@ -247,20 +244,18 @@ def _algorithm_with_dask_delayed(
         nsubgrid,
         use_dask=True,
     )
+
     approx_subgrid = numpy.array(dask.compute(*approx_subgrid))
 
+    log.info("Facet data: %s %s", facet.shape, facet.size)
     log.info("Reconstructed subgrids: %s %s", approx_subgrid.shape, approx_subgrid.size)
 
     # ==============================================
     log.info("\n== RUN: Subgrid to facet")
-    log.info("Subgrid data: %s %s", subgrid.shape, subgrid.size)
 
     nafs = subgrid_to_facet_1d(
         subgrid, nsubgrid, nfacet, xM_yN_size, xM_size, facet_off, N, Fn, use_dask=True
     )
-    nafs = numpy.array(dask.compute(*nafs))
-    # - redistribution of FNjSi here -
-    log.info("Intermediate data: %s %s", nafs.shape, nafs.size)
 
     approx_facet = reconstruct_facet_1d(
         nafs,
@@ -278,8 +273,10 @@ def _algorithm_with_dask_delayed(
         facet_B,
         use_dask=True,
     )
+
     approx_facet = numpy.array(dask.compute(*approx_facet))
 
+    log.info("Subgrid data: %s %s", subgrid.shape, subgrid.size)
     log.info("Reconstructed facets: %s %s", approx_facet.shape, approx_facet.size)
 
     return subgrid, facet, approx_subgrid, approx_facet
@@ -571,6 +568,7 @@ def main(to_plot=True, fig_name=None, use_dask=False, dask_option="array"):
         fig_name=fig_name,
     )
 
+    return subgrid, facet, approx_subgrid, approx_facet
 
 if __name__ == "__main__":
 
