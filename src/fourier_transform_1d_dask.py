@@ -385,7 +385,9 @@ def main(to_plot=True, fig_name=None):
             facet_m0_trunc,
             dtype,
         )
-        subgrid, facet, approx_subgrid, approx_facet = dask.compute(subgrid, facet, approx_subgrid, approx_facet)
+        subgrid, facet, approx_subgrid, approx_facet = dask.compute(
+            subgrid, facet, approx_subgrid, approx_facet
+        )
 
     else:
         subgrid, facet, approx_subgrid, approx_facet = _algorithm_in_serial(

@@ -10,9 +10,11 @@ import dask
 import numpy
 import sys
 import dask.array
+from distributed import performance_report
 
 from matplotlib import pylab
 
+from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
 from src.fourier_transform.fourier_algorithm import (
     ifft,
     extract_mid,
@@ -436,12 +438,14 @@ def main(to_plot=True, fig_name=None):
             xM_yN_size,
         )
 
-        subgrid_2, facet_2, NMBF_NMBF, BMNAF_BMNAF = dask.compute(subgrid_2, facet_2, NMBF_NMBF, BMNAF_BMNAF)
+        subgrid_2, facet_2, NMBF_NMBF, BMNAF_BMNAF = dask.compute(
+            subgrid_2, facet_2, NMBF_NMBF, BMNAF_BMNAF
+        )
 
-        subgrid_2 = numpy.array(subgrid_2[0])
-        facet_2 = numpy.array(facet_2[0])
-        NMBF_NMBF = numpy.array(NMBF_NMBF[0])
-        BMNAF_BMNAF = numpy.array(BMNAF_BMNAF[0])
+        subgrid_2 = numpy.array(subgrid_2)
+        facet_2 = numpy.array(facet_2)
+        NMBF_NMBF = numpy.array(NMBF_NMBF)
+        BMNAF_BMNAF = numpy.array(BMNAF_BMNAF)
 
     else:
         subgrid_2, facet_2, NMBF_NMBF, BMNAF_BMNAF = _algorithm_in_serial(
@@ -548,7 +552,9 @@ def subgrid_to_facet_algorithm(
     xMxN_yP_size,
     use_dask=False,
 ):
-    naf_naf = _generate_naf_naf(Fn, facet_off, nfacet, nsubgrid, subgrid_2, use_dask, xM_yN_size)
+    naf_naf = _generate_naf_naf(
+        Fn, facet_off, nfacet, nsubgrid, subgrid_2, use_dask, xM_yN_size
+    )
 
     BMNAF_BMNAF = numpy.empty((nfacet, nfacet, yB_size, yB_size), dtype=complex)
     if use_dask:
@@ -560,19 +566,23 @@ def subgrid_to_facet_algorithm(
             NAF_MNAF = numpy.zeros((xM_yN_size, yP_size), dtype=complex)
             for i1 in range(nsubgrid):
                 if use_dask:
-                    NAF_MNAF = NAF_MNAF + dask.array.from_delayed(add_subgrid_contribution(
-                        len(NAF_MNAF.shape),
-                        naf_naf[i0][i1][j0][j1],
-                        facet_m0_trunc,
-                        subgrid_off[i1],
-                        xMxN_yP_size,
-                        xM_yP_size,
-                        yP_size,
-                        N,
-                        1,
-                        use_dask=use_dask,
-                        nout=1,
-                    ), shape=(xM_yN_size, yP_size), dtype=complex)
+                    NAF_MNAF = NAF_MNAF + dask.array.from_delayed(
+                        add_subgrid_contribution(
+                            len(NAF_MNAF.shape),
+                            naf_naf[i0][i1][j0][j1],
+                            facet_m0_trunc,
+                            subgrid_off[i1],
+                            xMxN_yP_size,
+                            xM_yP_size,
+                            yP_size,
+                            N,
+                            1,
+                            use_dask=use_dask,
+                            nout=1,
+                        ),
+                        shape=(xM_yN_size, yP_size),
+                        dtype=complex,
+                    )
                 else:
                     NAF_MNAF = NAF_MNAF + add_subgrid_contribution(
                         len(NAF_MNAF.shape),
@@ -589,19 +599,23 @@ def subgrid_to_facet_algorithm(
                 NAF_MNAF, Fb, facet_B, yB_size, j1, 1, use_dask=use_dask, nout=0
             )
             if use_dask:
-                MNAF_BMNAF = MNAF_BMNAF + dask.array.from_delayed(add_subgrid_contribution(
-                    len(MNAF_BMNAF.shape),
-                    NAF_BMNAF,
-                    facet_m0_trunc,
-                    subgrid_off[i0],
-                    xMxN_yP_size,
-                    xM_yP_size,
-                    yP_size,
-                    N,
-                    0,
-                    use_dask=use_dask,
-                    nout=1,
-                ), shape=(yP_size, yB_size), dtype=complex)
+                MNAF_BMNAF = MNAF_BMNAF + dask.array.from_delayed(
+                    add_subgrid_contribution(
+                        len(MNAF_BMNAF.shape),
+                        NAF_BMNAF,
+                        facet_m0_trunc,
+                        subgrid_off[i0],
+                        xMxN_yP_size,
+                        xM_yP_size,
+                        yP_size,
+                        N,
+                        0,
+                        use_dask=use_dask,
+                        nout=1,
+                    ),
+                    shape=(yP_size, yB_size),
+                    dtype=complex,
+                )
             else:
                 MNAF_BMNAF = MNAF_BMNAF + add_subgrid_contribution(
                     len(MNAF_BMNAF.shape),
@@ -841,4 +855,10 @@ def facet_to_subgrid_2d_method_1(
 
 
 if __name__ == "__main__":
-    main()
+    client, current_env_var = set_up_dask()
+    with performance_report(filename="dask-report-2d.html"):
+        main(to_plot=False)
+    tear_down_dask(client, current_env_var)
+
+    # all above needs commenting and this uncommenting if want to run it without dask
+    # main(to_plot=False)

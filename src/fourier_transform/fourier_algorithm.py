@@ -960,7 +960,7 @@ def extract_subgrid(
     Fn,
     xM_yN_size,
     N,
-    **kwargs
+    **kwargs,
 ):
     """
     Extract the facet contribution of a subgrid.
@@ -1014,7 +1014,9 @@ def prepare_subgrid(subgrid, xM_size, **kwargs):
 
 
 @dask_wrapper
-def extract_facet_contribution(FSi, Fn, facet_off, j, xM_size, N, xM_yN_size, axis, **kwargs):
+def extract_facet_contribution(
+    FSi, Fn, facet_off, j, xM_size, N, xM_yN_size, axis, **kwargs
+):
     """
     Extract contribution of subgrid to a facet
 
@@ -1070,8 +1072,8 @@ def add_subgrid_contribution(
     xN_yP_size = xMxN_yP_size - xM_yP_size
     NjSi_mid = ifft_a(pad_mid_a(NjSi, xM_yP_size, axis), axis)
     NjSi_temp = pad_mid_a(NjSi_mid, xMxN_yP_size, axis)
-    slc1 = slice_a(slice(None), slice(xN_yP_size//2), dims, axis)
-    slc2 = slice_a(slice(None), slice(-xN_yP_size//2,None), dims, axis)
+    slc1 = slice_a(slice(None), slice(xN_yP_size // 2), dims, axis)
+    slc2 = slice_a(slice(None), slice(-xN_yP_size // 2, None), dims, axis)
     NjSi_temp[slc1] = NjSi_mid[slc2]
     NjSi_temp[slc2] = NjSi_mid[slc1]
     NjSi_temp = NjSi_temp * broadcast_a(facet_m0_trunc, len(NjSi.shape), axis)
