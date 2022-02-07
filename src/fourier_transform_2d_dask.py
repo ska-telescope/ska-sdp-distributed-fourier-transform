@@ -17,7 +17,6 @@ from matplotlib import pylab
 from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
 from src.fourier_transform.fourier_algorithm import (
     ifft,
-    extract_mid,
     fft,
     prepare_facet,
     extract_subgrid,
@@ -222,7 +221,7 @@ def subgrid_to_facet_algorithm(
 def facet_to_subgrid_2d_method_1(
     Fb,
     Fn,
-    facet_2,
+    facet,
     facet_m0_trunc,
     nfacet,
     nsubgrid,
@@ -243,17 +242,20 @@ def facet_to_subgrid_2d_method_1(
     without affecting the result. The obvious first choice might be to do all facet-preparation
     up-front, as this allows us to share the computation across all subgrids
 
-    :param Fb:
-    :param Fn:
-    :param facet_2:
-    :param facet_m0_trunc:
-    :param nfacet:
-    :param nsubgrid:
-    :param subgrid_off:
-    :param xM_yN_size:
-    :param xM_yP_size:
-    :param xMxN_yP_size:
-    :param use_dask:
+    :param Fb: Fourier transform of grid correction function
+    :param Fn: Fourier transform of gridding function
+    :param facet: 2D numpy array of facets
+    :param facet_m0_trunc: mask truncated to a facet (image space)
+    :param nsubgrid: number of subgrid
+    :param nfacet: number of facet
+    :param subgrid_off: subgrid offset
+    :param xM_yN_size: (padded subgrid size * padding) / N
+    :param xM_yP_size: (padded subgrid size * padded image size (facet)) / N
+    :param xMxN_yP_size: length of the region to be cut out of the prepared facet data.
+                         i.e. len(facet_m0_trunc)
+    :param use_dask: use dask.delayed or not
+
+    :return: TODO ???
     """
 
     NMBF_NMBF = numpy.empty(
@@ -263,7 +265,7 @@ def facet_to_subgrid_2d_method_1(
         NMBF_NMBF = NMBF_NMBF.tolist()
 
     for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
-        BF_F = prepare_facet(facet_2[j0][j1], 0, Fb, yP_size, use_dask=use_dask, nout=1)
+        BF_F = prepare_facet(facet[j0][j1], 0, Fb, yP_size, use_dask=use_dask, nout=1)
         BF_BF = prepare_facet(BF_F, 1, Fb, yP_size, use_dask=use_dask, nout=1)
         for i0 in range(nsubgrid):
             NMBF_BF = extract_subgrid(
@@ -304,7 +306,7 @@ def facet_to_subgrid_2d_method_2(
     Fb,
     Fn,
     NMBF_NMBF,
-    facet_2,
+    facet,
     facet_m0_trunc,
     nfacet,
     nsubgrid,
@@ -314,19 +316,34 @@ def facet_to_subgrid_2d_method_2(
     xMxN_yP_size,
     use_dask=False,
 ):
-    # Approach 2: First, do prepare_facet on the horizontal axis (axis=0), then
-    #             for loop for the horizontal subgrid direction, and do extract_subgrid
-    #             within same loop do prepare_facet in the vertical case (axis=1), then
-    #             go into the fila subgrid loop in the vertical dir and do extract_subgrid for that
-    # Gabi ^ Peter v
-    # # However, remember that `prepare_facet` increases the amount of data involved, which in turn
-    # means that we need to shuffle more data through subsequent computations.
-    # #
-    # # Therefore it is actually more efficient to first do the subgrid-specific reduction, and *then*
-    # continue with the (constant) facet preparation along the other axis. We can tackle both axes in
-    # whatever order we like, it doesn't make a difference for the result:
+    """
+    Approach 2: First, do prepare_facet on the horizontal axis (axis=0), then
+                for loop for the horizontal subgrid direction, and do extract_subgrid
+                within same loop do prepare_facet in the vertical case (axis=1), then
+                go into the fila subgrid loop in the vertical dir and do extract_subgrid for that
+
+    However, remember that `prepare_facet` increases the amount of data involved, which in turn
+    means that we need to shuffle more data through subsequent computations. Therefore it is actually
+    more efficient to first do the subgrid-specific reduction, and *then* continue with the (constant)
+    facet preparation along the other axis. We can tackle both axes in whatever order we like,
+    it doesn't make a difference for the result.
+
+    :param Fb: Fourier transform of grid correction function
+    :param Fn: Fourier transform of gridding function
+    :param NMBF_NMBF: TODO ???
+    :param facet: 2D numpy array of facets
+    :param facet_m0_trunc: mask truncated to a facet (image space)
+    :param nsubgrid: number of subgrid
+    :param nfacet: number of facet
+    :param subgrid_off: subgrid offset
+    :param xM_yN_size: (padded subgrid size * padding) / N
+    :param xM_yP_size: (padded subgrid size * padded image size (facet)) / N
+    :param xMxN_yP_size: length of the region to be cut out of the prepared facet data.
+                         i.e. len(facet_m0_trunc)
+    :param use_dask: use dask.delayed or not
+    """
     for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
-        BF_F = prepare_facet(facet_2[j0][j1], 0, Fb, yP_size, use_dask=use_dask, nout=1)
+        BF_F = prepare_facet(facet[j0][j1], 0, Fb, yP_size, use_dask=use_dask, nout=1)
         for i0 in range(nsubgrid):
             NMBF_F = extract_subgrid(
                 BF_F,
@@ -366,7 +383,7 @@ def facet_to_subgrid_2d_method_3(
     Fb,
     Fn,
     NMBF_NMBF,
-    facet_2,
+    facet,
     facet_m0_trunc,
     nfacet,
     nsubgrid,
@@ -376,11 +393,28 @@ def facet_to_subgrid_2d_method_3(
     xMxN_yP_size,
     use_dask=False,
 ):
-    # Approach 3: same as 2, but starts with the vertical direction (axis=1)
-    #             and finishes with the horizontal (axis=0) axis
-    # Gabi ^
+    """
+    Generate subgrid from facet 2D. 3rd Method.
+
+    Approach 3: same as 2, but starts with the vertical direction (axis=1)
+                and finishes with the horizontal (axis=0) axis
+
+    :param Fb: Fourier transform of grid correction function
+    :param Fn: Fourier transform of gridding function
+    :param NMBF_NMBF: TODO ???
+    :param facet: 2D numpy array of facets
+    :param facet_m0_trunc: mask truncated to a facet (image space)
+    :param nsubgrid: number of subgrid
+    :param nfacet: number of facet
+    :param subgrid_off: subgrid offset
+    :param xM_yN_size: (padded subgrid size * padding) / N
+    :param xM_yP_size: (padded subgrid size * padded image size (facet)) / N
+    :param xMxN_yP_size: length of the region to be cut out of the prepared facet data.
+                         i.e. len(facet_m0_trunc)
+    :param use_dask: use dask.delayed or not
+    """
     for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
-        F_BF = prepare_facet(facet_2[j0][j1], 1, Fb, yP_size, use_dask=use_dask, nout=1)
+        F_BF = prepare_facet(facet[j0][j1], 1, Fb, yP_size, use_dask=use_dask, nout=1)
         for i1 in range(nsubgrid):
             F_NMBF = extract_subgrid(
                 F_BF,
@@ -445,10 +479,12 @@ def _run_algorithm(
         facet_B,
         facet_off,
         dims=2,
-        use_dask=use_dask
+        use_dask=use_dask,
     )
+    log.info("%s x %s subgrids %s x %s facets", nsubgrid, nsubgrid, nfacet, nfacet)
 
-    # RUN FACET -> SUBGRID ALGORITHM
+    # ==== Facet to Subgrid ====
+    log.info("Executing 2D facet-to-subgrid algorithm")
 
     # 3 Approaches:
     #   - they differ in when facet is prepared and which axis is run first
@@ -525,7 +561,7 @@ def _run_algorithm(
         xM_yN_size,
         xM_yP_size,
         xMxN_yP_size,
-        use_dask=use_dask
+        use_dask=use_dask,
     )
     log.info("%s s", time.time() - t)
 
@@ -639,13 +675,6 @@ def main(to_plot=True, fig_name=None):
 
     log.info("Mean grid absolute: %s", numpy.mean(numpy.abs(G_2)))
 
-    # ==== Facet to Subgrid ====
-    log.info("Executing 2D facet-to-sugbrid algorithm")
-
-    # All of this generalises to two dimensions in the way you would expect. Let us set up test data:
-
-    log.info("%s x %s subgrids %s x %s facets", nsubgrid, nsubgrid, nfacet, nfacet)
-
     if use_dask:
         subgrid_2, facet_2, NMBF_NMBF, BMNAF_BMNAF = _run_algorithm(
             G_2,
@@ -662,7 +691,7 @@ def main(to_plot=True, fig_name=None):
             xM_yP_size,
             xMxN_yP_size,
             xM_yN_size,
-            use_dask=True
+            use_dask=True,
         )
 
         subgrid_2, facet_2, NMBF_NMBF, BMNAF_BMNAF = dask.compute(
@@ -690,7 +719,7 @@ def main(to_plot=True, fig_name=None):
             xM_yP_size,
             xMxN_yP_size,
             xM_yN_size,
-            use_dask=False
+            use_dask=False,
         )
 
     errors_facet_to_subgrid_2d(
