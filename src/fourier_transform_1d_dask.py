@@ -5,6 +5,9 @@ import math
 import dask
 import numpy
 import sys
+from dask.distributed import Client
+
+client = Client()
 
 from distributed import performance_report
 from matplotlib import pylab
@@ -209,9 +212,6 @@ def _algorithm_with_dask_delayed(
         1,
         use_dask=True,
     )
-    # We need to compute the subgrid and facet data since they are used later for fft/ifft
-    subgrid = numpy.array(dask.compute(*subgrid))
-    facet = numpy.array(dask.compute(*facet))
     # ==============================================
     log.info("\n== RUN: Facet to subgrid")
 
@@ -245,11 +245,6 @@ def _algorithm_with_dask_delayed(
         use_dask=True,
     )
 
-    approx_subgrid = numpy.array(dask.compute(*approx_subgrid))
-
-    log.info("Facet data: %s %s", facet.shape, facet.size)
-    log.info("Reconstructed subgrids: %s %s", approx_subgrid.shape, approx_subgrid.size)
-
     # ==============================================
     log.info("\n== RUN: Subgrid to facet")
 
@@ -274,10 +269,14 @@ def _algorithm_with_dask_delayed(
         use_dask=True,
     )
 
-    approx_facet = numpy.array(dask.compute(*approx_facet))
+    subgrid, facet, approx_subgrid, approx_facet = dask.compute(
+        subgrid, facet, approx_subgrid, approx_facet
+    )
 
-    log.info("Subgrid data: %s %s", subgrid.shape, subgrid.size)
-    log.info("Reconstructed facets: %s %s", approx_facet.shape, approx_facet.size)
+    subgrid = numpy.array(subgrid)
+    facet = numpy.array(facet)
+    approx_subgrid = numpy.array(approx_subgrid)
+    approx_facet = numpy.array(approx_facet)
 
     return subgrid, facet, approx_subgrid, approx_facet
 
@@ -569,6 +568,7 @@ def main(to_plot=True, fig_name=None, use_dask=False, dask_option="array"):
     )
 
     return subgrid, facet, approx_subgrid, approx_facet
+
 
 if __name__ == "__main__":
 

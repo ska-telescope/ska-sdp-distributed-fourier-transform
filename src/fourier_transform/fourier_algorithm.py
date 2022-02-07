@@ -469,6 +469,12 @@ def facet_contribution_to_subgrid_1d_dask_array(
     return facet_in_a_subgrid
 
 
+@dask_wrapper
+def prepare_facet_1d(facet_j, Fb, yP_size, **kwargs):
+
+    return ifft(pad_mid(facet_j * Fb, yP_size))  # prepare facet
+
+
 def facets_to_subgrid_1d(
     facet,
     nsubgrid,
@@ -515,7 +521,7 @@ def facets_to_subgrid_1d(
         RNjMiBjFj = RNjMiBjFj.tolist()
 
     for j in range(nfacet):
-        BjFj = ifft(pad_mid(facet[j] * Fb, yP_size))  # prepare facet
+        BjFj = prepare_facet_1d(facet[j], Fb, yP_size, use_dask=True, nout=1)
         for i in range(nsubgrid):
             RNjMiBjFj[i][j] = facet_contribution_to_subgrid_1d(  # extract subgrid
                 BjFj,
