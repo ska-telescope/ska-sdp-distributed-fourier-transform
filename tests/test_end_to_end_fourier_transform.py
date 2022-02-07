@@ -51,7 +51,7 @@ def test_end_to_end_1d_dask():
     Reference/expected values generated with numpy.random.seed(123456789)
     """
     result_subgrid, result_facet, result_approx_subgrid, result_approx_facet = main_1d(
-        to_plot=False, use_dask=True, dask_option="delayed"
+        to_plot=False
     )
 
     # check array shapes
@@ -112,7 +112,7 @@ def test_end_to_end_1d_dask_logging():
     ]
 
     with patch("logging.Logger.info") as mock_log:
-        main_1d(to_plot=False, use_dask=True, dask_option="delayed")
+        main_1d(to_plot=False)
         for log_call in expected_log_calls:
             assert log_call in mock_log.call_args_list
 

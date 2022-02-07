@@ -5,9 +5,6 @@ import math
 import dask
 import numpy
 import sys
-from dask.distributed import Client
-
-client = Client()
 
 from distributed import performance_report
 from matplotlib import pylab
