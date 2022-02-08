@@ -107,8 +107,10 @@ def _algorithm_with_dask_array(
     facet_m0_trunc,
     dtype,
 ):
+    FG = fft(G)
     subgrid, facet = make_subgrid_and_facet_dask_array(
         G,
+        FG,
         nsubgrid,
         xA_size,
         subgrid_A,

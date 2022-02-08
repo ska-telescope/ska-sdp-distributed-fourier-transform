@@ -334,6 +334,7 @@ def make_subgrid_and_facet(
 
 def make_subgrid_and_facet_dask_array(
     G,
+    FG,
     nsubgrid,
     xA_size,
     subgrid_A,
@@ -346,13 +347,10 @@ def make_subgrid_and_facet_dask_array(
     """
     Calculate the actual subgrids and facets. Same as make_subgrid_and_facet
     but implemented using dask.array. Consult that function for a full docstring.
-    Separating between 1D and 2D not yet implemented.
+    Only for 1D (2D not yet implemented).
 
-    # TODO: I didn't change the FG variable and am currently not using use_dask=True.
-    # TODO: But this may need to be changed
+    Returns a dask.array.
     """
-    FG = fft(G)
-
     subgrid = dask.array.from_array(
         [
             _ith_subgrid_facet_element(
