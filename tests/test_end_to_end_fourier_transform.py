@@ -52,8 +52,9 @@ def test_end_to_end_1d_dask():
     """
     Reference/expected values generated with numpy.random.seed(123456789)
     """
+    dask_option = "delayed"
     result_subgrid, result_facet, result_approx_subgrid, result_approx_facet = main_1d(
-        to_plot=False
+        to_plot=False, dask_option=dask_option
     )
 
     # check array shapes

@@ -400,6 +400,7 @@ def main(to_plot=True, fig_name=None, use_dask=False, dask_option="array"):
     :param dask_option: Dask optimisation option -- array or delayed
     """
 
+    # TODO: remove this from here and implement supplying it to main as input arg
     use_dask = os.getenv("USE_DASK", False) == "True"
 
     log.info("== Chosen configuration")

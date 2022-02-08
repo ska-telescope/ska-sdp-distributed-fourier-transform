@@ -72,3 +72,6 @@ RMSE: 1.8993992558912768e-17 (image: 3.5708706010756e-15)
 (subgrid to facet)
 RMSE: 1.9066529538510885e-07 (image: 4.881031561858787e-05 )
 RMSE: 3.1048924152453573e-13 (image: 7.948524583028115e-11)
+
+
+File ref_data.py contains numpy arrays which are meant as reference/expected data for testing the 1D pipeline.

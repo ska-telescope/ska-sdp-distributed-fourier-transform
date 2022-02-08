@@ -4,7 +4,6 @@ import itertools
 import scipy.special
 import scipy.signal
 import numpy
-
 import dask.array
 
 from src.fourier_transform.dask_wrapper import dask_wrapper
@@ -334,7 +333,15 @@ def make_subgrid_and_facet(
 
 
 def make_subgrid_and_facet_dask_array(
-    G, nsubgrid, xA_size, subgrid_A, subgrid_off, nfacet, yB_size, facet_B, facet_off,
+    G,
+    nsubgrid,
+    xA_size,
+    subgrid_A,
+    subgrid_off,
+    nfacet,
+    yB_size,
+    facet_B,
+    facet_off,
 ):
     """
     Calculate the actual subgrids and facets. Same as make_subgrid_and_facet
@@ -381,7 +388,7 @@ def facet_contribution_to_subgrid_1d(
     xM_yP_size,
     xM_yN_size,
     Fn,
-    **kwargs
+    **kwargs,
 ):
     """
     Extract the facet contribution to a subgrid for 1D version.
@@ -514,7 +521,7 @@ def facets_to_subgrid_1d(
         RNjMiBjFj = RNjMiBjFj.tolist()
 
     for j in range(nfacet):
-        BjFj = prepare_facet_1d(facet[j], Fb, yP_size, use_dask=True, nout=1)
+        BjFj = prepare_facet_1d(facet[j], Fb, yP_size, use_dask=use_dask, nout=1)
         for i in range(nsubgrid):
             RNjMiBjFj[i][j] = facet_contribution_to_subgrid_1d(  # extract subgrid
                 BjFj,
@@ -789,7 +796,7 @@ def add_subgrid_contribution_1d(
     subgrid_off_i,
     yB_size,
     N,
-    **kwargs
+    **kwargs,
 ):
     """
     Add subgrid contribution to a single facet.
