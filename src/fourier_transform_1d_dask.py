@@ -14,6 +14,7 @@ from matplotlib import pylab
 from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
 
 from src.fourier_transform.fourier_algorithm import (
+    fft,
     make_subgrid_and_facet,
     facets_to_subgrid_1d,
     reconstruct_subgrid_1d,
@@ -27,7 +28,6 @@ from src.fourier_transform.fourier_algorithm import (
     make_subgrid_and_facet_dask_array,
     reconstruct_subgrid_1d_dask_array,
     reconstruct_facet_1d_dask_array,
-    fft,
 )
 from src.fourier_transform.utils import (
     whole,
@@ -179,6 +179,107 @@ def _algorithm_with_dask_array(
     return subgrid, facet, approx_subgrid, approx_facet
 
 
+def _algorithm_with_dask_delayed(
+    G,
+    nsubgrid,
+    nfacet,
+    subgrid_A,
+    facet_B,
+    subgrid_off,
+    facet_off,
+    xMxN_yP_size,
+    xN_yP_size,
+    xM_yP_size,
+    xM_yN_size,
+    Fb,
+    Fn,
+    facet_m0_trunc,
+    dtype,
+):
+    FG = fft(G)
+    subgrid, facet = make_subgrid_and_facet(
+        G,
+        FG,
+        nsubgrid,
+        xA_size,
+        subgrid_A,
+        subgrid_off,
+        nfacet,
+        yB_size,
+        facet_B,
+        facet_off,
+        1,
+        use_dask=True,
+    )
+    # ==============================================
+    log.info("\n== RUN: Facet to subgrid")
+
+    nmbfs = facets_to_subgrid_1d(
+        facet,
+        nsubgrid,
+        nfacet,
+        xM_yN_size,
+        Fb,
+        Fn,
+        yP_size,
+        facet_m0_trunc,
+        subgrid_off,
+        N,
+        xMxN_yP_size,
+        xN_yP_size,
+        xM_yP_size,
+        dtype,
+        use_dask=True,
+    )
+
+    approx_subgrid = reconstruct_subgrid_1d(
+        nmbfs,
+        xM_size,
+        nfacet,
+        facet_off,
+        N,
+        subgrid_A,
+        xA_size,
+        nsubgrid,
+        use_dask=True,
+    )
+
+    # ==============================================
+    log.info("\n== RUN: Subgrid to facet")
+
+    nafs = subgrid_to_facet_1d(
+        subgrid, nsubgrid, nfacet, xM_yN_size, xM_size, facet_off, N, Fn, use_dask=True
+    )
+
+    approx_facet = reconstruct_facet_1d(
+        nafs,
+        nfacet,
+        yB_size,
+        nsubgrid,
+        xMxN_yP_size,
+        xM_yP_size,
+        xN_yP_size,
+        facet_m0_trunc,
+        yP_size,
+        subgrid_off,
+        N,
+        Fb,
+        facet_B,
+        use_dask=True,
+    )
+
+    subgrid, facet, approx_subgrid, approx_facet = dask.compute(
+        subgrid, facet, approx_subgrid, approx_facet
+    )
+
+    subgrid = numpy.array(subgrid)
+    facet = numpy.array(facet)
+    approx_subgrid = numpy.array(approx_subgrid)
+    approx_facet = numpy.array(approx_facet)
+
+    return subgrid, facet, approx_subgrid, approx_facet
+
+
 def _algorithm_in_serial(
     G,
     nsubgrid,
@@ -209,6 +310,7 @@ def _algorithm_in_serial(
         facet_B,
         facet_off,
         dims=1,
+        use_dask=False,
     )
 
     # ==============================================
@@ -232,12 +334,21 @@ def _algorithm_in_serial(
         xN_yP_size,
         xM_yP_size,
         dtype,
+        use_dask=False,
     )
     # - redistribution of nmbfs here -
     log.info("Redistributed data: %s %s", nmbfs.shape, nmbfs.size)
 
     approx_subgrid = reconstruct_subgrid_1d(
-        nmbfs, xM_size, nfacet, facet_off, N, subgrid_A, xA_size, nsubgrid
+        nmbfs,
+        xM_size,
+        nfacet,
+        facet_off,
+        N,
+        subgrid_A,
+        xA_size,
+        nsubgrid,
+        use_dask=False,
     )
     log.info("Reconstructed subgrids: %s %s", approx_subgrid.shape, approx_subgrid.size)
 
@@ -246,7 +357,15 @@ def _algorithm_in_serial(
     log.info("Subgrid data: %s %s", subgrid.shape, subgrid.size)
 
     nafs = subgrid_to_facet_1d(
-        subgrid, nsubgrid, nfacet, xM_yN_size, xM_size, facet_off, N, Fn
+        subgrid,
+        nsubgrid,
+        nfacet,
+        xM_yN_size,
+        xM_size,
+        facet_off,
+        N,
+        Fn,
+        use_dask=False,
     )
     # - redistribution of FNjSi here -
     log.info("Intermediate data: %s %s", nafs.shape, nafs.size)
@@ -265,17 +384,20 @@ def _algorithm_in_serial(
         N,
         Fb,
         facet_B,
+        use_dask=False,
     )
     log.info("Reconstructed facets: %s %s", approx_facet.shape, approx_facet.size)
 
     return subgrid, facet, approx_subgrid, approx_facet
 
 
-def main(to_plot=True, fig_name=None):
+def main(to_plot=True, fig_name=None, use_dask=False, dask_option="array"):
     """
     :param to_plot: run plotting?
     :param fig_name: If given, figures will be saved with this prefix into PNG files.
                      If to_plot is set to False, fig_name doesn't have an effect.
+    :param use_dask: use dask?
+    :param dask_option: Dask optimisation option -- array or delayed
     """
 
     use_dask = os.getenv("USE_DASK", False) == "True"
@@ -367,7 +489,7 @@ def main(to_plot=True, fig_name=None):
     G = numpy.random.rand(N) - 0.5
     dtype = numpy.complex128
 
-    if use_dask:
+    if use_dask and dask_option == "array":
         subgrid, facet, approx_subgrid, approx_facet = _algorithm_with_dask_array(
             G,
             nsubgrid,
@@ -387,6 +509,25 @@ def main(to_plot=True, fig_name=None):
         )
         subgrid, facet, approx_subgrid, approx_facet = dask.compute(
             subgrid, facet, approx_subgrid, approx_facet
+        )
+
+    elif use_dask and dask_option == "delayed":
+        subgrid, facet, approx_subgrid, approx_facet = _algorithm_with_dask_delayed(
+            G,
+            nsubgrid,
+            nfacet,
+            subgrid_A,
+            facet_B,
+            subgrid_off,
+            facet_off,
+            xMxN_yP_size,
+            xN_yP_size,
+            xM_yP_size,
+            xM_yN_size,
+            Fb,
+            Fn,
+            facet_m0_trunc,
+            dtype,
         )
 
     else:
