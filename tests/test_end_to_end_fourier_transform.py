@@ -13,9 +13,18 @@ import glob
 import logging
 import os
 from unittest.mock import patch, call
+
 import numpy
 from numpy.testing import assert_array_almost_equal
+
 from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
+
+from tests.test_data.reference_data.ref_data import (
+    EXPECTED_NONZERO_SUBGRID_1D,
+    EXPECTED_NONZERO_FACET_1D,
+    EXPECTED_NONZERO_APPROX_SUBGRID_1D,
+    EXPECTED_NONZERO_APPROX_FACET_1D,
+)
 
 # client, current_env_var = set_up_dask()
 client = None
@@ -23,13 +32,6 @@ current_env_var = None
 
 from src.fourier_transform_1d_dask import main as main_1d
 from src.fourier_transform_2d_dask import main as main_2d
-
-from tests.test_data.ref_data import (
-    EXPECTED_NONZERO_SUBGRID_1D,
-    EXPECTED_NONZERO_FACET_1D,
-    EXPECTED_NONZERO_APPROX_SUBGRID_1D,
-    EXPECTED_NONZERO_APPROX_FACET_1D,
-)
 
 log = logging.getLogger("fourier-logger")
 log.setLevel(logging.WARNING)
@@ -50,8 +52,9 @@ def test_end_to_end_1d_dask():
     """
     Reference/expected values generated with numpy.random.seed(123456789)
     """
+    dask_option = "delayed"
     result_subgrid, result_facet, result_approx_subgrid, result_approx_facet = main_1d(
-        to_plot=False
+        to_plot=False, dask_option=dask_option
     )
 
     # check array shapes
@@ -150,7 +153,7 @@ def test_end_to_end_1d_dask_plot():
         tear_down_dask(client, current_env_var)
 
 
-def test_end_to_end_2d_dask():
+def test_end_to_end_2d_dask_logging():
     """
     Test that the logged information matches the
     expected listed in test_data/reference_data/README.md
@@ -168,8 +171,8 @@ def test_end_to_end_2d_dask():
         call("RMSE: %s (image: %s)", 3.6351180911901923e-08, 6.834022011437562e-06),
         call("RMSE: %s (image: %s)", 1.8993992558912768e-17, 3.5708706010756e-15),
         # subgrid to facet - not yet added to tested code
-        # call("RMSE: %s (image: %s)", 1.9503554118423179e-07, 4.992909854316334e-05),
-        # call("RMSE: %s (image: %s)", 3.1048924152453573e-13, 7.948524583028115e-11),
+        call("RMSE: %s (image: %s)", 1.9066529538510885e-07, 4.881031561858787e-05),
+        call("RMSE: %s (image: %s)", 3.1048924152453573e-13, 7.948524583028115e-11),
     ]
 
     with patch("logging.Logger.info") as mock_log:
@@ -198,12 +201,9 @@ def test_end_to_end_2d_dask_plot():
         "test_data/reference_data/plot_error_mean_image_facet_to_subgrid_2d.png": f"{fig_prefix}_error_mean_image_facet_to_subgrid_2d.png",
         "test_data/reference_data/plot_test_accuracy_facet_to_subgrid_2d.png": f"{fig_prefix}_test_accuracy_facet_to_subgrid_2d.png",
         # subgrid to facet -- not yet added to tested code
-        # "test_data/reference_data/plot_error_mean_subgrid_to_facet_2d.png":
-        #     f"{fig_prefix}_error_mean_subgrid_to_facet_2d.png",
-        # "test_data/reference_data/plot_error_mean_image_subgrid_to_facet_2d.png":
-        #     f"{fig_prefix}_error_mean_image_subgrid_to_facet_2d.png",
-        # "test_data/reference_data/plot_test_accuracy_subgrid_to_facet_2d.png":
-        #     f"{fig_prefix}_test_accuracy_subgrid_to_facet_2d.png",
+        "test_data/reference_data/plot_error_mean_subgrid_to_facet_2d.png": f"{fig_prefix}_error_mean_subgrid_to_facet_2d.png",
+        "test_data/reference_data/plot_error_mean_image_subgrid_to_facet_2d.png": f"{fig_prefix}_error_mean_image_subgrid_to_facet_2d.png",
+        "test_data/reference_data/plot_test_accuracy_subgrid_to_facet_2d.png": f"{fig_prefix}_test_accuracy_subgrid_to_facet_2d.png",
     }
 
     main_2d(to_plot=True, fig_name=fig_prefix)

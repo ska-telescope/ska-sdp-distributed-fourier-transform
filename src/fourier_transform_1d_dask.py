@@ -2,9 +2,11 @@
 # coding: utf-8
 import logging
 import math
-import dask
+import os
+
 import numpy
 import sys
+import dask
 
 from distributed import performance_report
 from matplotlib import pylab
@@ -105,8 +107,10 @@ def _algorithm_with_dask_array(
     facet_m0_trunc,
     dtype,
 ):
+    FG = fft(G)
     subgrid, facet = make_subgrid_and_facet_dask_array(
         G,
+        FG,
         nsubgrid,
         xA_size,
         subgrid_A,
@@ -307,7 +311,7 @@ def _algorithm_in_serial(
         yB_size,
         facet_B,
         facet_off,
-        1,
+        dims=1,
         use_dask=False,
     )
 
@@ -397,6 +401,9 @@ def main(to_plot=True, fig_name=None, use_dask=False, dask_option="array"):
     :param use_dask: use dask?
     :param dask_option: Dask optimisation option -- array or delayed
     """
+
+    # TODO: remove this from here and implement supplying it to main as input arg
+    use_dask = os.getenv("USE_DASK", False) == "True"
 
     log.info("== Chosen configuration")
     for n in [
@@ -503,6 +510,10 @@ def main(to_plot=True, fig_name=None, use_dask=False, dask_option="array"):
             facet_m0_trunc,
             dtype,
         )
+        subgrid, facet, approx_subgrid, approx_facet = dask.compute(
+            subgrid, facet, approx_subgrid, approx_facet
+        )
+
     elif use_dask and dask_option == "delayed":
         subgrid, facet, approx_subgrid, approx_facet = _algorithm_with_dask_delayed(
             G,

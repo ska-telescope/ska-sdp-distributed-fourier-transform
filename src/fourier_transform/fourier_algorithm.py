@@ -1,10 +1,13 @@
 """Distributed Fourier Transform Module."""
+import itertools
+
 import scipy.special
 import scipy.signal
 import numpy
-import dask
 import dask.array
+
 from src.fourier_transform.dask_wrapper import dask_wrapper
+
 
 # TODO: ideally we'd like to merge the 1D functions with their 2D equivalent,
 #   which then can be used for both versions
@@ -330,29 +333,24 @@ def make_subgrid_and_facet(
 
 
 def make_subgrid_and_facet_dask_array(
-    G, nsubgrid, xA_size, subgrid_A, subgrid_off, nfacet, yB_size, facet_B, facet_off,
+    G,
+    FG,
+    nsubgrid,
+    xA_size,
+    subgrid_A,
+    subgrid_off,
+    nfacet,
+    yB_size,
+    facet_B,
+    facet_off,
 ):
     """
     Calculate the actual subgrids and facets. Same as make_subgrid_and_facet
-    but implemented using dask.array.
+    but implemented using dask.array. Consult that function for a full docstring.
+    Only for 1D (2D not yet implemented).
 
-    :param G: "ground truth", the actual input data
-    :param nsubgrid: number of subgrid
-    :param xA_size: true usable subgrid size
-    :param subgrid_A: subgrid mask
-    :param subgrid_off: subgrid offset
-    :param nfacet: number of facet
-    :param yB_size: effective facet size
-    :param facet_B: facet mask
-    :param facet_off: facet offset
-
-    :return: tuple of two dask.array (subgrid, facet)
+    Returns a dask.array.
     """
-
-    # TODO: I didn't change the FG variable and am currently not using use_dask=True.
-    # TODO: But this may need to be changed
-    FG = fft(G)
-
     subgrid = dask.array.from_array(
         [
             _ith_subgrid_facet_element(
@@ -388,7 +386,7 @@ def facet_contribution_to_subgrid_1d(
     xM_yP_size,
     xM_yN_size,
     Fn,
-    **kwargs
+    **kwargs,
 ):
     """
     Extract the facet contribution to a subgrid for 1D version.
@@ -521,7 +519,7 @@ def facets_to_subgrid_1d(
         RNjMiBjFj = RNjMiBjFj.tolist()
 
     for j in range(nfacet):
-        BjFj = prepare_facet_1d(facet[j], Fb, yP_size, use_dask=True, nout=1)
+        BjFj = prepare_facet_1d(facet[j], Fb, yP_size, use_dask=use_dask, nout=1)
         for i in range(nsubgrid):
             RNjMiBjFj[i][j] = facet_contribution_to_subgrid_1d(  # extract subgrid
                 BjFj,
@@ -796,7 +794,7 @@ def add_subgrid_contribution_1d(
     subgrid_off_i,
     yB_size,
     N,
-    **kwargs
+    **kwargs,
 ):
     """
     Add subgrid contribution to a single facet.
@@ -911,6 +909,13 @@ def reconstruct_facet_1d(
 
     :return: approximate facet
     """
+    # Note: compared to reconstruct_subgrid_1d, which does the same but for subgrids,
+    # the order in which we perform calculations is different:
+    # here, we apply fft then extract_mid to cut down from size yP_size to yB_size,
+    # finally we do the sum (which results in approx);
+    # In reconstruct_subgrid_1d we first do the sum, and then cut from xM_size to xA_size,
+    # hence approx starts as a larger sized array in that case.
+
     approx_facet = numpy.ndarray((nfacet, yB_size), dtype=complex)
     if use_dask:
         approx_facet = approx_facet.tolist()
@@ -1014,7 +1019,8 @@ def reconstruct_facet_1d_dask_array(
 
 
 # 2D FOURIER ALGORITHM FUNCTIONS (facet to subgrid)
-def prepare_facet(facet, axis, Fb, yP_size):
+@dask_wrapper
+def prepare_facet(facet, axis, Fb, yP_size, **kwargs):
     """
 
     param facet: Facet
@@ -1030,6 +1036,7 @@ def prepare_facet(facet, axis, Fb, yP_size):
     return BF
 
 
+@dask_wrapper
 def extract_subgrid(
     BF,
     i,
@@ -1042,6 +1049,7 @@ def extract_subgrid(
     Fn,
     xM_yN_size,
     N,
+    **kwargs,
 ):
     """
     Extract the facet contribution of a subgrid.
@@ -1082,7 +1090,8 @@ def extract_subgrid(
 
 
 # 2D FOURIER ALGORITHM FUNCTIONS (subgrid to facet)
-def prepare_subgrid(subgrid, xM_size):
+@dask_wrapper
+def prepare_subgrid(subgrid, xM_size, **kwargs):
     """
     Initial shared work per subgrid - no reason to do this per-axis, so always do it for all
     :param subgrid: Subgrid
@@ -1093,7 +1102,10 @@ def prepare_subgrid(subgrid, xM_size):
     return fft(pad_mid(subgrid, xM_size))
 
 
-def extract_facet_contribution(FSi, Fn, facet_off, j, xM_size, N, xM_yN_size, axis):
+@dask_wrapper
+def extract_facet_contribution(
+    FSi, Fn, facet_off, j, xM_size, N, xM_yN_size, axis, **kwargs
+):
     """
     Extract contribution of subgrid to a facet
 
@@ -1115,17 +1127,18 @@ def extract_facet_contribution(FSi, Fn, facet_off, j, xM_size, N, xM_yN_size, ax
     )
 
 
+@dask_wrapper
 def add_subgrid_contribution(
-    MiNjSi_sum,
+    dims,
     NjSi,
-    i,
     facet_m0_trunc,
-    subgrid_off,
+    subgrid_off_i,
     xMxN_yP_size,
     xM_yP_size,
     yP_size,
     N,
     axis,
+    **kwargs,
 ):
     """
     Add subgrid contribution to a facet
@@ -1145,25 +1158,22 @@ def add_subgrid_contribution(
     :return MiNjSi_sum:
 
     """
-    dims = len(MiNjSi_sum.shape)
-    MiNjSi = numpy.zeros_like(MiNjSi_sum)
-    NjSi_temp = extract_mid_a(MiNjSi, xMxN_yP_size, axis)
-    NjSi_mid = extract_mid_a(NjSi_temp, xM_yP_size, axis)
-    NjSi_mid[...] = ifft_a(
-        pad_mid_a(NjSi, xM_yP_size, axis), axis
-    )  # updates NjSi via reference!
     xN_yP_size = xMxN_yP_size - xM_yP_size
+    NjSi_mid = ifft_a(pad_mid_a(NjSi, xM_yP_size, axis), axis)
+    NjSi_temp = pad_mid_a(NjSi_mid, xMxN_yP_size, axis)
     slc1 = slice_a(slice(None), slice(xN_yP_size // 2), dims, axis)
     slc2 = slice_a(slice(None), slice(-xN_yP_size // 2, None), dims, axis)
     NjSi_temp[slc1] = NjSi_mid[slc2]
     NjSi_temp[slc2] = NjSi_mid[slc1]
-    NjSi_temp[...] *= broadcast_a(facet_m0_trunc, len(NjSi.shape), axis)
-    MiNjSi_sum[...] += numpy.roll(
-        pad_mid_a(MiNjSi, yP_size, axis), subgrid_off[i] * yP_size // N, axis=axis
+    NjSi_temp = NjSi_temp * broadcast_a(facet_m0_trunc, len(NjSi.shape), axis)
+
+    return numpy.roll(
+        pad_mid_a(NjSi_temp, yP_size, axis), subgrid_off_i * yP_size // N, axis=axis
     )
 
 
-def finish_facet(MiNjSi_sum, Fb, facet_B, yB_size, j, axis):
+@dask_wrapper
+def finish_facet(MiNjSi_sum, Fb, facet_B, yB_size, j, axis, **kwargs):
     """
     Obtain finished facet
 
