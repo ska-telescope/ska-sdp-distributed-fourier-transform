@@ -94,20 +94,20 @@ def display_plots(x, legend=None, grid=False, xlim=None, fig_name=None):
 
 
 # TODO: needs better name; used both for 1D and 2D
-def plot_1(pswf, xN_size, N, yN_size, W, yB_size, fig_name=None):
+def plot_1(pswf, N, yN_size, W, yB_size, fig_name=None):
     """
     :param pswf: prolate-spheroidal wave function
-    :param xN:
-    :param xN_size:
-    :param yB:
-    :param yN:
+    :param N:
     :param yN_size:
+    :param W:
+    :param yB_size:
     :param fig_name: partial name or prefix (can include path) if figure is saved
                      if None, pylab.show() is called instead
     """
     xN = W / yN_size / 2
     yN = yN_size / 2
     yB = yB_size / 2
+    xN_size = N * W / yN_size
 
     pylab.clf()
     pylab.semilogy(

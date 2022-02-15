@@ -445,7 +445,7 @@ def main(to_plot=True, fig_name=None, use_dask=False, dask_option="array"):
     pswf = calculate_pswf(yN_size, ALPHA, W)
 
     if to_plot:
-        plot_1(pswf, xN_size, N, yN_size, W, yB_size, fig_name=fig_name)
+        plot_1(pswf, N, yN_size, W, yB_size, fig_name=fig_name)
 
     # Calculate actual work terms to use. We need both $n$ and $b$ in image space.
     Fb, Fn, facet_m0_trunc = get_actual_work_terms(
