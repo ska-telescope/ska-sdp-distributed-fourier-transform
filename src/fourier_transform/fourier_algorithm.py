@@ -398,7 +398,7 @@ def facet_contribution_to_subgrid_1d(
     :param N: total image size on a side
     :param xMxN_yP_size: length of the region to be cut out of the prepared facet data.
                          i.e. len(facet_m0_trunc)
-    :param xN_yP_size: remainder of the padded facet region after the cut-out region has been subtracetd of it
+    :param xN_yP_size: remainder of the padded facet region after the cut-out region has been subtracted of it
                        i.e. xMxN_yP_size - xM_yP_size
     :param xM_yP_size: (padded subgrid size * padded image size (facet)) / N
     :param xM_yN_size: (padded subgrid size * padding) / N
@@ -445,7 +445,7 @@ def facet_contribution_to_subgrid_1d_dask_array(
     :param N: total image size on a side
     :param xMxN_yP_size: length of the region to be cut out of the prepared facet data.
                          i.e. len(facet_m0_trunc)
-    :param xN_yP_size: remainder of the padded facet region after the cut-out region has been subtracetd of it
+    :param xN_yP_size: remainder of the padded facet region after the cut-out region has been subtracted of it
                        i.e. xMxN_yP_size - xM_yP_size
     :param xM_yP_size: (padded subgrid size * padded image size (facet)) / N
     :param xM_yN_size: (padded subgrid size * padding) / N
@@ -505,7 +505,7 @@ def facets_to_subgrid_1d(
     :param N: total image size on a side
     :param xMxN_yP_size: length of the region to be cut out of the prepared facet data.
                          i.e. len(facet_m0_trunc)
-    :param xN_yP_size: remainder of the padded facet region after the cut-out region has been subtracetd of it
+    :param xN_yP_size: remainder of the padded facet region after the cut-out region has been subtracted of it
                        i.e. xMxN_yP_size - xM_yP_size
     :param xM_yP_size: (padded subgrid size * padded image size (facet)) / N
     :param dtype: data type
@@ -571,7 +571,7 @@ def facets_to_subgrid_1d_dask_array(
     :param N: total image size on a side
     :param xMxN_yP_size: length of the region to be cut out of the prepared facet data.
                          i.e. len(facet_m0_trunc)
-    :param xN_yP_size: remainder of the padded facet region after the cut-out region has been subtracetd of it
+    :param xN_yP_size: remainder of the padded facet region after the cut-out region has been subtracted of it
                        i.e. xMxN_yP_size - xM_yP_size
     :param xM_yP_size: (padded subgrid size * padded image size (facet)) / N
     :param dtype: data type
@@ -803,7 +803,7 @@ def add_subgrid_contribution_1d(
                          i.e. len(facet_m0_trunc)
     :param xM_yP_size: (padded subgrid size * padded image size (facet)) / N
     :param nafs_ij: redistributed facet array [i:j] element
-    :param xN_yP_size: remainder of the padded facet region after the cut-out region has been subtracetd of it
+    :param xN_yP_size: remainder of the padded facet region after the cut-out region has been subtracted of it
                        i.e. xMxN_yP_size - xM_yP_size
     :param facet_m0_trunc: mask truncated to a facet (image space)
     :param yP_size: facet size padded for m convolution (internal)
@@ -846,7 +846,7 @@ def add_subgrid_contribution_1d_dask_array(
                          i.e. len(facet_m0_trunc)
     :param xM_yP_size: (padded subgrid size * padded image size (facet)) / N
     :param nafs_ij: redistributed facet array [i:j] element
-    :param xN_yP_size: remainder of the padded facet region after the cut-out region has been subtracetd of it
+    :param xN_yP_size: remainder of the padded facet region after the cut-out region has been subtracted of it
                        i.e. xMxN_yP_size - xM_yP_size
     :param facet_m0_trunc: mask truncated to a facet (image space)
     :param yP_size: facet size padded for m convolution (internal)
@@ -898,7 +898,7 @@ def reconstruct_facet_1d(
     :param xMxN_yP_size: length of the region to be cut out of the prepared facet data.
                          i.e. len(facet_m0_trunc)
     :param xM_yP_size: (padded subgrid size * padded image size (facet)) / N
-    :param xN_yP_size: remainder of the padded facet region after the cut-out region has been subtracetd of it
+    :param xN_yP_size: remainder of the padded facet region after the cut-out region has been subtracted of it
                        i.e. xMxN_yP_size - xM_yP_size
     :param facet_m0_trunc: mask truncated to a facet (image space)
     :param yP_size: facet size padded for m convolution (internal)
@@ -983,7 +983,7 @@ def reconstruct_facet_1d_dask_array(
     :param xMxN_yP_size: length of the region to be cut out of the prepared facet data.
                          i.e. len(facet_m0_trunc)
     :param xM_yP_size: (padded subgrid size * padded image size (facet)) / N
-    :param xN_yP_size: remainder of the padded facet region after the cut-out region has been subtracetd of it
+    :param xN_yP_size: remainder of the padded facet region after the cut-out region has been subtracted of it
                        i.e. xMxN_yP_size - xM_yP_size
     :param facet_m0_trunc: mask truncated to a facet (image space)
     :param yP_size: facet size padded for m convolution (internal)

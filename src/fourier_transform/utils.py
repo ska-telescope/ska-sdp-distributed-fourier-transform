@@ -94,17 +94,21 @@ def display_plots(x, legend=None, grid=False, xlim=None, fig_name=None):
 
 
 # TODO: needs better name; used both for 1D and 2D
-def plot_1(pswf, xN, xN_size, yB, yN, N, yN_size, fig_name=None):
+def plot_1(pswf, N, yN_size, W, yB_size, fig_name=None):
     """
     :param pswf: prolate-spheroidal wave function
-    :param xN:
-    :param xN_size:
-    :param yB:
-    :param yN:
+    :param N:
     :param yN_size:
+    :param W:
+    :param yB_size:
     :param fig_name: partial name or prefix (can include path) if figure is saved
                      if None, pylab.show() is called instead
     """
+    xN = W / yN_size / 2
+    yN = yN_size / 2
+    yB = yB_size / 2
+    xN_size = N * W / yN_size
+
     pylab.clf()
     pylab.semilogy(
         coordinates(4 * int(xN_size)) * 4 * xN_size / N,
@@ -153,7 +157,7 @@ def plot_2(facet_m0_trunc, xM, xMxN_yP_size, yP_size, fig_name=None):
 
 
 def calculate_and_plot_errors_subgrid_1d(
-    approx_subgrid, nsubgrid, subgrid, xA, xA_size, N, to_plot=True, fig_name=None
+    approx_subgrid, nsubgrid, subgrid, xA_size, N, to_plot=True, fig_name=None
 ):
     """
     Facet to subgrid error terms. Log and plot them.
@@ -161,7 +165,6 @@ def calculate_and_plot_errors_subgrid_1d(
     :param approx_subgrid:
     :param nsubgrid:
     :param subgrid:
-    :param xA:
     :param xA_size:
     :param N:
     :param to_plot: plot results?
@@ -170,6 +173,8 @@ def calculate_and_plot_errors_subgrid_1d(
     """
     # Let us look at the error terms:
     if to_plot:
+        xA = xA_size / 2 / N
+
         pylab.clf()
         fig = pylab.figure(figsize=(16, 8))
         ax1, ax2 = fig.add_subplot(211), fig.add_subplot(212)
@@ -209,7 +214,7 @@ def calculate_and_plot_errors_subgrid_1d(
 
 
 def calculate_and_plot_errors_facet_1d(
-    approx_facet, facet, nfacet, xA, xM, yB, yB_size, to_plot=True, fig_name=None
+    approx_facet, facet, nfacet, xM, yB_size, xA_size, N, to_plot=True, fig_name=None
 ):
     if to_plot:
         pylab.clf()
@@ -233,6 +238,9 @@ def calculate_and_plot_errors_facet_1d(
     )
 
     if to_plot:
+        xA = xA_size / 2 / N
+        yB = yB_size / 2
+
         mark_range("$x_A$", -xA, xA, ax=ax1)
         mark_range("$x_M$", -xM, xM, ax=ax1)
         mark_range("$y_B$", -yB, yB, ax=ax2)
