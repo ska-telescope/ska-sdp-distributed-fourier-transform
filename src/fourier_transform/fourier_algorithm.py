@@ -239,12 +239,11 @@ def _ith_subgrid_facet_element(
 def make_subgrid_and_facet(
     G,
     FG,
+    sizes_class,
     nsubgrid,
-    xA_size,
     subgrid_A,
     subgrid_off,
     nfacet,
-    yB_size,
     facet_B,
     facet_off,
     dims,
@@ -269,8 +268,8 @@ def make_subgrid_and_facet(
     """
 
     if dims == 1:
-        subgrid = numpy.empty((nsubgrid, xA_size), dtype=complex)
-        facet = numpy.empty((nfacet, yB_size), dtype=complex)
+        subgrid = numpy.empty((nsubgrid, sizes_class.xA_size), dtype=complex)
+        facet = numpy.empty((nfacet, sizes_class.yB_size), dtype=complex)
 
         if use_dask:
             subgrid = subgrid.tolist()
@@ -280,7 +279,7 @@ def make_subgrid_and_facet(
             subgrid[i] = _ith_subgrid_facet_element(
                 G,
                 -subgrid_off[i],
-                xA_size,
+                sizes_class.xA_size,
                 subgrid_A[i],
                 axis=None,
                 use_dask=use_dask,
@@ -291,7 +290,7 @@ def make_subgrid_and_facet(
             facet[j] = _ith_subgrid_facet_element(
                 FG,
                 -facet_off[j],
-                yB_size,
+                sizes_class.yB_size,
                 facet_B[j],
                 axis=None,
                 use_dask=use_dask,
@@ -299,8 +298,8 @@ def make_subgrid_and_facet(
             )
 
     elif dims == 2:
-        subgrid = numpy.empty((nsubgrid, nsubgrid, xA_size, xA_size), dtype=complex)
-        facet = numpy.empty((nfacet, nfacet, yB_size, yB_size), dtype=complex)
+        subgrid = numpy.empty((nsubgrid, nsubgrid, sizes_class.xA_size, sizes_class.xA_size), dtype=complex)
+        facet = numpy.empty((nfacet, nfacet, sizes_class.yB_size, sizes_class.yB_size), dtype=complex)
 
         if use_dask:
             subgrid = subgrid.tolist()
@@ -310,7 +309,7 @@ def make_subgrid_and_facet(
             subgrid[i0][i1] = _ith_subgrid_facet_element(
                 G,
                 (-subgrid_off[i0], -subgrid_off[i1]),
-                xA_size,
+                sizes_class.xA_size,
                 numpy.outer(subgrid_A[i0], subgrid_A[i1]),
                 axis=(0, 1),
                 use_dask=use_dask,
@@ -320,7 +319,7 @@ def make_subgrid_and_facet(
             facet[j0][j1] = _ith_subgrid_facet_element(
                 FG,
                 (-facet_off[j0], -facet_off[j1]),
-                yB_size,
+                sizes_class.yB_size,
                 numpy.outer(facet_B[j0], facet_B[j1]),
                 axis=(0, 1),
                 use_dask=use_dask,
@@ -335,12 +334,11 @@ def make_subgrid_and_facet(
 def make_subgrid_and_facet_dask_array(
     G,
     FG,
+    sizes_class,
     nsubgrid,
-    xA_size,
     subgrid_A,
     subgrid_off,
     nfacet,
-    yB_size,
     facet_B,
     facet_off,
 ):
@@ -354,21 +352,21 @@ def make_subgrid_and_facet_dask_array(
     subgrid = dask.array.from_array(
         [
             _ith_subgrid_facet_element(
-                G, -subgrid_off[i], xA_size, subgrid_A[i], axis=None
+                G, -subgrid_off[i], sizes_class.xA_size, subgrid_A[i], axis=None
             )
             for i in range(nsubgrid)
         ],
-        chunks=(1, xA_size),
+        chunks=(1, sizes_class.xA_size),
     ).astype(complex)
 
     facet = dask.array.from_array(
         [
             _ith_subgrid_facet_element(
-                FG, -facet_off[j], yB_size, facet_B[j], axis=None
+                FG, -facet_off[j], sizes_class.yB_size, facet_B[j], axis=None
             )
             for j in range(nfacet)
         ],
-        chunks=(1, yB_size),
+        chunks=(1, sizes_class.yB_size),
     ).astype(complex)
 
     return subgrid, facet
