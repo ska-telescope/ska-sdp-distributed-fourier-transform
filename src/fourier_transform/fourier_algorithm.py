@@ -1192,25 +1192,24 @@ def finish_facet(MiNjSi_sum, Fb, facet_B, yB_size, j, axis, **kwargs):
 
 
 # COMMON 1D and 2D FUNCTIONS -- SETTING UP FOR ALGORITHM TO RUN
-def calculate_pswf(yN_size, alpha, W):
+def calculate_pswf(sizes_class, alpha):
     """
     Calculate PSWF (prolate-spheroidal wave function) at the
     full required resolution (facet size)
 
-    :param yN_size: needed padding
+    :param sizes_class: Sizes class object containing fundamental and derived parameters
     :param alpha: TODO: ???, int
-    :param W: PSWF parameter (grid-space support), float
     """
-    pswf = anti_aliasing_function(yN_size, alpha, numpy.pi * W / 2).real
+    pswf = anti_aliasing_function(
+        sizes_class.yN_size, alpha, numpy.pi * sizes_class.W / 2
+    ).real
     pswf /= numpy.prod(
         numpy.arange(2 * alpha - 1, 0, -2, dtype=float)
     )  # double factorial
     return pswf
 
 
-def get_actual_work_terms(
-    pswf, xM, xMxN_yP_size, yB_size, yN_size, xM_size, N, yP_size
-):
+def get_actual_work_terms(pswf, sizes_class):
     """
     Get gridding-related functions.
     Calculate actual work terms to use. We need both $n$ and $b$ in image space
@@ -1218,14 +1217,7 @@ def get_actual_work_terms(
                          "b": grid correction function.
 
     :param pswf: prolate-spheroidal wave function
-    :param xM: TODO ???
-    :param xMxN_yP_size: length of the region to be cut out of the prepared facet data.
-                         i.e. len(facet_m0_trunc)
-    :param yB_size: effective facet size
-    :param yN_size: needed padding
-    :param xM_size: padded (rough) subgrid size
-    :param N: total image size in one direction
-    :param yP_size: padded (rough) image size (facet)
+    :param sizes_class: Sizes class object containing fundamental and derived parameters
 
     :return:
         Fb: Fourier transform of grid correction function
@@ -1236,14 +1228,24 @@ def get_actual_work_terms(
     instead of one per facet/subgrid) is that we assume that they are all the same function,
     just shifted in grid and image space respectively (to the positions of the subgrids and facets)
     """
-    Fb = 1 / extract_mid(pswf, yB_size)
-    Fn = pswf[(yN_size // 2) % int(1 / 2 / xM) :: int(1 / 2 / xM)]
-    facet_m0_trunc = pswf * numpy.sinc(coordinates(yN_size) * xM_size / N * yN_size)
+    Fb = 1 / extract_mid(pswf, sizes_class.yB_size)
+    Fn = pswf[
+        (sizes_class.yN_size // 2)
+        % int(1 / 2 / sizes_class.xM) :: int(1 / 2 / sizes_class.xM)
+    ]
+    facet_m0_trunc = pswf * numpy.sinc(
+        coordinates(sizes_class.yN_size)
+        * sizes_class.xM_size
+        / sizes_class.N
+        * sizes_class.yN_size
+    )
     facet_m0_trunc = (
-        xM_size
-        * yP_size
-        / N
-        * extract_mid(ifft(pad_mid(facet_m0_trunc, yP_size)), xMxN_yP_size).real
+        sizes_class.xM_size
+        * sizes_class.yP_size
+        / sizes_class.N
+        * extract_mid(
+            ifft(pad_mid(facet_m0_trunc, sizes_class.yP_size)), sizes_class.xMxN_yP_size
+        ).real
     )
     return Fb, Fn, facet_m0_trunc
 

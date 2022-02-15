@@ -10,6 +10,7 @@ import dask
 from distributed import performance_report
 from matplotlib import pylab
 
+from src.fourier_transform.algorithm_parameters import Sizes
 from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
 
 from src.fourier_transform.fourier_algorithm import (
@@ -72,37 +73,33 @@ TARGET_PARS = {
     "xM_size": 256,  # padded (rough) subgrid size
 }
 
-# expand these, instead of running exec(f"{n} = target_pars[n]") to fix code syntax
-W = TARGET_PARS["W"]
-fov = TARGET_PARS["fov"]
-N = TARGET_PARS["N"]
-Nx = TARGET_PARS["Nx"]
-yB_size = TARGET_PARS["yB_size"]
-yN_size = TARGET_PARS["yN_size"]
-yP_size = TARGET_PARS["yP_size"]
-xA_size = TARGET_PARS["xA_size"]
-xM_size = TARGET_PARS["xM_size"]
-
 ALPHA = 0
 
 
 def _algorithm_with_dask_array(
     G,
+    sizes_class,
     nsubgrid,
     nfacet,
     subgrid_A,
     facet_B,
     subgrid_off,
     facet_off,
-    xMxN_yP_size,
-    xN_yP_size,
-    xM_yP_size,
-    xM_yN_size,
     Fb,
     Fn,
     facet_m0_trunc,
     dtype,
 ):
+    xMxN_yP_size = sizes_class.xMxN_yP_size
+    xN_yP_size = sizes_class.xN_yP_size
+    xM_yP_size = sizes_class.xM_yP_size
+    xM_yN_size = sizes_class.xM_yN_size
+    xA_size = sizes_class.xA_size
+    yB_size = sizes_class.yB_size
+    yP_size = sizes_class.yP_size
+    N = sizes_class.N
+    xM_size = sizes_class.xM_size
+
     FG = fft(G)
     subgrid, facet = make_subgrid_and_facet_dask_array(
         G,
@@ -179,21 +176,28 @@ def _algorithm_with_dask_array(
 
 def _algorithm_with_dask_delayed(
     G,
+    sizes_class,
     nsubgrid,
     nfacet,
     subgrid_A,
     facet_B,
     subgrid_off,
     facet_off,
-    xMxN_yP_size,
-    xN_yP_size,
-    xM_yP_size,
-    xM_yN_size,
     Fb,
     Fn,
     facet_m0_trunc,
     dtype,
 ):
+    xMxN_yP_size = sizes_class.xMxN_yP_size
+    xN_yP_size = sizes_class.xN_yP_size
+    xM_yP_size = sizes_class.xM_yP_size
+    xM_yN_size = sizes_class.xM_yN_size
+    xA_size = sizes_class.xA_size
+    yB_size = sizes_class.yB_size
+    yP_size = sizes_class.yP_size
+    N = sizes_class.N
+    xM_size = sizes_class.xM_size
+
     FG = fft(G)
     subgrid, facet = make_subgrid_and_facet(
         G,
@@ -280,21 +284,28 @@ def _algorithm_with_dask_delayed(
 
 def _algorithm_in_serial(
     G,
+    sizes_class,
     nsubgrid,
     nfacet,
     subgrid_A,
     facet_B,
     subgrid_off,
     facet_off,
-    xMxN_yP_size,
-    xN_yP_size,
-    xM_yP_size,
-    xM_yN_size,
     Fb,
     Fn,
     facet_m0_trunc,
     dtype,
 ):
+    xMxN_yP_size = sizes_class.xMxN_yP_size
+    xN_yP_size = sizes_class.xN_yP_size
+    xM_yP_size = sizes_class.xM_yP_size
+    xM_yN_size = sizes_class.xM_yN_size
+    xA_size = sizes_class.xA_size
+    yB_size = sizes_class.yB_size
+    yP_size = sizes_class.yP_size
+    N = sizes_class.N
+    xM_size = sizes_class.xM_size
+
     FG = fft(G)
     subgrid, facet = make_subgrid_and_facet(
         G,
@@ -398,97 +409,60 @@ def main(to_plot=True, fig_name=None, use_dask=False, dask_option="array"):
     :param dask_option: Dask optimisation option -- array or delayed
     """
     log.info("== Chosen configuration")
-    for n in [
-        "W",
-        "fov",
-        "N",
-        "Nx",
-        "yB_size",
-        "yN_size",
-        "yP_size",
-        "xA_size",
-        "xM_size",
-    ]:
-        log.info(f"{n} = {TARGET_PARS[n]}")
-
-    log.info("\n== Relative coordinates")
-    xM = xM_size / 2 / N
-
-    log.info("\n== Derived values")
-    xN_size = N * W / yN_size
-
-    # Note from Peter: Note that this (xM_yP_size) is xM_yN_size * yP_size / yN_size.
-    # So could replace by yN_size, which would be the more fundamental entity.
-    # Generally - if you don't want to carry a structure around with all the derived values,
-    # it would probably best just to re-derive these entities from the fundamental sizes when required.
-    # I mean, the names basically tell you how to calculate them - x[a]_y[b]_size = x[a]_size * y[b]_size / N
-    # ^ Gabi: we will have to deal with the input params and derived values better,
-    #         this could be a way of refactoring + keeping them in a class that does the necessary calcs
-    xM_yP_size = xM_size * yP_size // N
-
-    xMxN_yP_size = xM_yP_size + int(2 * numpy.ceil(xN_size * yP_size / N / 2))
-    assert (xM_size * yN_size) % N == 0
-
-    # same note as above xM_yP_size; could be replaced with xM_size
-    xM_yN_size = xM_size * yN_size // N
-
-    xN_yP_size = xMxN_yP_size - xM_yP_size
+    sizes = Sizes(**TARGET_PARS)
+    log.info(sizes)
 
     # TODO: nfacet is redefined later; which is correct?
-    if fov is not None:
-        nfacet = int(numpy.ceil(N * fov / yB_size))
+    if sizes.fov is not None:
+        nfacet = int(numpy.ceil(sizes.N * sizes.fov / sizes.yB_size))
         log.info(
-            f"{nfacet}x{nfacet} facets for FoV of {fov} ({N * fov / nfacet / yB_size * 100}% efficiency)"
+            f"{nfacet}x{nfacet} facets for FoV of {sizes.fov} "
+            f"({sizes.N * sizes.fov / nfacet / sizes.yB_size * 100}% efficiency)"
         )
 
     log.info("\n== Calculate PSWF")
-    pswf = calculate_pswf(yN_size, ALPHA, W)
+    pswf = calculate_pswf(sizes, ALPHA)
 
     if to_plot:
-        plot_1(pswf, N, yN_size, W, yB_size, fig_name=fig_name)
+        plot_1(pswf, sizes, fig_name=fig_name)
 
     # Calculate actual work terms to use. We need both $n$ and $b$ in image space.
-    Fb, Fn, facet_m0_trunc = get_actual_work_terms(
-        pswf, xM, xMxN_yP_size, yB_size, yN_size, xM_size, N, yP_size
-    )
+    Fb, Fn, facet_m0_trunc = get_actual_work_terms(pswf, sizes)
 
     if to_plot:
-        plot_2(facet_m0_trunc, xM, xMxN_yP_size, yP_size, fig_name=fig_name)
+        plot_2(facet_m0_trunc, sizes, fig_name=fig_name)
 
     log.info("\n== Generate layout (factes and subgrids")
     # Layout subgrids + facets
-    nsubgrid = int(math.ceil(N / xA_size))
-    nfacet = int(math.ceil(N / yB_size))
+    nsubgrid = int(math.ceil(sizes.N / sizes.xA_size))
+    nfacet = int(math.ceil(sizes.N / sizes.yB_size))
     log.info("%d subgrids, %d facets needed to cover" % (nsubgrid, nfacet))
-    subgrid_off = xA_size * numpy.arange(nsubgrid) + Nx
-    facet_off = yB_size * numpy.arange(nfacet)
+    subgrid_off = sizes.xA_size * numpy.arange(nsubgrid) + sizes.Nx
+    facet_off = sizes.yB_size * numpy.arange(nfacet)
 
-    assert whole(numpy.outer(subgrid_off, facet_off) / N)
-    assert whole(facet_off * xM_size / N)
+    assert whole(numpy.outer(subgrid_off, facet_off) / sizes.N)
+    assert whole(facet_off * sizes.xM_size / sizes.N)
 
     log.info("\n== Generate A/B masks and subgrid/facet offsets")
     # Determine subgrid/facet offsets and the appropriate A/B masks for cutting them out.
     # We are aiming for full coverage here: Every pixel is part of exactly one subgrid / facet.
 
-    facet_B = generate_mask(N, nfacet, yB_size, facet_off)
-    subgrid_A = generate_mask(N, nsubgrid, xA_size, subgrid_off)
+    facet_B = generate_mask(sizes.N, nfacet, sizes.yB_size, facet_off)
+    subgrid_A = generate_mask(sizes.N, nsubgrid, sizes.xA_size, subgrid_off)
 
-    G = numpy.random.rand(N) - 0.5
+    G = numpy.random.rand(sizes.N) - 0.5
     dtype = numpy.complex128
 
     if use_dask and dask_option == "array":
         subgrid, facet, approx_subgrid, approx_facet = _algorithm_with_dask_array(
             G,
+            sizes,
             nsubgrid,
             nfacet,
             subgrid_A,
             facet_B,
             subgrid_off,
             facet_off,
-            xMxN_yP_size,
-            xN_yP_size,
-            xM_yP_size,
-            xM_yN_size,
             Fb,
             Fn,
             facet_m0_trunc,
@@ -501,16 +475,13 @@ def main(to_plot=True, fig_name=None, use_dask=False, dask_option="array"):
     elif use_dask and dask_option == "delayed":
         subgrid, facet, approx_subgrid, approx_facet = _algorithm_with_dask_delayed(
             G,
+            sizes,
             nsubgrid,
             nfacet,
             subgrid_A,
             facet_B,
             subgrid_off,
             facet_off,
-            xMxN_yP_size,
-            xN_yP_size,
-            xM_yP_size,
-            xM_yN_size,
             Fb,
             Fn,
             facet_m0_trunc,
@@ -520,16 +491,13 @@ def main(to_plot=True, fig_name=None, use_dask=False, dask_option="array"):
     else:
         subgrid, facet, approx_subgrid, approx_facet = _algorithm_in_serial(
             G,
+            sizes,
             nsubgrid,
             nfacet,
             subgrid_A,
             facet_B,
             subgrid_off,
             facet_off,
-            xMxN_yP_size,
-            xN_yP_size,
-            xM_yP_size,
-            xM_yN_size,
             Fb,
             Fn,
             facet_m0_trunc,
@@ -540,8 +508,8 @@ def main(to_plot=True, fig_name=None, use_dask=False, dask_option="array"):
         approx_subgrid,
         nsubgrid,
         subgrid,
-        xA_size,
-        N,
+        sizes.xA_size,
+        sizes.N,
         to_plot=to_plot,
         fig_name=fig_name,
     )
@@ -550,10 +518,7 @@ def main(to_plot=True, fig_name=None, use_dask=False, dask_option="array"):
         approx_facet,
         facet,
         nfacet,
-        xM,
-        yB_size,
-        xA_size,
-        N,
+        sizes,
         to_plot=to_plot,
         fig_name=fig_name,
     )
