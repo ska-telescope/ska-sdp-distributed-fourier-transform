@@ -585,12 +585,7 @@ def main(to_plot=True, fig_name=None, use_dask=False):
         log.info(f"{n} = {TARGET_PARS[n]}")
 
     log.info("\n== Relative coordinates")
-    xN = W / yN_size / 2
     xM = xM_size / 2 / N
-    yN = yN_size / 2
-    xA = xA_size / 2 / N
-    yB = yB_size / 2
-    log.info("xN=%g xM=%g yN=%g xNyN=%g xA=%g" % (xN, xM, yN, xN * yN, xA))
 
     log.info("\n== Derived values")
     xN_size = N * W / yN_size
@@ -598,10 +593,6 @@ def main(to_plot=True, fig_name=None, use_dask=False):
     xMxN_yP_size = xM_yP_size + int(2 * numpy.ceil(xN_size * yP_size / N / 2))
     assert (xM_size * yN_size) % N == 0
     xM_yN_size = xM_size * yN_size // N
-
-    log.info(
-        f"xN_size={xN_size:.1f} xM_yP_size={xM_yP_size}, xMxN_yP_size={xMxN_yP_size}, xM_yN_size={xM_yN_size}"
-    )
 
     if fov is not None:
         nfacet = int(numpy.ceil(N * fov / yB_size))
@@ -613,7 +604,7 @@ def main(to_plot=True, fig_name=None, use_dask=False):
     pswf = calculate_pswf(yN_size, ALPHA, W)
 
     if to_plot:
-        plot_1(pswf, xN, xN_size, yB, yN, N, yN_size, fig_name=fig_name)
+        plot_1(pswf, xN_size, N, yN_size, W, yB_size, fig_name=fig_name)
 
     # Calculate actual work terms to use. We need both $n$ and $b$ in image space.
     Fb, Fn, facet_m0_trunc = get_actual_work_terms(
