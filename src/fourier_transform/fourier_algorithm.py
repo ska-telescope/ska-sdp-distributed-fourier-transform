@@ -230,6 +230,16 @@ def anti_aliasing_function(shape, m, c):
 def _ith_subgrid_facet_element(
     true_image, offset_i, true_usable_size, mask_element, axis=None, **kwargs
 ):
+    """
+    :param true_image: true image, G (1D or 2D)
+    :param offset_i: ith offset (subgrid or facet)
+    :param true_usable_size: xA_size for subgrid, and yB_size for facet
+    :param mask_element: an element of subgrid_A or facet_B (masks)
+    :param axis: axis (0 or 1)
+    :param kwargs: needs to contain the following if dask is used:
+            use_dask: True
+            nout: <number of function outputs> --> 1
+    """
     result = mask_element * extract_mid(
         numpy.roll(true_image, offset_i, axis), true_usable_size
     )
@@ -393,6 +403,9 @@ def facet_contribution_to_subgrid_1d(
     :param offset_i: ith offset value (subgrid)
     :param Fn: Fourier transform of gridding function
     :param sizes_class: Sizes class object containing fundamental and derived parameters
+    :param kwargs: needs to contain the following if dask is used:
+                use_dask: True
+                nout: <number of function outputs> --> 1
 
     :return: facet_in_a_subgrid: facet contribution to a subgrid
     """
@@ -450,6 +463,14 @@ def facet_contribution_to_subgrid_1d_dask_array(
 
 @dask_wrapper
 def prepare_facet_1d(facet_j, Fb, yP_size, **kwargs):
+    """
+    :param facet_j: jth facet element
+    :param Fb: Fourier transform of grid correction function
+    :param yP_size: padded (rough) facet size
+    :param kwargs: needs to contain the following if dask is used:
+            use_dask: True
+            nout: <number of function outputs> --> 1
+    """
     return ifft(pad_mid(facet_j * Fb, yP_size))  # prepare facet
 
 
@@ -547,6 +568,16 @@ def facets_to_subgrid_1d_dask_array(
 
 @dask_wrapper
 def _add_padded_value(nmbf, facet_off_j, xM_size, N, **kwargs):
+    """
+    :param nmbf: a single element of the subgrid array calculated from
+                 facets by facets_to_subgrid_1d
+    :param facet_off_j: jth facet offset
+    :param xM_size: padded (rough) subgrid size
+    :param N: total image size
+    :param kwargs: needs to contain the following if dask is used:
+            use_dask: True
+            nout: <number of function outputs> --> 1
+    """
     return numpy.roll(pad_mid(nmbf, xM_size), facet_off_j * xM_size // N)
 
 
@@ -645,7 +676,15 @@ def reconstruct_subgrid_1d_dask_array(
 
 @dask_wrapper
 def _calculate_fns_term(subgrid_ith, facet_off_jth, Fn, sizes_class, **kwargs):
-
+    """
+    :param subgrid_ith: ith subgrid element
+    :param facet_off_jth: jth facet offset
+    :param Fn: Fourier transform of gridding function
+    :param sizes_class: Sizes class object containing fundamental and derived parameters
+    :param kwargs: needs to contain the following if dask is used:
+            use_dask: True
+            nout: <number of function outputs> --> 1
+    """
     return Fn * extract_mid(
         numpy.roll(
             fft(pad_mid(subgrid_ith, sizes_class.xM_size)),
@@ -739,6 +778,9 @@ def add_subgrid_contribution_1d(
     :param facet_m0_trunc: mask truncated to a facet (image space)
     :param subgrid_off_i: subgrid offset [i]th element
     :param sizes_class: Sizes class object containing fundamental and derived parameters
+    :param kwargs: needs to contain the following if dask is used:
+            use_dask: True
+            nout: <number of function outputs> --> 1
 
     :return: subgrid contribution
     """
@@ -896,13 +938,15 @@ def reconstruct_facet_1d_dask_array(
 def prepare_facet(facet, axis, Fb, yP_size, **kwargs):
     """
 
-    param facet: Facet
-    param axis: Axis
-    param Fb:
-    param yP_size: Facet size, padded for m convolution (internal)
+    :param facet: Facet
+    :param axis: Axis
+    :param Fb:
+    :param yP_size: Facet size, padded for m convolution (internal)
+    :param kwargs: needs to contain the following if dask is used:
+            use_dask: True
+            nout: <number of function outputs> --> 1
 
-
-    return: BF
+    :return: BF
     """
     BF = pad_mid_a(facet * broadcast_a(Fb, len(facet.shape), axis), yP_size, axis)
     BF = ifft_a(BF, axis)
@@ -930,12 +974,17 @@ def extract_subgrid(
     :param facet_m0_trunc:
     :param Fn:
     :param sizes_class: Sizes class object containing fundamental and derived parameters
+    :param kwargs: needs to contain the following if dask is used:
+            use_dask: True
+            nout: <number of function outputs> --> 1
 
     :return:
     """
     dims = len(BF.shape)
     BF_mid = extract_mid_a(
-        numpy.roll(BF, -subgrid_off_i * sizes_class.yP_size // sizes_class.N, axis), sizes_class.xMxN_yP_size, axis
+        numpy.roll(BF, -subgrid_off_i * sizes_class.yP_size // sizes_class.N, axis),
+        sizes_class.xMxN_yP_size,
+        axis,
     )
     MBF = broadcast_a(facet_m0_trunc, dims, axis) * BF_mid
     MBF_sum = numpy.array(extract_mid_a(MBF, sizes_class.xM_yP_size, axis))
@@ -958,6 +1007,9 @@ def prepare_subgrid(subgrid, xM_size, **kwargs):
     Initial shared work per subgrid - no reason to do this per-axis, so always do it for all
     :param subgrid: Subgrid
     :param xM_size: Subgrid size, padded for transfer (internal)
+    :param kwargs: needs to contain the following if dask is used:
+            use_dask: True
+            nout: <number of function outputs> --> 1
 
     :return: the FS term
     """
@@ -965,9 +1017,7 @@ def prepare_subgrid(subgrid, xM_size, **kwargs):
 
 
 @dask_wrapper
-def extract_facet_contribution(
-    FSi, Fn, facet_off_j, sizes_class, axis, **kwargs
-):
+def extract_facet_contribution(FSi, Fn, facet_off_j, sizes_class, axis, **kwargs):
     """
     Extract contribution of subgrid to a facet
 
@@ -976,12 +1026,17 @@ def extract_facet_contribution(
     :param facet_off_j:
     :param sizes_class: Sizes class object containing fundamental and derived parameters
     :param axis: Axis
+    :param kwargs: needs to contain the following if dask is used:
+            use_dask: True
+            nout: <number of function outputs> --> 1
 
     :return: Contribution of facet on the subgrid
 
     """
     return broadcast_a(Fn, len(FSi.shape), axis) * extract_mid_a(
-        numpy.roll(FSi, -facet_off_j * sizes_class.xM_size // sizes_class.N, axis), sizes_class.xM_yN_size, axis
+        numpy.roll(FSi, -facet_off_j * sizes_class.xM_size // sizes_class.N, axis),
+        sizes_class.xM_yN_size,
+        axis,
     )
 
 
@@ -1004,6 +1059,9 @@ def add_subgrid_contribution(
     :param subgrid_off:
     :param sizes_class: Sizes class object containing fundamental and derived parameters
     :param axis:
+    :param kwargs: needs to contain the following if dask is used:
+            use_dask: True
+            nout: <number of function outputs> --> 1
 
     :return MiNjSi_sum:
 
@@ -1018,7 +1076,9 @@ def add_subgrid_contribution(
     NjSi_temp = NjSi_temp * broadcast_a(facet_m0_trunc, len(NjSi.shape), axis)
 
     return numpy.roll(
-        pad_mid_a(NjSi_temp, sizes_class.yP_size, axis), subgrid_off_i * sizes_class.yP_size // sizes_class.N, axis=axis
+        pad_mid_a(NjSi_temp, sizes_class.yP_size, axis),
+        subgrid_off_i * sizes_class.yP_size // sizes_class.N,
+        axis=axis,
     )
 
 
@@ -1032,6 +1092,9 @@ def finish_facet(MiNjSi_sum, Fb, facet_B_j, yB_size, axis, **kwargs):
     :param facet_B_j:
     :param yB_size: effective facet size
     :param axis:
+    :param kwargs: needs to contain the following if dask is used:
+            use_dask: True
+            nout: <number of function outputs> --> 1
 
     :return: The finished facet (in BMNAF term)
     """

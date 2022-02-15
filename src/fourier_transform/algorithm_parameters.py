@@ -62,20 +62,22 @@ class Sizes:
             raise ValueError
 
     def __str__(self):
-        class_string = "Fundamental parameters: \n" \
-                       f"W = {self.W}\n" \
-                       f"fov = {self.fov}\n" \
-                       f"N = {self.N}\n" \
-                       f"Nx = {self.Nx}\n" \
-                       f"yB_size = {self.yB_size}\n" \
-                       f"yP_size = {self.yP_size}\n" \
-                       f"xA_size = {self.xA_size}\n" \
-                       f"xM_size = {self.xM_size}\n" \
-                       f"yN_size = {self.yN_size}\n" \
-                       f"\nDerived values: \n" \
-                       f"xM = {self.xM}\n" \
-                       f"xM_yP_size = {self.xM_yP_size}\n" \
-                       f"xM_yN_size = {self.xM_yN_size}\n" \
-                       f"xMxN_yP_size = {self.xMxN_yP_size}\n" \
-                       f"xN_yP_size = {self.xN_yP_size}"
+        class_string = (
+            "Fundamental parameters: \n"
+            f"W = {self.W}\n"
+            f"fov = {self.fov}\n"
+            f"N = {self.N}\n"
+            f"Nx = {self.Nx}\n"
+            f"yB_size = {self.yB_size}\n"
+            f"yP_size = {self.yP_size}\n"
+            f"xA_size = {self.xA_size}\n"
+            f"xM_size = {self.xM_size}\n"
+            f"yN_size = {self.yN_size}\n"
+            f"\nDerived values: \n"
+            f"xM = {self.xM}\n"
+            f"xM_yP_size = {self.xM_yP_size}\n"
+            f"xM_yN_size = {self.xM_yN_size}\n"
+            f"xMxN_yP_size = {self.xMxN_yP_size}\n"
+            f"xN_yP_size = {self.xN_yP_size}"
+        )
         return class_string

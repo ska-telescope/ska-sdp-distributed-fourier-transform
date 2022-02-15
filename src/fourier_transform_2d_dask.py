@@ -248,6 +248,7 @@ def facet_to_subgrid_2d_method_1(
     :param nsubgrid: number of subgrid
     :param nfacet: number of facet
     :param subgrid_off: subgrid offset
+    :param sizes_class: Sizes class object containing fundamental and derived parameters
     :param use_dask: use dask.delayed or not
 
     :return: TODO ???
@@ -331,6 +332,7 @@ def facet_to_subgrid_2d_method_2(
     :param nsubgrid: number of subgrid
     :param nfacet: number of facet
     :param subgrid_off: subgrid offset
+    :param sizes_class: Sizes class object containing fundamental and derived parameters
     :param use_dask: use dask.delayed or not
     """
     for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
@@ -390,6 +392,7 @@ def facet_to_subgrid_2d_method_3(
     :param nsubgrid: number of subgrid
     :param nfacet: number of facet
     :param subgrid_off: subgrid offset
+    :param sizes_class: Sizes class object containing fundamental and derived parameters
     :param use_dask: use dask.delayed or not
     """
     for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
@@ -541,6 +544,7 @@ def main(to_plot=True, fig_name=None, use_dask=False):
     sizes = Sizes(**TARGET_PARS)
     log.info(sizes)
 
+    # TODO: nfacet is redefined later; which is correct?
     if sizes.fov is not None:
         nfacet = int(numpy.ceil(sizes.N * sizes.fov / sizes.yB_size))
         log.info(
