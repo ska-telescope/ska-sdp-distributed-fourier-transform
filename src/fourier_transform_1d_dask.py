@@ -2,7 +2,6 @@
 # coding: utf-8
 import logging
 import math
-import os
 
 import numpy
 import sys
@@ -40,9 +39,6 @@ from src.fourier_transform.utils import (
 log = logging.getLogger("fourier-logger")
 log.setLevel(logging.INFO)
 log.addHandler(logging.StreamHandler(sys.stdout))
-
-# Fixing seed of numpy random
-numpy.random.seed(123456789)
 
 # Plot setup
 pylab.rcParams["figure.figsize"] = 16, 4
@@ -401,10 +397,6 @@ def main(to_plot=True, fig_name=None, use_dask=False, dask_option="array"):
     :param use_dask: use dask?
     :param dask_option: Dask optimisation option -- array or delayed
     """
-
-    # TODO: remove this from here and implement supplying it to main as input arg
-    use_dask = os.getenv("USE_DASK", False) == "True"
-
     log.info("== Chosen configuration")
     for n in [
         "W",
@@ -579,11 +571,13 @@ def main(to_plot=True, fig_name=None, use_dask=False, dask_option="array"):
 
 
 if __name__ == "__main__":
+    # Fixing seed of numpy random
+    numpy.random.seed(123456789)
 
-    client, current_env_var = set_up_dask()
+    client = set_up_dask()
     with performance_report(filename="dask-report.html"):
-        main(to_plot=False)
-    tear_down_dask(client, current_env_var)
+        main(to_plot=False, use_dask=True)
+    tear_down_dask(client)
 
     # all above needs commenting and this uncommenting if want to run it without dask
     # main(to_plot=False)
