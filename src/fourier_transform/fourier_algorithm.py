@@ -254,12 +254,11 @@ def make_subgrid_and_facet(
 
     :param G: "ground truth", the actual input data
     :param FG: FFT of input data
+    :param sizes_class: Sizes class object containing fundamental and derived parameters
     :param nsubgrid: number of subgrid
-    :param xA_size: true usable subgrid size
     :param subgrid_A: subgrid mask
     :param subgrid_off: subgrid offset
     :param nfacet: number of facet
-    :param yB_size: effective facet size
     :param facet_B: facet mask
     :param facet_off: facet offset
     :param dims: Dimensions; integer 1 or 2 for 1D or 2D
@@ -298,8 +297,13 @@ def make_subgrid_and_facet(
             )
 
     elif dims == 2:
-        subgrid = numpy.empty((nsubgrid, nsubgrid, sizes_class.xA_size, sizes_class.xA_size), dtype=complex)
-        facet = numpy.empty((nfacet, nfacet, sizes_class.yB_size, sizes_class.yB_size), dtype=complex)
+        subgrid = numpy.empty(
+            (nsubgrid, nsubgrid, sizes_class.xA_size, sizes_class.xA_size),
+            dtype=complex,
+        )
+        facet = numpy.empty(
+            (nfacet, nfacet, sizes_class.yB_size, sizes_class.yB_size), dtype=complex
+        )
 
         if use_dask:
             subgrid = subgrid.tolist()
@@ -377,13 +381,8 @@ def facet_contribution_to_subgrid_1d(
     BjFj,
     facet_m0_trunc,
     offset_i,
-    yP_size,
-    N,
-    xMxN_yP_size,
-    xN_yP_size,
-    xM_yP_size,
-    xM_yN_size,
     Fn,
+    sizes_class,
     **kwargs,
 ):
     """
@@ -392,30 +391,26 @@ def facet_contribution_to_subgrid_1d(
     :param BjFj: Prepared facet data (i.e. multiplied by b, padded to yP_size, Fourier transformed)
     :param facet_m0_trunc: mask truncated to a facet (image space)
     :param offset_i: ith offset value (subgrid)
-    :param yP_size: facet size, padded for m convolution (internal; it's len(BjFj))
-    :param N: total image size on a side
-    :param xMxN_yP_size: length of the region to be cut out of the prepared facet data.
-                         i.e. len(facet_m0_trunc)
-    :param xN_yP_size: remainder of the padded facet region after the cut-out region has been subtracted of it
-                       i.e. xMxN_yP_size - xM_yP_size
-    :param xM_yP_size: (padded subgrid size * padded image size (facet)) / N
-    :param xM_yN_size: (padded subgrid size * padding) / N
     :param Fn: Fourier transform of gridding function
+    :param sizes_class: Sizes class object containing fundamental and derived parameters
 
     :return: facet_in_a_subgrid: facet contribution to a subgrid
     """
     MiBjFj = facet_m0_trunc * extract_mid(
-        numpy.roll(BjFj, -offset_i * yP_size // N), xMxN_yP_size
+        numpy.roll(BjFj, -offset_i * sizes_class.yP_size // sizes_class.N),
+        sizes_class.xMxN_yP_size,
     )
-    MiBjFj_sum = extract_mid(MiBjFj, xM_yP_size)
-    MiBjFj_sum[: xN_yP_size // 2] = (
-        MiBjFj_sum[: xN_yP_size // 2] + MiBjFj[-xN_yP_size // 2 :]
+    MiBjFj_sum = extract_mid(MiBjFj, sizes_class.xM_yP_size)
+    MiBjFj_sum[: sizes_class.xN_yP_size // 2] = (
+        MiBjFj_sum[: sizes_class.xN_yP_size // 2]
+        + MiBjFj[-sizes_class.xN_yP_size // 2 :]
     )
-    MiBjFj_sum[-xN_yP_size // 2 :] = (
-        MiBjFj_sum[-xN_yP_size // 2 :] + MiBjFj[: xN_yP_size // 2 :]
+    MiBjFj_sum[-sizes_class.xN_yP_size // 2 :] = (
+        MiBjFj_sum[-sizes_class.xN_yP_size // 2 :]
+        + MiBjFj[: sizes_class.xN_yP_size // 2 :]
     )
 
-    facet_in_a_subgrid = Fn * extract_mid(fft(MiBjFj_sum), xM_yN_size)
+    facet_in_a_subgrid = Fn * extract_mid(fft(MiBjFj_sum), sizes_class.xM_yN_size)
 
     return facet_in_a_subgrid
 
@@ -424,50 +419,37 @@ def facet_contribution_to_subgrid_1d_dask_array(
     BjFj,
     facet_m0_trunc,
     offset_i,
-    yP_size,
-    N,
-    xMxN_yP_size,
-    xN_yP_size,
-    xM_yP_size,
-    xM_yN_size,
+    sizes_class,
     Fn,
 ):
     """
     Extract the facet contribution of a subgrid for 1D version.
     Same as facet_contribution_to_subgrid_1d but implemented using dask.array.
+    Consult that function for a full docstring.
 
-    :param BjFj: Prepared facet data (i.e. multiplied by b, padded to yP_size, Fourier transformed)
-    :param facet_m0_trunc: mask truncated to a facet (image space)
-    :param offset_i: ith offset value (subgrid)
-    :param yP_size: facet size, padded for m convolution (internal; it's len(BjFj))
-    :param N: total image size on a side
-    :param xMxN_yP_size: length of the region to be cut out of the prepared facet data.
-                         i.e. len(facet_m0_trunc)
-    :param xN_yP_size: remainder of the padded facet region after the cut-out region has been subtracted of it
-                       i.e. xMxN_yP_size - xM_yP_size
-    :param xM_yP_size: (padded subgrid size * padded image size (facet)) / N
-    :param xM_yN_size: (padded subgrid size * padding) / N
-    :param Fn: Fourier transform of gridding function
-
-    :return: facet_in_a_subgrid: facet contribution to a subgrid
+    Returns a dask.array.
     """
     MiBjFj = facet_m0_trunc * extract_mid(
-        numpy.roll(BjFj, -offset_i * yP_size // N), xMxN_yP_size
-    ).rechunk(xMxN_yP_size)
-    MiBjFj_sum = extract_mid(MiBjFj, xM_yP_size).rechunk(xM_yP_size)
-    MiBjFj_sum[: xN_yP_size // 2] += MiBjFj[-xN_yP_size // 2 :]
-    MiBjFj_sum[-xN_yP_size // 2 :] += MiBjFj[: xN_yP_size // 2 :]
-
-    facet_in_a_subgrid = Fn * extract_mid(fft(MiBjFj_sum), xM_yN_size).rechunk(
-        xM_yN_size
+        numpy.roll(BjFj, -offset_i * sizes_class.yP_size // sizes_class.N),
+        sizes_class.xMxN_yP_size,
+    ).rechunk(sizes_class.xMxN_yP_size)
+    MiBjFj_sum = extract_mid(MiBjFj, sizes_class.xM_yP_size).rechunk(
+        sizes_class.xM_yP_size
     )
+    MiBjFj_sum[: sizes_class.xN_yP_size // 2] += MiBjFj[-sizes_class.xN_yP_size // 2 :]
+    MiBjFj_sum[-sizes_class.xN_yP_size // 2 :] += MiBjFj[
+        : sizes_class.xN_yP_size // 2 :
+    ]
+
+    facet_in_a_subgrid = Fn * extract_mid(
+        fft(MiBjFj_sum), sizes_class.xM_yN_size
+    ).rechunk(sizes_class.xM_yN_size)
 
     return facet_in_a_subgrid
 
 
 @dask_wrapper
 def prepare_facet_1d(facet_j, Fb, yP_size, **kwargs):
-
     return ifft(pad_mid(facet_j * Fb, yP_size))  # prepare facet
 
 
@@ -475,16 +457,11 @@ def facets_to_subgrid_1d(
     facet,
     nsubgrid,
     nfacet,
-    xM_yN_size,
     Fb,
     Fn,
-    yP_size,
     facet_m0_trunc,
     subgrid_off,
-    N,
-    xMxN_yP_size,
-    xN_yP_size,
-    xM_yP_size,
+    sizes_class,
     dtype,
     use_dask,
 ):
@@ -494,42 +471,32 @@ def facets_to_subgrid_1d(
     :param facet: numpy array of facets
     :param nsubgrid: number of subgrid
     :param nfacet: number of facet
-    :param xM_yN_size: (padded subgrid size * padding) / N
     :param Fb: Fourier transform of grid correction function
     :param Fn: Fourier transform of gridding function
-    :param yP_size: padded (rough) image size (facet)
     :param facet_m0_trunc: mask truncated to a facet (image space)
     :param subgrid_off: subgrid offset
-    :param N: total image size on a side
-    :param xMxN_yP_size: length of the region to be cut out of the prepared facet data.
-                         i.e. len(facet_m0_trunc)
-    :param xN_yP_size: remainder of the padded facet region after the cut-out region has been subtracted of it
-                       i.e. xMxN_yP_size - xM_yP_size
-    :param xM_yP_size: (padded subgrid size * padded image size (facet)) / N
+    :param sizes_class: Sizes class object containing fundamental and derived parameters
     :param dtype: data type
     :param use_dask: use Dask?
 
     :return: RNjMiBjFj: array of contributions of this facet to different subgrids
     """
-    RNjMiBjFj = numpy.empty((nsubgrid, nfacet, xM_yN_size), dtype=dtype)
+    RNjMiBjFj = numpy.empty((nsubgrid, nfacet, sizes_class.xM_yN_size), dtype=dtype)
 
     if use_dask:
         RNjMiBjFj = RNjMiBjFj.tolist()
 
     for j in range(nfacet):
-        BjFj = prepare_facet_1d(facet[j], Fb, yP_size, use_dask=use_dask, nout=1)
+        BjFj = prepare_facet_1d(
+            facet[j], Fb, sizes_class.yP_size, use_dask=use_dask, nout=1
+        )
         for i in range(nsubgrid):
             RNjMiBjFj[i][j] = facet_contribution_to_subgrid_1d(  # extract subgrid
                 BjFj,
                 facet_m0_trunc,
                 subgrid_off[i],
-                yP_size,
-                N,
-                xMxN_yP_size,
-                xN_yP_size,
-                xM_yP_size,
-                xM_yN_size,
                 Fn,
+                sizes_class,
                 use_dask=use_dask,
                 nout=1,
             )
@@ -541,74 +508,50 @@ def facets_to_subgrid_1d_dask_array(
     facet,
     nsubgrid,
     nfacet,
-    xM_yN_size,
     Fb,
     Fn,
-    yP_size,
     facet_m0_trunc,
     subgrid_off,
-    N,
-    xMxN_yP_size,
-    xN_yP_size,
-    xM_yP_size,
+    sizes_class,
     dtype,
 ):
     """
     Facet to subgrid 1D algorithm. Returns redistributed subgrid data.
     Same as facets_to_subgrid_1d but implemented using dask.array.
+    Consult that function for a full docstring.
 
-    :param facet: numpy array of facets
-    :param nsubgrid: number of subgrid
-    :param nfacet: number of facet
-    :param xM_yN_size: (padded subgrid size * padding) / N
-    :param Fb: Fourier transform of grid correction function
-    :param Fn: Fourier transform of gridding function
-    :param yP_size: padded (rough) image size (facet)
-    :param facet_m0_trunc: mask truncated to a facet (image space)
-    :param subgrid_off: subgrid offset
-    :param N: total image size on a side
-    :param xMxN_yP_size: length of the region to be cut out of the prepared facet data.
-                         i.e. len(facet_m0_trunc)
-    :param xN_yP_size: remainder of the padded facet region after the cut-out region has been subtracted of it
-                       i.e. xMxN_yP_size - xM_yP_size
-    :param xM_yP_size: (padded subgrid size * padded image size (facet)) / N
-    :param dtype: data type
-
-    :return: RNjMiBjFj: array of contributions of this facet to different subgrids
+    Returns a dask.array.
     """
     RNjMiBjFj = dask.array.from_array(
         [
             [
                 facet_contribution_to_subgrid_1d_dask_array(
                     ifft(
-                        pad_mid(facet[i] * Fb, yP_size).rechunk(yP_size)
+                        pad_mid(facet[i] * Fb, sizes_class.yP_size).rechunk(
+                            sizes_class.yP_size
+                        )
                     ),  # prepare facet
                     facet_m0_trunc,
                     subgrid_off[j],
-                    yP_size,
-                    N,
-                    xMxN_yP_size,
-                    xN_yP_size,
-                    xM_yP_size,
-                    xM_yN_size,
+                    sizes_class,
                     Fn,
                 )
                 for i in range(nfacet)
             ]
             for j in range(nsubgrid)
         ],
-        chunks=(1, 1, xM_yN_size),
+        chunks=(1, 1, sizes_class.xM_yN_size),
     ).astype(dtype)
     return RNjMiBjFj
 
 
 @dask_wrapper
-def add_padded_value(nmbf, facet_off_j, xM_size, N, **kwargs):
+def _add_padded_value(nmbf, facet_off_j, xM_size, N, **kwargs):
     return numpy.roll(pad_mid(nmbf, xM_size), facet_off_j * xM_size // N)
 
 
 def reconstruct_subgrid_1d(
-    nmbfs, xM_size, nfacet, facet_off, N, subgrid_A, xA_size, nsubgrid, use_dask
+    nmbfs, nfacet, facet_off, subgrid_A, nsubgrid, sizes_class, use_dask
 ):
     """
     Reconstruct the subgrid array calculated by facets_to_subgrid_1d.
@@ -622,90 +565,98 @@ def reconstruct_subgrid_1d(
     finally we do the sum (which results in approx), hence approx is already defined with the smaller size.
 
     :param nmbfs: subgrid array calculated from facets by facets_to_subgrid_1d
-    :param xM_size: padded (rough) subgrid size
     :param nfacet: number of facet
     :param facet_off: facet offset
-    :param N: total image size on a side
     :param subgrid_A: subgrid mask
-    :param xA_size: true usable subgrid size
+    :param sizes_class: Sizes class object containing fundamental and derived parameters
     :param use_dask: use Dask?
 
     :return: approximate subgrid
     """
-    approx_subgrid = numpy.ndarray((nsubgrid, xA_size), dtype=complex)
+    approx_subgrid = numpy.ndarray((nsubgrid, sizes_class.xA_size), dtype=complex)
     if use_dask:
         approx_subgrid = approx_subgrid.tolist()
-        approx = numpy.zeros((nsubgrid, xM_size), dtype=complex)
+        approx = numpy.zeros((nsubgrid, sizes_class.xM_size), dtype=complex)
         approx = approx.tolist()
         for i in range(nsubgrid):
             for j in range(nfacet):
-                approx[i] = approx[i] + add_padded_value(
-                    nmbfs[i][j], facet_off[j], xM_size, N, use_dask=use_dask, nout=1
+                approx[i] = approx[i] + _add_padded_value(
+                    nmbfs[i][j],
+                    facet_off[j],
+                    sizes_class.xM_size,
+                    sizes_class.N,
+                    use_dask=use_dask,
+                    nout=1,
                 )
             # TODO: Here we used dask array in order to avoid complications of ifft, but this is not optimal.
-            approx_array = dask.array.from_delayed(approx[i], (xM_size,), dtype=complex)
-            approx_subgrid[i] = subgrid_A[i] * extract_mid(ifft(approx_array), xA_size)
+            approx_array = dask.array.from_delayed(
+                approx[i], (sizes_class.xM_size,), dtype=complex
+            )
+            approx_subgrid[i] = subgrid_A[i] * extract_mid(
+                ifft(approx_array), sizes_class.xA_size
+            )
     else:
         for i in range(nsubgrid):
-            approx = numpy.zeros(xM_size, dtype=complex)
+            approx = numpy.zeros(sizes_class.xM_size, dtype=complex)
             for j in range(nfacet):
-                approx = approx + add_padded_value(
-                    nmbfs[i, j], facet_off[j], xM_size, N
+                approx = approx + _add_padded_value(
+                    nmbfs[i, j], facet_off[j], sizes_class.xM_size, sizes_class.N
                 )
-            approx_subgrid[i, :] = subgrid_A[i] * extract_mid(ifft(approx), xA_size)
+            approx_subgrid[i, :] = subgrid_A[i] * extract_mid(
+                ifft(approx), sizes_class.xA_size
+            )
 
     return approx_subgrid
 
 
 def reconstruct_subgrid_1d_dask_array(
-    nmbfs, xM_size, nfacet, facet_off, N, subgrid_A, xA_size, nsubgrid
+    nmbfs, nfacet, facet_off, subgrid_A, nsubgrid, sizes_class
 ):
     """
     Reconstruct the subgrid array calculated by facets_to_subgrid_1d.
     Same as reconstruct_subgrid_1d but using dask.array.
-    TODO: same questions as for redistribute_subgrid_1d
+    Consult that function for a full docstring.
 
-    :param nmbfs: subgrid array calculated from facets by facets_to_subgrid_1d
-    :param xM_size: padded (rough) subgrid size
-    :param nfacet: number of facet
-    :param facet_off: facet offset
-    :param N: total image size on a side
-    :param subgrid_A: subgrid mask
-    :param xA_size: true usable subgrid size
-
-    :return: approximate subgrid
+    Returns a dask.array.
     """
     approx = dask.array.from_array(
-        numpy.zeros((nsubgrid, xM_size), dtype=complex), chunks=(1, xM_size)
+        numpy.zeros((nsubgrid, sizes_class.xM_size), dtype=complex),
+        chunks=(1, sizes_class.xM_size),
     )
     approx_subgrid = dask.array.from_array(
-        numpy.ndarray((nsubgrid, xA_size), dtype=complex), chunks=(1, xA_size)
+        numpy.ndarray((nsubgrid, sizes_class.xA_size), dtype=complex),
+        chunks=(1, sizes_class.xA_size),
     )
     for i in range(nsubgrid):
         for j in range(nfacet):
-            padded = pad_mid(nmbfs[i, j, :], xM_size).rechunk(xM_size)
-            approx[i, :] += numpy.roll(padded, facet_off[j] * xM_size // N)
+            padded = pad_mid(nmbfs[i, j, :], sizes_class.xM_size).rechunk(
+                sizes_class.xM_size
+            )
+            approx[i, :] += numpy.roll(
+                padded, facet_off[j] * sizes_class.xM_size // sizes_class.N
+            )
 
         approx_subgrid[i, :] = subgrid_A[i] * extract_mid(
-            ifft(approx[i]), xA_size
-        ).rechunk(xA_size)
+            ifft(approx[i]), sizes_class.xA_size
+        ).rechunk(sizes_class.xA_size)
 
     return approx_subgrid
 
 
 @dask_wrapper
-def calculate_fns_term(
-    subgrid_ith, facet_off_jth, Fn, xM_size, xM_yN_size, N, **kwargs
-):
+def _calculate_fns_term(subgrid_ith, facet_off_jth, Fn, sizes_class, **kwargs):
 
     return Fn * extract_mid(
-        numpy.roll(fft(pad_mid(subgrid_ith, xM_size)), -facet_off_jth * xM_size // N),
-        xM_yN_size,
+        numpy.roll(
+            fft(pad_mid(subgrid_ith, sizes_class.xM_size)),
+            -facet_off_jth * sizes_class.xM_size // sizes_class.N,
+        ),
+        sizes_class.xM_yN_size,
     )
 
 
 def subgrid_to_facet_1d(
-    subgrid, nsubgrid, nfacet, xM_yN_size, xM_size, facet_off, N, Fn, use_dask
+    subgrid, nsubgrid, nfacet, facet_off, Fn, sizes_class, use_dask
 ):
     """
     Subgrid to facet algorithm. Returns redistributed facet data.
@@ -713,29 +664,25 @@ def subgrid_to_facet_1d(
     :param subgrid: numpy array of subgrids
     :param nsubgrid: number of subgrid
     :param nfacet: number of facets
-    :param xM_yN_size: (padded subgrid size * padding) / N
-    :param xM_size: padded subgrid size
     :param facet_off: facet offset
-    :param N: total image size on a side
     :param Fn: Fourier transform of gridding function
+    :param sizes_class: Sizes class object containing fundamental and derived parameters
     :param use_dask: use Dask?
 
     :return: distributed facet array determined from input subgrid array
     """
-    FNjSi = numpy.empty((nsubgrid, nfacet, xM_yN_size), dtype=complex)
+    FNjSi = numpy.empty((nsubgrid, nfacet, sizes_class.xM_yN_size), dtype=complex)
 
     if use_dask:
         FNjSi = FNjSi.tolist()
 
     for i in range(nsubgrid):
         for j in range(nfacet):
-            FNjSi[i][j] = calculate_fns_term(
+            FNjSi[i][j] = _calculate_fns_term(
                 subgrid[i],
                 facet_off[j],
                 Fn,
-                xM_size,
-                xM_yN_size,
-                N,
+                sizes_class,
                 use_dask=use_dask,
                 nout=1,
             )
@@ -744,32 +691,28 @@ def subgrid_to_facet_1d(
 
 
 def subgrid_to_facet_1d_dask_array(
-    subgrid, nsubgrid, nfacet, xM_yN_size, xM_size, facet_off, N, Fn
+    subgrid, nsubgrid, nfacet, facet_off, Fn, sizes_class
 ):
     """
     Subgrid to facet algorithm. Returns redistributed facet data.
     Same as subgrid_to_facet_1d but implemented with dask.array
+    Consult that function for a full docstring.
 
-    :param subgrid: numpy array of subgrids
-    :param nsubgrid: number of subgrid
-    :param nfacet: number of facets
-    :param xM_yN_size: (padded subgrid size * padding) / N
-    :param xM_size: padded subgrid size
-    :param facet_off: facet offset
-    :param N: total image size on a side
-    :param Fn: Fourier transform of gridding function
-
-    :return: distributed facet array determined from input subgrid array
+    Returns a dask.array.
     """
     FNjSi = dask.array.from_array(
         [
             [
                 extract_mid(
                     numpy.roll(
-                        fft(pad_mid(subgrid[j], xM_size).rechunk(xM_size)),
-                        -facet_off[i] * xM_size // N,
+                        fft(
+                            pad_mid(subgrid[j], sizes_class.xM_size).rechunk(
+                                sizes_class.xM_size
+                            )
+                        ),
+                        -facet_off[i] * sizes_class.xM_size // sizes_class.N,
                     ),
-                    xM_yN_size,
+                    sizes_class.xM_yN_size,
                 )
                 for i in range(nfacet)
             ]
@@ -783,107 +726,78 @@ def subgrid_to_facet_1d_dask_array(
 
 @dask_wrapper
 def add_subgrid_contribution_1d(
-    xMxN_yP_size,
-    xM_yP_size,
     nafs_ij,
-    xN_yP_size,
     facet_m0_trunc,
-    yP_size,
     subgrid_off_i,
-    yB_size,
-    N,
+    sizes_class,
     **kwargs,
 ):
     """
     Add subgrid contribution to a single facet.
 
-    :param xMxN_yP_size: length of the region to be cut out of the prepared facet data.
-                         i.e. len(facet_m0_trunc)
-    :param xM_yP_size: (padded subgrid size * padded image size (facet)) / N
     :param nafs_ij: redistributed facet array [i:j] element
-    :param xN_yP_size: remainder of the padded facet region after the cut-out region has been subtracted of it
-                       i.e. xMxN_yP_size - xM_yP_size
     :param facet_m0_trunc: mask truncated to a facet (image space)
-    :param yP_size: facet size padded for m convolution (internal)
     :param subgrid_off_i: subgrid offset [i]th element
-    :param yB_size: effective facet size
-    :param N: total image size on a side
+    :param sizes_class: Sizes class object containing fundamental and derived parameters
 
     :return: subgrid contribution
     """
-    NjSi = numpy.zeros(xMxN_yP_size, dtype=complex)
-    NjSi_mid = extract_mid(NjSi, xM_yP_size)
-    NjSi_mid[:] = ifft(pad_mid(nafs_ij, xM_yP_size))  # updates NjSi via reference!
-    NjSi[-xN_yP_size // 2 :] = NjSi_mid[: xN_yP_size // 2]
-    NjSi[: xN_yP_size // 2 :] = NjSi_mid[-xN_yP_size // 2 :]
+    NjSi = numpy.zeros(sizes_class.xMxN_yP_size, dtype=complex)
+    NjSi_mid = extract_mid(NjSi, sizes_class.xM_yP_size)
+    NjSi_mid[:] = ifft(
+        pad_mid(nafs_ij, sizes_class.xM_yP_size)
+    )  # updates NjSi via reference!
+    NjSi[-sizes_class.xN_yP_size // 2 :] = NjSi_mid[: sizes_class.xN_yP_size // 2]
+    NjSi[: sizes_class.xN_yP_size // 2 :] = NjSi_mid[-sizes_class.xN_yP_size // 2 :]
     FMiNjSi = fft(
         numpy.roll(
-            pad_mid(facet_m0_trunc * NjSi, yP_size), subgrid_off_i * yP_size // N
+            pad_mid(facet_m0_trunc * NjSi, sizes_class.yP_size),
+            subgrid_off_i * sizes_class.yP_size // sizes_class.N,
         )
     )
-    subgrid_contrib = extract_mid(FMiNjSi, yB_size)
+    subgrid_contrib = extract_mid(FMiNjSi, sizes_class.yB_size)
     return subgrid_contrib
 
 
 def add_subgrid_contribution_1d_dask_array(
-    xMxN_yP_size,
-    xM_yP_size,
     nafs_ij,
-    xN_yP_size,
     facet_m0_trunc,
-    yP_size,
     subgrid_off_i,
-    yB_size,
-    N,
+    sizes_class,
 ):
     """
     Add subgrid contribution to a single facet.
     Same as add_subgrid_contribution_1d but implemented with dask.array.
+    Consult that function for a full docstring.
 
-    :param xMxN_yP_size: length of the region to be cut out of the prepared facet data.
-                         i.e. len(facet_m0_trunc)
-    :param xM_yP_size: (padded subgrid size * padded image size (facet)) / N
-    :param nafs_ij: redistributed facet array [i:j] element
-    :param xN_yP_size: remainder of the padded facet region after the cut-out region has been subtracted of it
-                       i.e. xMxN_yP_size - xM_yP_size
-    :param facet_m0_trunc: mask truncated to a facet (image space)
-    :param yP_size: facet size padded for m convolution (internal)
-    :param subgrid_off_i: subgrid offset [i]th element
-    :param yB_size: effective facet size
-    :param N: total image size on a side
-
-    :return: subgrid contribution
+    Returns a dask.array.
     """
-    NjSi = numpy.zeros(xMxN_yP_size, dtype=complex)
-    NjSi_mid = extract_mid(NjSi, xM_yP_size)
+    NjSi = numpy.zeros(sizes_class.xMxN_yP_size, dtype=complex)
+    NjSi_mid = extract_mid(NjSi, sizes_class.xM_yP_size)
     NjSi_mid[:] = ifft(
-        pad_mid(nafs_ij, xM_yP_size).rechunk(xM_yP_size)
+        pad_mid(nafs_ij, sizes_class.xM_yP_size).rechunk(sizes_class.xM_yP_size)
     )  # updates NjSi via reference!
-    NjSi[-xN_yP_size // 2 :] = NjSi_mid[: xN_yP_size // 2]
-    NjSi[: xN_yP_size // 2 :] = NjSi_mid[-xN_yP_size // 2 :]
+    NjSi[-sizes_class.xN_yP_size // 2 :] = NjSi_mid[: sizes_class.xN_yP_size // 2]
+    NjSi[: sizes_class.xN_yP_size // 2 :] = NjSi_mid[-sizes_class.xN_yP_size // 2 :]
     FMiNjSi = fft(
         numpy.roll(
-            pad_mid(facet_m0_trunc * NjSi, yP_size), subgrid_off_i * yP_size // N
+            pad_mid(facet_m0_trunc * NjSi, sizes_class.yP_size),
+            subgrid_off_i * sizes_class.yP_size // sizes_class.N,
         )
     )
-    subgrid_contrib = extract_mid(FMiNjSi, yB_size)
+    subgrid_contrib = extract_mid(FMiNjSi, sizes_class.yB_size)
     return subgrid_contrib
 
 
 def reconstruct_facet_1d(
     nafs,
     nfacet,
-    yB_size,
     nsubgrid,
-    xMxN_yP_size,
-    xM_yP_size,
-    xN_yP_size,
     facet_m0_trunc,
-    yP_size,
     subgrid_off,
-    N,
     Fb,
     facet_B,
+    sizes_class,
     use_dask=False,
 ):
     """
@@ -891,19 +805,13 @@ def reconstruct_facet_1d(
 
     :param nafs: redistributed facet array calculated from facets by subgrid_to_facet_1d
     :param nfacet: number of facets
-    :param yB_size: effective facet size
     :param nsubgrid: number of subgrids
-    :param xMxN_yP_size: length of the region to be cut out of the prepared facet data.
-                         i.e. len(facet_m0_trunc)
-    :param xM_yP_size: (padded subgrid size * padded image size (facet)) / N
-    :param xN_yP_size: remainder of the padded facet region after the cut-out region has been subtracted of it
-                       i.e. xMxN_yP_size - xM_yP_size
     :param facet_m0_trunc: mask truncated to a facet (image space)
-    :param yP_size: facet size padded for m convolution (internal)
     :param subgrid_off: subgrid offset
-    :param N: total image size on a side
     :param Fb: Fourier transform of grid correction function
     :param facet_B: facet mask
+    :param sizes_class: Sizes class object containing fundamental and derived parameters
+    :param use_dask: whether to run with dask.delayed or not
 
     :return: approximate facet
     """
@@ -914,41 +822,31 @@ def reconstruct_facet_1d(
     # In reconstruct_subgrid_1d we first do the sum, and then cut from xM_size to xA_size,
     # hence approx starts as a larger sized array in that case.
 
-    approx_facet = numpy.ndarray((nfacet, yB_size), dtype=complex)
+    approx_facet = numpy.ndarray((nfacet, sizes_class.yB_size), dtype=complex)
     if use_dask:
         approx_facet = approx_facet.tolist()
-        approx = numpy.zeros((nfacet, yB_size), dtype=complex)
+        approx = numpy.zeros((nfacet, sizes_class.yB_size), dtype=complex)
         approx = approx.tolist()
         for j in range(nfacet):
             for i in range(nsubgrid):
                 approx[j] = approx[j] + add_subgrid_contribution_1d(
-                    xMxN_yP_size,
-                    xM_yP_size,
                     nafs[i][j],
-                    xN_yP_size,
                     facet_m0_trunc,
-                    yP_size,
                     subgrid_off[i],
-                    yB_size,
-                    N,
+                    sizes_class,
                     use_dask=use_dask,
                     nout=1,
                 )
             approx_facet[j] = approx[j] * Fb * facet_B[j]
     else:
         for j in range(nfacet):
-            approx = numpy.zeros(yB_size, dtype=complex)
+            approx = numpy.zeros(sizes_class.yB_size, dtype=complex)
             for i in range(nsubgrid):
                 approx = approx + add_subgrid_contribution_1d(
-                    xMxN_yP_size,
-                    xM_yP_size,
                     nafs[i, j],
-                    xN_yP_size,
                     facet_m0_trunc,
-                    yP_size,
                     subgrid_off[i],
-                    yB_size,
-                    N,
+                    sizes_class,
                 )
             approx_facet[j, :] = approx * Fb * facet_B[j]
 
@@ -958,58 +856,35 @@ def reconstruct_facet_1d(
 def reconstruct_facet_1d_dask_array(
     nafs,
     nfacet,
-    yB_size,
     nsubgrid,
-    xMxN_yP_size,
-    xM_yP_size,
-    xN_yP_size,
     facet_m0_trunc,
-    yP_size,
     subgrid_off,
-    N,
     Fb,
     facet_B,
+    sizes_class,
 ):
     """
     Reconstruct the facet array calculated by subgrid_to_facet_1d.
     Same as reconstruct_facet_1d but implemented with dask.array.
+    Consult that function for a full docstring.
 
-    :param nafs: redistributed facet array calculated from facets by subgrid_to_facet_1d
-    :param nfacet: number of facets
-    :param yB_size: effective facet size
-    :param nsubgrid: number of subgrids
-    :param xMxN_yP_size: length of the region to be cut out of the prepared facet data.
-                         i.e. len(facet_m0_trunc)
-    :param xM_yP_size: (padded subgrid size * padded image size (facet)) / N
-    :param xN_yP_size: remainder of the padded facet region after the cut-out region has been subtracted of it
-                       i.e. xMxN_yP_size - xM_yP_size
-    :param facet_m0_trunc: mask truncated to a facet (image space)
-    :param yP_size: facet size padded for m convolution (internal)
-    :param subgrid_off: subgrid offset
-    :param N: total image size on a side
-    :param Fb: Fourier transform of grid correction function
-    :param facet_B: facet mask
-
-    :return: approximate facet
+    Returns a dask.array.
     """
     approx = dask.array.from_array(
-        numpy.zeros((nfacet, yB_size), dtype=complex), chunks=(1, yB_size)
+        numpy.zeros((nfacet, sizes_class.yB_size), dtype=complex),
+        chunks=(1, sizes_class.yB_size),
     )  # why is this not yP_size? for the subgrid version it uses xM_size
     approx_facet = dask.array.from_array(
-        numpy.ndarray((nfacet, yB_size), dtype=complex), chunks=(1, yB_size)
+        numpy.ndarray((nfacet, sizes_class.yB_size), dtype=complex),
+        chunks=(1, sizes_class.yB_size),
     )
     for j in range(nfacet):
         for i in range(nsubgrid):
             approx[j, :] += add_subgrid_contribution_1d_dask_array(
-                xMxN_yP_size,
-                xM_yP_size,
                 nafs[i, j],
-                xN_yP_size,
                 facet_m0_trunc,
-                yP_size,
                 subgrid_off[i],
-                yB_size,
-                N,
+                sizes_class,
             )
         approx_facet[j, :] = approx[j] * Fb * facet_B[j]
 

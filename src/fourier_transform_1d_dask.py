@@ -90,16 +90,6 @@ def _algorithm_with_dask_array(
     facet_m0_trunc,
     dtype,
 ):
-    xMxN_yP_size = sizes_class.xMxN_yP_size
-    xN_yP_size = sizes_class.xN_yP_size
-    xM_yP_size = sizes_class.xM_yP_size
-    xM_yN_size = sizes_class.xM_yN_size
-    xA_size = sizes_class.xA_size
-    yB_size = sizes_class.yB_size
-    yP_size = sizes_class.yP_size
-    N = sizes_class.N
-    xM_size = sizes_class.xM_size
-
     FG = fft(G)
     subgrid, facet = make_subgrid_and_facet_dask_array(
         G,
@@ -123,23 +113,18 @@ def _algorithm_with_dask_array(
         facet,
         nsubgrid,
         nfacet,
-        xM_yN_size,
         Fb,
         Fn,
-        yP_size,
         facet_m0_trunc,
         subgrid_off,
-        N,
-        xMxN_yP_size,
-        xN_yP_size,
-        xM_yP_size,
+        sizes_class,
         dtype,
     )
     # - redistribution of nmbfs here -
     log.info("Redistributed data: %s %s", nmbfs.shape, nmbfs.size)
 
     approx_subgrid = reconstruct_subgrid_1d_dask_array(
-        nmbfs, xM_size, nfacet, facet_off, N, subgrid_A, xA_size, nsubgrid
+        nmbfs, nfacet, facet_off, subgrid_A, nsubgrid, sizes_class
     )
     log.info("Reconstructed subgrids: %s %s", approx_subgrid.shape, approx_subgrid.size)
 
@@ -148,7 +133,12 @@ def _algorithm_with_dask_array(
     log.info("Subgrid data: %s %s", subgrid.shape, subgrid.size)
 
     nafs = subgrid_to_facet_1d_dask_array(
-        subgrid, nsubgrid, nfacet, xM_yN_size, xM_size, facet_off, N, Fn
+        subgrid,
+        nsubgrid,
+        nfacet,
+        facet_off,
+        Fn,
+        sizes_class,
     )
     # - redistribution of FNjSi here -
     log.info("Intermediate data: %s %s", nafs.shape, nafs.size)
@@ -156,17 +146,12 @@ def _algorithm_with_dask_array(
     approx_facet = reconstruct_facet_1d_dask_array(
         nafs,
         nfacet,
-        yB_size,
         nsubgrid,
-        xMxN_yP_size,
-        xM_yP_size,
-        xN_yP_size,
         facet_m0_trunc,
-        yP_size,
         subgrid_off,
-        N,
         Fb,
         facet_B,
+        sizes_class,
     )
     log.info("Reconstructed facets: %s %s", approx_facet.shape, approx_facet.size)
 
@@ -187,16 +172,6 @@ def _algorithm_with_dask_delayed(
     facet_m0_trunc,
     dtype,
 ):
-    xMxN_yP_size = sizes_class.xMxN_yP_size
-    xN_yP_size = sizes_class.xN_yP_size
-    xM_yP_size = sizes_class.xM_yP_size
-    xM_yN_size = sizes_class.xM_yN_size
-    xA_size = sizes_class.xA_size
-    yB_size = sizes_class.yB_size
-    yP_size = sizes_class.yP_size
-    N = sizes_class.N
-    xM_size = sizes_class.xM_size
-
     FG = fft(G)
     subgrid, facet = make_subgrid_and_facet(
         G,
@@ -218,29 +193,22 @@ def _algorithm_with_dask_delayed(
         facet,
         nsubgrid,
         nfacet,
-        xM_yN_size,
         Fb,
         Fn,
-        yP_size,
         facet_m0_trunc,
         subgrid_off,
-        N,
-        xMxN_yP_size,
-        xN_yP_size,
-        xM_yP_size,
+        sizes_class,
         dtype,
         use_dask=True,
     )
 
     approx_subgrid = reconstruct_subgrid_1d(
         nmbfs,
-        xM_size,
         nfacet,
         facet_off,
-        N,
         subgrid_A,
-        xA_size,
         nsubgrid,
+        sizes_class,
         use_dask=True,
     )
 
@@ -248,23 +216,18 @@ def _algorithm_with_dask_delayed(
     log.info("\n== RUN: Subgrid to facet")
 
     nafs = subgrid_to_facet_1d(
-        subgrid, nsubgrid, nfacet, xM_yN_size, xM_size, facet_off, N, Fn, use_dask=True
+        subgrid, nsubgrid, nfacet, facet_off, Fn, sizes_class, use_dask=True
     )
 
     approx_facet = reconstruct_facet_1d(
         nafs,
         nfacet,
-        yB_size,
         nsubgrid,
-        xMxN_yP_size,
-        xM_yP_size,
-        xN_yP_size,
         facet_m0_trunc,
-        yP_size,
         subgrid_off,
-        N,
         Fb,
         facet_B,
+        sizes_class,
         use_dask=True,
     )
 
@@ -294,16 +257,6 @@ def _algorithm_in_serial(
     facet_m0_trunc,
     dtype,
 ):
-    xMxN_yP_size = sizes_class.xMxN_yP_size
-    xN_yP_size = sizes_class.xN_yP_size
-    xM_yP_size = sizes_class.xM_yP_size
-    xM_yN_size = sizes_class.xM_yN_size
-    xA_size = sizes_class.xA_size
-    yB_size = sizes_class.yB_size
-    yP_size = sizes_class.yP_size
-    N = sizes_class.N
-    xM_size = sizes_class.xM_size
-
     FG = fft(G)
     subgrid, facet = make_subgrid_and_facet(
         G,
@@ -329,16 +282,11 @@ def _algorithm_in_serial(
         facet,
         nsubgrid,
         nfacet,
-        xM_yN_size,
         Fb,
         Fn,
-        yP_size,
         facet_m0_trunc,
         subgrid_off,
-        N,
-        xMxN_yP_size,
-        xN_yP_size,
-        xM_yP_size,
+        sizes_class,
         dtype,
         use_dask=False,
     )
@@ -347,13 +295,11 @@ def _algorithm_in_serial(
 
     approx_subgrid = reconstruct_subgrid_1d(
         nmbfs,
-        xM_size,
         nfacet,
         facet_off,
-        N,
         subgrid_A,
-        xA_size,
         nsubgrid,
+        sizes_class,
         use_dask=False,
     )
     log.info("Reconstructed subgrids: %s %s", approx_subgrid.shape, approx_subgrid.size)
@@ -366,11 +312,9 @@ def _algorithm_in_serial(
         subgrid,
         nsubgrid,
         nfacet,
-        xM_yN_size,
-        xM_size,
         facet_off,
-        N,
         Fn,
+        sizes_class,
         use_dask=False,
     )
     # - redistribution of FNjSi here -
@@ -379,17 +323,12 @@ def _algorithm_in_serial(
     approx_facet = reconstruct_facet_1d(
         nafs,
         nfacet,
-        yB_size,
         nsubgrid,
-        xMxN_yP_size,
-        xM_yP_size,
-        xN_yP_size,
         facet_m0_trunc,
-        yP_size,
         subgrid_off,
-        N,
         Fb,
         facet_B,
+        sizes_class,
         use_dask=False,
     )
     log.info("Reconstructed facets: %s %s", approx_facet.shape, approx_facet.size)
