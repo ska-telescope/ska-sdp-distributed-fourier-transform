@@ -397,30 +397,20 @@ def test_accuracy_facet_to_subgrid(
         for i0 in range(nsubgrid):
             NMBF_BF = extract_subgrid(
                 BF_BF,
-                i0,
                 0,
-                subgrid_off,
-                sizes_class.yP_size,
-                sizes_class.xMxN_yP_size,
+                subgrid_off[i0],
                 facet_m0_trunc,
-                sizes_class.xM_yP_size,
                 Fn,
-                sizes_class.xM_yN_size,
-                sizes_class.N,
+                sizes_class,
             )
             for i1 in range(nsubgrid):
                 NMBF_NMBF[i0, i1, j0, j1] = extract_subgrid(
                     NMBF_BF,
-                    i1,
                     1,
-                    subgrid_off,
-                    sizes_class.yP_size,
-                    sizes_class.xMxN_yP_size,
+                    subgrid_off[i1],
                     facet_m0_trunc,
-                    sizes_class.xM_yP_size,
                     Fn,
-                    sizes_class.xM_yN_size,
-                    sizes_class.N,
+                    sizes_class,
                 )
 
     err_mean = err_mean_img = 0
@@ -515,11 +505,11 @@ def test_accuracy_subgrid_to_facet(
         AF_AF = prepare_subgrid(subgrid_2[i0, i1], sizes_class.xM_size)
         for j0 in range(nfacet):
             NAF_AF = extract_facet_contribution(
-                AF_AF, Fn, facet_off, j0, sizes_class.xM_size, sizes_class.N, sizes_class.xM_yN_size, 0
+                AF_AF, Fn, facet_off[j0], sizes_class, 0
             )
             for j1 in range(nfacet):
                 NAF_NAF[i0, i1, j0, j1] = extract_facet_contribution(
-                    NAF_AF, Fn, facet_off, j1, sizes_class.xM_size, sizes_class.N, sizes_class.xM_yN_size, 1
+                    NAF_AF, Fn, facet_off[j1], sizes_class, 1
                 )
 
     BMNAF_BMNAF = numpy.empty((nfacet, nfacet, sizes_class.yB_size, sizes_class.yB_size), dtype=complex)
@@ -533,25 +523,19 @@ def test_accuracy_subgrid_to_facet(
                     NAF_NAF[i0, i1, j0, j1],
                     facet_m0_trunc,
                     subgrid_off[i1],
-                    sizes_class.xMxN_yP_size,
-                    sizes_class.xM_yP_size,
-                    sizes_class.yP_size,
-                    sizes_class.N,
+                    sizes_class,
                     1,
                 )
-            NAF_BMNAF = finish_facet(NAF_MNAF, Fb, facet_B, sizes_class.yB_size, j1, 1)
+            NAF_BMNAF = finish_facet(NAF_MNAF, Fb, facet_B[j1], sizes_class.yB_size, 1)
             MNAF_BMNAF = MNAF_BMNAF + add_subgrid_contribution(
                 len(MNAF_BMNAF.shape),
                 NAF_BMNAF,
                 facet_m0_trunc,
                 subgrid_off[i0],
-                sizes_class.xMxN_yP_size,
-                sizes_class.xM_yP_size,
-                sizes_class.yP_size,
-                sizes_class.N,
+                sizes_class,
                 0,
             )
-        BMNAF_BMNAF[j0, j1] = finish_facet(MNAF_BMNAF, Fb, facet_B, sizes_class.yB_size, j0, 0)
+        BMNAF_BMNAF[j0, j1] = finish_facet(MNAF_BMNAF, Fb, facet_B[j0], sizes_class.yB_size, 0)
 
     pylab.rcParams["figure.figsize"] = 16, 8
     err_mean = err_mean_img = 0

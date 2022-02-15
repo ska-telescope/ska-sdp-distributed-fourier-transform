@@ -912,16 +912,11 @@ def prepare_facet(facet, axis, Fb, yP_size, **kwargs):
 @dask_wrapper
 def extract_subgrid(
     BF,
-    i,
     axis,
-    subgrid_off,
-    yP_size,
-    xMxN_yP_size,
+    subgrid_off_i,
     facet_m0_trunc,
-    xM_yP_size,
     Fn,
-    xM_yN_size,
-    N,
+    sizes_class,
     **kwargs,
 ):
     """
@@ -930,27 +925,21 @@ def extract_subgrid(
         See discussion at https://gitlab.com/ska-telescope/sdp/ska-sdp-distributed-fourier-transform/-/merge_requests/4#note_825003275
 
     :param BF:
-    :param i:
     :param axis: Axis
-    :param subgrid_off:
-    :param yP_size: Facet size, padded for m convolution (internal)
-    :param xMxN_yP_size: length of the region to be cut out of the prepared facet data.
-                         i.e. len(facet_m0_trunc)
+    :param subgrid_off_i:
     :param facet_m0_trunc:
-    :param xM_yP_size:
     :param Fn:
-    :param xM_yN_size:
-    :param N: Total image size on a side
+    :param sizes_class: Sizes class object containing fundamental and derived parameters
 
     :return:
     """
     dims = len(BF.shape)
     BF_mid = extract_mid_a(
-        numpy.roll(BF, -subgrid_off[i] * yP_size // N, axis), xMxN_yP_size, axis
+        numpy.roll(BF, -subgrid_off_i * sizes_class.yP_size // sizes_class.N, axis), sizes_class.xMxN_yP_size, axis
     )
     MBF = broadcast_a(facet_m0_trunc, dims, axis) * BF_mid
-    MBF_sum = numpy.array(extract_mid_a(MBF, xM_yP_size, axis))
-    xN_yP_size = xMxN_yP_size - xM_yP_size
+    MBF_sum = numpy.array(extract_mid_a(MBF, sizes_class.xM_yP_size, axis))
+    xN_yP_size = sizes_class.xMxN_yP_size - sizes_class.xM_yP_size
     # [:xN_yP_size//2] / [-xN_yP_size//2:] for axis, [:] otherwise
     slc1 = slice_a(slice(None), slice(xN_yP_size // 2), dims, axis)
     slc2 = slice_a(slice(None), slice(-xN_yP_size // 2, None), dims, axis)
@@ -958,7 +947,7 @@ def extract_subgrid(
     MBF_sum[slc2] += MBF[slc1]
 
     return broadcast_a(Fn, len(BF.shape), axis) * extract_mid_a(
-        fft_a(MBF_sum, axis), xM_yN_size, axis
+        fft_a(MBF_sum, axis), sizes_class.xM_yN_size, axis
     )
 
 
@@ -977,26 +966,22 @@ def prepare_subgrid(subgrid, xM_size, **kwargs):
 
 @dask_wrapper
 def extract_facet_contribution(
-    FSi, Fn, facet_off, j, xM_size, N, xM_yN_size, axis, **kwargs
+    FSi, Fn, facet_off_j, sizes_class, axis, **kwargs
 ):
     """
     Extract contribution of subgrid to a facet
 
     :param Fsi:
     :param Fn:
-    :param facet_off:
-    :param j: Index on the facet
-    :param xM_size: Subgrid size, padded for transfer (internal)
-    :param N: Total image size on a side
-    :param xM_yN_size:
+    :param facet_off_j:
+    :param sizes_class: Sizes class object containing fundamental and derived parameters
     :param axis: Axis
 
     :return: Contribution of facet on the subgrid
 
     """
-
     return broadcast_a(Fn, len(FSi.shape), axis) * extract_mid_a(
-        numpy.roll(FSi, -facet_off[j] * xM_size // N, axis), xM_yN_size, axis
+        numpy.roll(FSi, -facet_off_j * sizes_class.xM_size // sizes_class.N, axis), sizes_class.xM_yN_size, axis
     )
 
 
@@ -1006,10 +991,7 @@ def add_subgrid_contribution(
     NjSi,
     facet_m0_trunc,
     subgrid_off_i,
-    xMxN_yP_size,
-    xM_yP_size,
-    yP_size,
-    N,
+    sizes_class,
     axis,
     **kwargs,
 ):
@@ -1018,22 +1000,17 @@ def add_subgrid_contribution(
 
     :param MiNjSi_sum:
     :param NjSi:
-    :param i:
     :param facet_m0_trunc:
     :param subgrid_off:
-    :param xMxN_yP_size: length of the region to be cut out of the prepared facet data.
-                         i.e. len(facet_m0_trunc)
-    :param xM_yP_size:
-    :param yP_size:
-    :param N:
+    :param sizes_class: Sizes class object containing fundamental and derived parameters
     :param axis:
 
     :return MiNjSi_sum:
 
     """
-    xN_yP_size = xMxN_yP_size - xM_yP_size
-    NjSi_mid = ifft_a(pad_mid_a(NjSi, xM_yP_size, axis), axis)
-    NjSi_temp = pad_mid_a(NjSi_mid, xMxN_yP_size, axis)
+    xN_yP_size = sizes_class.xMxN_yP_size - sizes_class.xM_yP_size
+    NjSi_mid = ifft_a(pad_mid_a(NjSi, sizes_class.xM_yP_size, axis), axis)
+    NjSi_temp = pad_mid_a(NjSi_mid, sizes_class.xMxN_yP_size, axis)
     slc1 = slice_a(slice(None), slice(xN_yP_size // 2), dims, axis)
     slc2 = slice_a(slice(None), slice(-xN_yP_size // 2, None), dims, axis)
     NjSi_temp[slc1] = NjSi_mid[slc2]
@@ -1041,26 +1018,25 @@ def add_subgrid_contribution(
     NjSi_temp = NjSi_temp * broadcast_a(facet_m0_trunc, len(NjSi.shape), axis)
 
     return numpy.roll(
-        pad_mid_a(NjSi_temp, yP_size, axis), subgrid_off_i * yP_size // N, axis=axis
+        pad_mid_a(NjSi_temp, sizes_class.yP_size, axis), subgrid_off_i * sizes_class.yP_size // sizes_class.N, axis=axis
     )
 
 
 @dask_wrapper
-def finish_facet(MiNjSi_sum, Fb, facet_B, yB_size, j, axis, **kwargs):
+def finish_facet(MiNjSi_sum, Fb, facet_B_j, yB_size, axis, **kwargs):
     """
     Obtain finished facet
 
     :param MiNjSi_sum:
     :param Fb:
-    :param facet_B:
+    :param facet_B_j:
     :param yB_size: effective facet size
-    :param j:
     :param axis:
 
     :return: The finished facet (in BMNAF term)
     """
     return extract_mid_a(fft_a(MiNjSi_sum, axis), yB_size, axis) * broadcast_a(
-        Fb * facet_B[j], len(MiNjSi_sum.shape), axis
+        Fb * facet_B_j, len(MiNjSi_sum.shape), axis
     )
 
 
