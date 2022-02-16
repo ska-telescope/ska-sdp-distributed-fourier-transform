@@ -79,8 +79,6 @@ ALPHA = 0
 def _algorithm_with_dask_array(
     G,
     sizes_class,
-    nsubgrid,
-    nfacet,
     subgrid_A,
     facet_B,
     subgrid_off,
@@ -95,10 +93,8 @@ def _algorithm_with_dask_array(
         G,
         FG,
         sizes_class,
-        nsubgrid,
         subgrid_A,
         subgrid_off,
-        nfacet,
         facet_B,
         facet_off,
     )
@@ -111,8 +107,6 @@ def _algorithm_with_dask_array(
 
     nmbfs = facets_to_subgrid_1d_dask_array(
         facet,
-        nsubgrid,
-        nfacet,
         Fb,
         Fn,
         facet_m0_trunc,
@@ -124,7 +118,7 @@ def _algorithm_with_dask_array(
     log.info("Redistributed data: %s %s", nmbfs.shape, nmbfs.size)
 
     approx_subgrid = reconstruct_subgrid_1d_dask_array(
-        nmbfs, nfacet, facet_off, subgrid_A, nsubgrid, sizes_class
+        nmbfs, facet_off, subgrid_A, sizes_class
     )
     log.info("Reconstructed subgrids: %s %s", approx_subgrid.shape, approx_subgrid.size)
 
@@ -134,8 +128,6 @@ def _algorithm_with_dask_array(
 
     nafs = subgrid_to_facet_1d_dask_array(
         subgrid,
-        nsubgrid,
-        nfacet,
         facet_off,
         Fn,
         sizes_class,
@@ -145,8 +137,6 @@ def _algorithm_with_dask_array(
 
     approx_facet = reconstruct_facet_1d_dask_array(
         nafs,
-        nfacet,
-        nsubgrid,
         facet_m0_trunc,
         subgrid_off,
         Fb,
@@ -161,8 +151,6 @@ def _algorithm_with_dask_array(
 def _algorithm_with_dask_delayed(
     G,
     sizes_class,
-    nsubgrid,
-    nfacet,
     subgrid_A,
     facet_B,
     subgrid_off,
@@ -177,10 +165,8 @@ def _algorithm_with_dask_delayed(
         G,
         FG,
         sizes_class,
-        nsubgrid,
         subgrid_A,
         subgrid_off,
-        nfacet,
         facet_B,
         facet_off,
         1,
@@ -191,8 +177,6 @@ def _algorithm_with_dask_delayed(
 
     nmbfs = facets_to_subgrid_1d(
         facet,
-        nsubgrid,
-        nfacet,
         Fb,
         Fn,
         facet_m0_trunc,
@@ -204,10 +188,8 @@ def _algorithm_with_dask_delayed(
 
     approx_subgrid = reconstruct_subgrid_1d(
         nmbfs,
-        nfacet,
         facet_off,
         subgrid_A,
-        nsubgrid,
         sizes_class,
         use_dask=True,
     )
@@ -216,13 +198,11 @@ def _algorithm_with_dask_delayed(
     log.info("\n== RUN: Subgrid to facet")
 
     nafs = subgrid_to_facet_1d(
-        subgrid, nsubgrid, nfacet, facet_off, Fn, sizes_class, use_dask=True
+        subgrid, facet_off, Fn, sizes_class, use_dask=True
     )
 
     approx_facet = reconstruct_facet_1d(
         nafs,
-        nfacet,
-        nsubgrid,
         facet_m0_trunc,
         subgrid_off,
         Fb,
@@ -246,8 +226,6 @@ def _algorithm_with_dask_delayed(
 def _algorithm_in_serial(
     G,
     sizes_class,
-    nsubgrid,
-    nfacet,
     subgrid_A,
     facet_B,
     subgrid_off,
@@ -262,10 +240,8 @@ def _algorithm_in_serial(
         G,
         FG,
         sizes_class,
-        nsubgrid,
         subgrid_A,
         subgrid_off,
-        nfacet,
         facet_B,
         facet_off,
         dims=1,
@@ -280,8 +256,6 @@ def _algorithm_in_serial(
 
     nmbfs = facets_to_subgrid_1d(
         facet,
-        nsubgrid,
-        nfacet,
         Fb,
         Fn,
         facet_m0_trunc,
@@ -295,10 +269,8 @@ def _algorithm_in_serial(
 
     approx_subgrid = reconstruct_subgrid_1d(
         nmbfs,
-        nfacet,
         facet_off,
         subgrid_A,
-        nsubgrid,
         sizes_class,
         use_dask=False,
     )
@@ -310,8 +282,6 @@ def _algorithm_in_serial(
 
     nafs = subgrid_to_facet_1d(
         subgrid,
-        nsubgrid,
-        nfacet,
         facet_off,
         Fn,
         sizes_class,
@@ -322,8 +292,6 @@ def _algorithm_in_serial(
 
     approx_facet = reconstruct_facet_1d(
         nafs,
-        nfacet,
-        nsubgrid,
         facet_m0_trunc,
         subgrid_off,
         Fb,
@@ -348,14 +316,6 @@ def main(to_plot=True, fig_name=None, use_dask=False, dask_option="array"):
     sizes = Sizes(**TARGET_PARS)
     log.info(sizes)
 
-    # TODO: nfacet is redefined later; which is correct?
-    if sizes.fov is not None:
-        nfacet = int(numpy.ceil(sizes.N * sizes.fov / sizes.yB_size))
-        log.info(
-            f"{nfacet}x{nfacet} facets for FoV of {sizes.fov} "
-            f"({sizes.N * sizes.fov / nfacet / sizes.yB_size * 100}% efficiency)"
-        )
-
     log.info("\n== Calculate PSWF")
     pswf = calculate_pswf(sizes, ALPHA)
 
@@ -370,11 +330,9 @@ def main(to_plot=True, fig_name=None, use_dask=False, dask_option="array"):
 
     log.info("\n== Generate layout (factes and subgrids")
     # Layout subgrids + facets
-    nsubgrid = int(math.ceil(sizes.N / sizes.xA_size))
-    nfacet = int(math.ceil(sizes.N / sizes.yB_size))
-    log.info("%d subgrids, %d facets needed to cover" % (nsubgrid, nfacet))
-    subgrid_off = sizes.xA_size * numpy.arange(nsubgrid) + sizes.Nx
-    facet_off = sizes.yB_size * numpy.arange(nfacet)
+    log.info("%d subgrids, %d facets needed to cover" % (sizes.nsubgrid, sizes.nfacet))
+    subgrid_off = sizes.xA_size * numpy.arange(sizes.nsubgrid) + sizes.Nx
+    facet_off = sizes.yB_size * numpy.arange(sizes.nfacet)
 
     assert whole(numpy.outer(subgrid_off, facet_off) / sizes.N)
     assert whole(facet_off * sizes.xM_size / sizes.N)
@@ -383,8 +341,8 @@ def main(to_plot=True, fig_name=None, use_dask=False, dask_option="array"):
     # Determine subgrid/facet offsets and the appropriate A/B masks for cutting them out.
     # We are aiming for full coverage here: Every pixel is part of exactly one subgrid / facet.
 
-    facet_B = generate_mask(sizes.N, nfacet, sizes.yB_size, facet_off)
-    subgrid_A = generate_mask(sizes.N, nsubgrid, sizes.xA_size, subgrid_off)
+    facet_B = generate_mask(sizes.N, sizes.nfacet, sizes.yB_size, facet_off)
+    subgrid_A = generate_mask(sizes.N, sizes.nsubgrid, sizes.xA_size, subgrid_off)
 
     G = numpy.random.rand(sizes.N) - 0.5
     dtype = numpy.complex128
@@ -393,8 +351,6 @@ def main(to_plot=True, fig_name=None, use_dask=False, dask_option="array"):
         subgrid, facet, approx_subgrid, approx_facet = _algorithm_with_dask_array(
             G,
             sizes,
-            nsubgrid,
-            nfacet,
             subgrid_A,
             facet_B,
             subgrid_off,
@@ -412,8 +368,6 @@ def main(to_plot=True, fig_name=None, use_dask=False, dask_option="array"):
         subgrid, facet, approx_subgrid, approx_facet = _algorithm_with_dask_delayed(
             G,
             sizes,
-            nsubgrid,
-            nfacet,
             subgrid_A,
             facet_B,
             subgrid_off,
@@ -428,8 +382,6 @@ def main(to_plot=True, fig_name=None, use_dask=False, dask_option="array"):
         subgrid, facet, approx_subgrid, approx_facet = _algorithm_in_serial(
             G,
             sizes,
-            nsubgrid,
-            nfacet,
             subgrid_A,
             facet_B,
             subgrid_off,
@@ -442,7 +394,7 @@ def main(to_plot=True, fig_name=None, use_dask=False, dask_option="array"):
 
     calculate_and_plot_errors_subgrid_1d(
         approx_subgrid,
-        nsubgrid,
+        sizes.nsubgrid,
         subgrid,
         sizes.xA_size,
         sizes.N,
@@ -453,7 +405,6 @@ def main(to_plot=True, fig_name=None, use_dask=False, dask_option="array"):
     calculate_and_plot_errors_facet_1d(
         approx_facet,
         facet,
-        nfacet,
         sizes,
         to_plot=to_plot,
         fig_name=fig_name,
