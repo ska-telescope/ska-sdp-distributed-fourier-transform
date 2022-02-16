@@ -139,9 +139,7 @@ def plot_1(pswf, sizes_class, fig_name=None):
 def plot_2(facet_m0_trunc, sizes_class, fig_name=None):
     """
     :param facet_m0_trunc:
-    :param xM:
-    :param xMxN_yP_size:
-    :param yP_size:
+    :param sizes_class: Sizes class object containing fundamental and derived parameters
     :param fig_name: partial name or prefix (can include path) if figure is saved
                      if None, pylab.show() is called instead
     """
@@ -152,7 +150,8 @@ def plot_2(facet_m0_trunc, sizes_class, fig_name=None):
         * sizes_class.xMxN_yP_size,
         facet_m0_trunc,
     )
-    mark_range("xM", -sizes_class.xM, sizes_class.xM)
+    xM = sizes_class.xM_size / 2 / sizes_class.N
+    mark_range("xM", -xM, xM)
     pylab.grid()
     if fig_name is None:
         pylab.show()
@@ -246,9 +245,10 @@ def calculate_and_plot_errors_facet_1d(
     if to_plot:
         xA = sizes_class.xA_size / 2 / sizes_class.N
         yB = sizes_class.yB_size / 2
+        xM = sizes_class.xM_size / 2 / sizes_class.N
 
         mark_range("$x_A$", -xA, xA, ax=ax1)
-        mark_range("$x_M$", -sizes_class.xM, sizes_class.xM, ax=ax1)
+        mark_range("$x_M$", -xM, xM, ax=ax1)
         mark_range("$y_B$", -yB, yB, ax=ax2)
         mark_range("$0.5$", -0.5, 0.5, ax=ax1)
         if fig_name is None:

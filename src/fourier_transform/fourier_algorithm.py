@@ -1122,7 +1122,7 @@ def get_actual_work_terms(pswf, sizes_class):
     Fb = 1 / extract_mid(pswf, sizes_class.yB_size)
     Fn = pswf[
         (sizes_class.yN_size // 2)
-        % int(1 / 2 / sizes_class.xM) :: int(1 / 2 / sizes_class.xM)
+        % int(sizes_class.N/sizes_class.xM_size) :: int(sizes_class.N/sizes_class.xM_size)
     ]
     facet_m0_trunc = pswf * numpy.sinc(
         coordinates(sizes_class.yN_size)

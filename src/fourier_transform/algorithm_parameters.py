@@ -36,7 +36,6 @@ class Sizes:
 
     The class, in addition, derives the following, commonly used sizes:
 
-    xM: TODO ?
     xM_yP_size: (padded subgrid size * padded facet size) / N
     xM_yN_size: (padded subgrid size * padding) / N
     xMxN_yP_size: length of the region to be cut out of the prepared facet data
@@ -62,7 +61,6 @@ class Sizes:
         self.check_params()
 
         # Commonly used relative coordinates and derived values
-        self.xM = self.xM_size / 2 / self.N
 
         # Note from Peter: Note that this (xM_yP_size) is xM_yN_size * yP_size / yN_size.
         # So could replace by yN_size, which would be the more fundamental entity.
@@ -98,7 +96,6 @@ class Sizes:
             f"xM_size = {self.xM_size}\n"
             f"yN_size = {self.yN_size}\n"
             f"\nDerived values: \n"
-            f"xM = {self.xM}\n"
             f"xM_yP_size = {self.xM_yP_size}\n"
             f"xM_yN_size = {self.xM_yN_size}\n"
             f"xMxN_yP_size = {self.xMxN_yP_size}\n"
