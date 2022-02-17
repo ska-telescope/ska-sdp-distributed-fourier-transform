@@ -2,7 +2,6 @@
 # coding: utf-8
 import itertools
 import logging
-import math
 import time
 
 import dask
@@ -13,16 +12,13 @@ from distributed import performance_report
 
 from matplotlib import pylab
 
-from src.fourier_transform.algorithm_parameters import Sizes
+from src.fourier_transform.algorithm_parameters import DistributedFFT
 from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
 from src.fourier_transform.fourier_algorithm import (
     ifft,
     fft,
     prepare_facet,
     extract_subgrid,
-    get_actual_work_terms,
-    calculate_pswf,
-    generate_mask,
     prepare_subgrid,
     extract_facet_contribution,
     add_subgrid_contribution,
@@ -30,7 +26,6 @@ from src.fourier_transform.fourier_algorithm import (
     make_subgrid_and_facet,
 )
 from src.fourier_transform.utils import (
-    whole,
     plot_1,
     plot_2,
     errors_facet_to_subgrid_2d,
@@ -67,41 +62,39 @@ ALPHA = 0
 
 
 def _generate_naf_naf(
-    Fn, facet_off, subgrid_2, sizes_class, use_dask
+    subgrid_2, constants_class, use_dask
 ):
     naf_naf = numpy.empty(
         (
-            sizes_class.nsubgrid,
-            sizes_class.nsubgrid,
-            sizes_class.nfacet,
-            sizes_class.nfacet,
-            sizes_class.xM_yN_size,
-            sizes_class.xM_yN_size,
+            constants_class.nsubgrid,
+            constants_class.nsubgrid,
+            constants_class.nfacet,
+            constants_class.nfacet,
+            constants_class.xM_yN_size,
+            constants_class.xM_yN_size,
         ),
         dtype=complex,
     )
     if use_dask:
         naf_naf = naf_naf.tolist()
-    for i0, i1 in itertools.product(range(sizes_class.nsubgrid), range(sizes_class.nsubgrid)):
+    for i0, i1 in itertools.product(range(constants_class.nsubgrid), range(constants_class.nsubgrid)):
         AF_AF = prepare_subgrid(
-            subgrid_2[i0][i1], sizes_class.xM_size, use_dask=use_dask, nout=1
+            subgrid_2[i0][i1], constants_class.xM_size, use_dask=use_dask, nout=1
         )
-        for j0 in range(sizes_class.nfacet):
+        for j0 in range(constants_class.nfacet):
             NAF_AF = extract_facet_contribution(
                 AF_AF,
-                Fn,
-                facet_off[j0],
-                sizes_class,
+                constants_class.facet_off[j0],
+                constants_class,
                 0,
                 use_dask=use_dask,
                 nout=1,
             )
-            for j1 in range(sizes_class.nfacet):
+            for j1 in range(constants_class.nfacet):
                 naf_naf[i0][i1][j0][j1] = extract_facet_contribution(
                     NAF_AF,
-                    Fn,
-                    facet_off[j1],
-                    sizes_class,
+                    constants_class.facet_off[j1],
+                    constants_class,
                     1,
                     use_dask=use_dask,
                     nout=1,
@@ -110,68 +103,58 @@ def _generate_naf_naf(
 
 
 def subgrid_to_facet_algorithm(
-    Fb,
-    Fn,
-    facet_B,
-    facet_m0_trunc,
-    facet_off,
     subgrid_2,
-    subgrid_off,
-    sizes_class,
+    constants_class,
     use_dask=False,
 ):
     naf_naf = _generate_naf_naf(
-        Fn,
-        facet_off,
         subgrid_2,
-        sizes_class,
+        constants_class,
         use_dask,
     )
 
     BMNAF_BMNAF = numpy.empty(
-        (sizes_class.nfacet, sizes_class.nfacet, sizes_class.yB_size, sizes_class.yB_size), dtype=complex
+        (constants_class.nfacet, constants_class.nfacet, constants_class.yB_size, constants_class.yB_size), dtype=complex
     )
     if use_dask:
         BMNAF_BMNAF = BMNAF_BMNAF.tolist()
 
-    for j0, j1 in itertools.product(range(sizes_class.nfacet), range(sizes_class.nfacet)):
+    for j0, j1 in itertools.product(range(constants_class.nfacet), range(constants_class.nfacet)):
         MNAF_BMNAF = numpy.zeros(
-            (sizes_class.yP_size, sizes_class.yB_size), dtype=complex
+            (constants_class.yP_size, constants_class.yB_size), dtype=complex
         )
-        for i0 in range(sizes_class.nsubgrid):
+        for i0 in range(constants_class.nsubgrid):
             NAF_MNAF = numpy.zeros(
-                (sizes_class.xM_yN_size, sizes_class.yP_size), dtype=complex
+                (constants_class.xM_yN_size, constants_class.yP_size), dtype=complex
             )
-            for i1 in range(sizes_class.nsubgrid):
+            for i1 in range(constants_class.nsubgrid):
                 if use_dask:
                     NAF_MNAF = NAF_MNAF + dask.array.from_delayed(
                         add_subgrid_contribution(
                             len(NAF_MNAF.shape),
                             naf_naf[i0][i1][j0][j1],
-                            facet_m0_trunc,
-                            subgrid_off[i1],
-                            sizes_class,
+                            constants_class.subgrid_off[i1],
+                            constants_class,
                             1,
                             use_dask=use_dask,
                             nout=1,
                         ),
-                        shape=(sizes_class.xM_yN_size, sizes_class.yP_size),
+                        shape=(constants_class.xM_yN_size, constants_class.yP_size),
                         dtype=complex,
                     )
                 else:
                     NAF_MNAF = NAF_MNAF + add_subgrid_contribution(
                         len(NAF_MNAF.shape),
                         naf_naf[i0][i1][j0][j1],
-                        facet_m0_trunc,
-                        subgrid_off[i1],
-                        sizes_class,
+                        constants_class.subgrid_off[i1],
+                        constants_class,
                         1,
                     )
             NAF_BMNAF = finish_facet(
                 NAF_MNAF,
-                Fb,
-                facet_B[j1],
-                sizes_class.yB_size,
+                constants_class.Fb,
+                constants_class.facet_B[j1],
+                constants_class.yB_size,
                 1,
                 use_dask=use_dask,
                 nout=0,
@@ -181,32 +164,30 @@ def subgrid_to_facet_algorithm(
                     add_subgrid_contribution(
                         len(MNAF_BMNAF.shape),
                         NAF_BMNAF,
-                        facet_m0_trunc,
-                        subgrid_off[i0],
-                        sizes_class,
+                        constants_class.subgrid_off[i0],
+                        constants_class,
                         0,
                         use_dask=use_dask,
                         nout=1,
                     ),
-                    shape=(sizes_class.yP_size, sizes_class.yB_size),
+                    shape=(constants_class.yP_size, constants_class.yB_size),
                     dtype=complex,
                 )
             else:
                 MNAF_BMNAF = MNAF_BMNAF + add_subgrid_contribution(
                     len(MNAF_BMNAF.shape),
                     NAF_BMNAF,
-                    facet_m0_trunc,
-                    subgrid_off[i0],
-                    sizes_class,
+                    constants_class.subgrid_off[i0],
+                    constants_class,
                     0,
                     use_dask=use_dask,
                     nout=1,
                 )
         BMNAF_BMNAF[j0][j1] = finish_facet(
             MNAF_BMNAF,
-            Fb,
-            facet_B[j0],
-            sizes_class.yB_size,
+            constants_class.Fb,
+            constants_class.facet_B[j0],
+            constants_class.yB_size,
             0,
             use_dask=use_dask,
             nout=1,
@@ -216,12 +197,8 @@ def subgrid_to_facet_algorithm(
 
 
 def facet_to_subgrid_2d_method_1(
-    Fb,
-    Fn,
     facet,
-    facet_m0_trunc,
-    subgrid_off,
-    sizes_class,
+    constants_class,
     use_dask=False,
 ):
     """
@@ -235,12 +212,9 @@ def facet_to_subgrid_2d_method_1(
     without affecting the result. The obvious first choice might be to do all facet-preparation
     up-front, as this allows us to share the computation across all subgrids
 
-    :param Fb: Fourier transform of grid correction function
-    :param Fn: Fourier transform of gridding function
     :param facet: 2D numpy array of facets
-    :param facet_m0_trunc: mask truncated to a facet (image space)
-    :param subgrid_off: subgrid offset
-    :param sizes_class: Sizes class object containing fundamental and derived parameters
+    :param constants_class: ConstantArrays or DistributedFFT class object containing
+                            fundamental and derived parameters
     :param use_dask: use dask.delayed or not
 
     :return: TODO ???
@@ -248,44 +222,40 @@ def facet_to_subgrid_2d_method_1(
 
     NMBF_NMBF = numpy.empty(
         (
-            sizes_class.nsubgrid,
-            sizes_class.nsubgrid,
-            sizes_class.nfacet,
-            sizes_class.nfacet,
-            sizes_class.xM_yN_size,
-            sizes_class.xM_yN_size,
+            constants_class.nsubgrid,
+            constants_class.nsubgrid,
+            constants_class.nfacet,
+            constants_class.nfacet,
+            constants_class.xM_yN_size,
+            constants_class.xM_yN_size,
         ),
         dtype=complex,
     )
     if use_dask:
         NMBF_NMBF = NMBF_NMBF.tolist()
 
-    for j0, j1 in itertools.product(range(sizes_class.nfacet), range(sizes_class.nfacet)):
+    for j0, j1 in itertools.product(range(constants_class.nfacet), range(constants_class.nfacet)):
         BF_F = prepare_facet(
-            facet[j0][j1], 0, Fb, sizes_class.yP_size, use_dask=use_dask, nout=1
+            facet[j0][j1], 0, constants_class.Fb, constants_class.yP_size, use_dask=use_dask, nout=1
         )
         BF_BF = prepare_facet(
-            BF_F, 1, Fb, sizes_class.yP_size, use_dask=use_dask, nout=1
+            BF_F, 1, constants_class.Fb, constants_class.yP_size, use_dask=use_dask, nout=1
         )
-        for i0 in range(sizes_class.nsubgrid):
+        for i0 in range(constants_class.nsubgrid):
             NMBF_BF = extract_subgrid(
                 BF_BF,
                 0,
-                subgrid_off[i0],
-                facet_m0_trunc,
-                Fn,
-                sizes_class,
+                constants_class.subgrid_off[i0],
+                constants_class,
                 use_dask=use_dask,
                 nout=1,
             )
-            for i1 in range(sizes_class.nsubgrid):
+            for i1 in range(constants_class.nsubgrid):
                 NMBF_NMBF[i0][i1][j0][j1] = extract_subgrid(
                     NMBF_BF,
                     1,
-                    subgrid_off[i1],
-                    facet_m0_trunc,
-                    Fn,
-                    sizes_class,
+                    constants_class.subgrid_off[i1],
+                    constants_class,
                     use_dask=use_dask,
                     nout=1,
                 )
@@ -293,13 +263,9 @@ def facet_to_subgrid_2d_method_1(
 
 
 def facet_to_subgrid_2d_method_2(
-    Fb,
-    Fn,
     NMBF_NMBF,
     facet,
-    facet_m0_trunc,
-    subgrid_off,
-    sizes_class,
+    constants_class,
     use_dask=False,
 ):
     """
@@ -314,54 +280,43 @@ def facet_to_subgrid_2d_method_2(
     facet preparation along the other axis. We can tackle both axes in whatever order we like,
     it doesn't make a difference for the result.
 
-    :param Fb: Fourier transform of grid correction function
-    :param Fn: Fourier transform of gridding function
     :param NMBF_NMBF: TODO ???
     :param facet: 2D numpy array of facets
-    :param facet_m0_trunc: mask truncated to a facet (image space)
-    :param subgrid_off: subgrid offset
-    :param sizes_class: Sizes class object containing fundamental and derived parameters
+    :param constants_class: ConstantArrays or DistributedFFT class object containing
+                            fundamental and derived parameters
     :param use_dask: use dask.delayed or not
     """
-    for j0, j1 in itertools.product(range(sizes_class.nfacet), range(sizes_class.nfacet)):
+    for j0, j1 in itertools.product(range(constants_class.nfacet), range(constants_class.nfacet)):
         BF_F = prepare_facet(
-            facet[j0][j1], 0, Fb, sizes_class.yP_size, use_dask=use_dask, nout=1
+            facet[j0][j1], 0, constants_class.Fb, constants_class.yP_size, use_dask=use_dask, nout=1
         )
-        for i0 in range(sizes_class.nsubgrid):
+        for i0 in range(constants_class.nsubgrid):
             NMBF_F = extract_subgrid(
                 BF_F,
                 0,
-                subgrid_off[i0],
-                facet_m0_trunc,
-                Fn,
-                sizes_class,
+                constants_class.subgrid_off[i0],
+                constants_class,
                 use_dask=use_dask,
                 nout=1,
             )
             NMBF_BF = prepare_facet(
-                NMBF_F, 1, Fb, sizes_class.yP_size, use_dask=use_dask, nout=1
+                NMBF_F, 1, constants_class.Fb, constants_class.yP_size, use_dask=use_dask, nout=1
             )
-            for i1 in range(sizes_class.nsubgrid):
+            for i1 in range(constants_class.nsubgrid):
                 NMBF_NMBF[i0][i1][j0][j1] = extract_subgrid(
                     NMBF_BF,
                     1,
-                    subgrid_off[i1],
-                    facet_m0_trunc,
-                    Fn,
-                    sizes_class,
+                    constants_class.subgrid_off[i1],
+                    constants_class,
                     use_dask=use_dask,
                     nout=1,
                 )
 
 
 def facet_to_subgrid_2d_method_3(
-    Fb,
-    Fn,
     NMBF_NMBF,
     facet,
-    facet_m0_trunc,
-    subgrid_off,
-    sizes_class,
+    constants_class,
     use_dask=False,
 ):
     """
@@ -370,41 +325,34 @@ def facet_to_subgrid_2d_method_3(
     Approach 3: same as 2, but starts with the vertical direction (axis=1)
                 and finishes with the horizontal (axis=0) axis
 
-    :param Fb: Fourier transform of grid correction function
-    :param Fn: Fourier transform of gridding function
     :param NMBF_NMBF: TODO ???
     :param facet: 2D numpy array of facets
-    :param facet_m0_trunc: mask truncated to a facet (image space)
-    :param subgrid_off: subgrid offset
-    :param sizes_class: Sizes class object containing fundamental and derived parameters
+    :param constants_class: ConstantArrays or DistributedFFT class object containing
+                            fundamental and derived parameters
     :param use_dask: use dask.delayed or not
     """
-    for j0, j1 in itertools.product(range(sizes_class.nfacet), range(sizes_class.nfacet)):
+    for j0, j1 in itertools.product(range(constants_class.nfacet), range(constants_class.nfacet)):
         F_BF = prepare_facet(
-            facet[j0][j1], 1, Fb, sizes_class.yP_size, use_dask=use_dask, nout=1
+            facet[j0][j1], 1, constants_class.Fb, constants_class.yP_size, use_dask=use_dask, nout=1
         )
-        for i1 in range(sizes_class.nsubgrid):
+        for i1 in range(constants_class.nsubgrid):
             F_NMBF = extract_subgrid(
                 F_BF,
                 1,
-                subgrid_off[i1],
-                facet_m0_trunc,
-                Fn,
-                sizes_class,
+                constants_class.subgrid_off[i1],
+                constants_class,
                 use_dask=use_dask,
                 nout=1,
             )
             BF_NMBF = prepare_facet(
-                F_NMBF, 0, Fb, sizes_class.yP_size, use_dask=use_dask, nout=1
+                F_NMBF, 0, constants_class.Fb, constants_class.yP_size, use_dask=use_dask, nout=1
             )
-            for i0 in range(sizes_class.nsubgrid):
+            for i0 in range(constants_class.nsubgrid):
                 NMBF_NMBF[i0][i1][j0][j1] = extract_subgrid(
                     BF_NMBF,
                     0,
-                    subgrid_off[i0],
-                    facet_m0_trunc,
-                    Fn,
-                    sizes_class,
+                    constants_class.subgrid_off[i0],
+                    constants_class,
                     use_dask=use_dask,
                     nout=1,
                 )
@@ -413,28 +361,17 @@ def facet_to_subgrid_2d_method_3(
 def _run_algorithm(
     G_2,
     FG_2,
-    sizes_class,
-    subgrid_A,
-    facet_B,
-    subgrid_off,
-    facet_off,
-    Fb,
-    Fn,
-    facet_m0_trunc,
+    distr_fft_class,
     use_dask,
 ):
     subgrid_2, facet_2 = make_subgrid_and_facet(
         G_2,
         FG_2,
-        sizes_class,
-        subgrid_A,
-        subgrid_off,
-        facet_B,
-        facet_off,
+        distr_fft_class,
         dims=2,
         use_dask=use_dask,
     )
-    log.info("%s x %s subgrids %s x %s facets", sizes_class.nsubgrid, sizes_class.nsubgrid, sizes_class.nfacet, sizes_class.nfacet)
+    log.info("%s x %s subgrids %s x %s facets", distr_fft_class.nsubgrid, distr_fft_class.nsubgrid, distr_fft_class.nfacet, distr_fft_class.nfacet)
 
     # ==== Facet to Subgrid ====
     log.info("Executing 2D facet-to-subgrid algorithm")
@@ -447,38 +384,26 @@ def _run_algorithm(
 
     t = time.time()
     NMBF_NMBF = facet_to_subgrid_2d_method_1(
-        Fb,
-        Fn,
         facet_2,
-        facet_m0_trunc,
-        subgrid_off,
-        sizes_class,
+        distr_fft_class,
         use_dask=use_dask,
     )
     log.info("%s s", time.time() - t)
 
     t = time.time()
     facet_to_subgrid_2d_method_2(
-        Fb,
-        Fn,
         NMBF_NMBF,
         facet_2,
-        facet_m0_trunc,
-        subgrid_off,
-        sizes_class,
+        distr_fft_class,
         use_dask=use_dask,
     )
     log.info("%s s", time.time() - t)
 
     t = time.time()
     facet_to_subgrid_2d_method_3(
-        Fb,
-        Fn,
         NMBF_NMBF,
         facet_2,
-        facet_m0_trunc,
-        subgrid_off,
-        sizes_class,
+        distr_fft_class,
         use_dask=use_dask,
     )
     log.info("%s s", time.time() - t)
@@ -490,14 +415,8 @@ def _run_algorithm(
 
     t = time.time()
     BMNAF_BMNAF = subgrid_to_facet_algorithm(
-        Fb,
-        Fn,
-        facet_B,
-        facet_m0_trunc,
-        facet_off,
         subgrid_2,
-        subgrid_off,
-        sizes_class,
+        distr_fft_class,
         use_dask=use_dask,
     )
     log.info("%s s", time.time() - t)
@@ -513,59 +432,43 @@ def main(to_plot=True, fig_name=None, use_dask=False):
     :param use_dask: boolean; use dask?
     """
     log.info("== Chosen configuration")
-    sizes = Sizes(**TARGET_PARS)
-    log.info(sizes)
-
-    log.info("\n== Calculate PSWF")
-    pswf = calculate_pswf(sizes, ALPHA)
+    distr_fft_class = DistributedFFT(**TARGET_PARS)
+    log.info(distr_fft_class)
 
     if to_plot:
-        plot_1(pswf, sizes, fig_name=fig_name)
-
-    # Calculate actual work terms to use. We need both $n$ and $b$ in image space.
-    Fb, Fn, facet_m0_trunc = get_actual_work_terms(pswf, sizes)
-
-    if to_plot:
-        plot_2(facet_m0_trunc, sizes, fig_name=fig_name)
+        plot_1(distr_fft_class.pswf, distr_fft_class, fig_name=fig_name)
+        plot_2(distr_fft_class, fig_name=fig_name)
 
     log.info("\n== Generate layout (factes and subgrids")
     # Layout subgrids + facets
-    log.info("%d subgrids, %d facets needed to cover" % (sizes.nsubgrid, sizes.nfacet))
-    subgrid_off = sizes.xA_size * numpy.arange(sizes.nsubgrid) + sizes.Nx
-    facet_off = sizes.yB_size * numpy.arange(sizes.nfacet)
-
-    assert whole(numpy.outer(subgrid_off, facet_off) / sizes.N)
-    assert whole(facet_off * sizes.xM_size / sizes.N)
+    log.info("%d subgrids, %d facets needed to cover" % (distr_fft_class.nsubgrid, distr_fft_class.nfacet))
 
     log.info("\n== Generate A/B masks and subgrid/facet offsets")
     # Determine subgrid/facet offsets and the appropriate A/B masks for cutting them out.
     # We are aiming for full coverage here: Every pixel is part of exactly one subgrid / facet.
 
-    facet_B = generate_mask(sizes.N, sizes.nfacet, sizes.yB_size, facet_off)
-    subgrid_A = generate_mask(sizes.N, sizes.nsubgrid, sizes.xA_size, subgrid_off)
-
     # adding sources
     add_sources = True
     if add_sources:
-        FG_2 = numpy.zeros((sizes.N, sizes.N))
+        FG_2 = numpy.zeros((distr_fft_class.N, distr_fft_class.N))
         source_count = 1000
         sources = [
             (
-                numpy.random.randint(-sizes.N // 2, sizes.N // 2 - 1),
-                numpy.random.randint(-sizes.N // 2, sizes.N // 2 - 1),
-                numpy.random.rand() * sizes.N * sizes.N / numpy.sqrt(source_count) / 2,
+                numpy.random.randint(-distr_fft_class.N // 2, distr_fft_class.N // 2 - 1),
+                numpy.random.randint(-distr_fft_class.N // 2, distr_fft_class.N // 2 - 1),
+                numpy.random.rand() * distr_fft_class.N * distr_fft_class.N / numpy.sqrt(source_count) / 2,
             )
             for _ in range(source_count)
         ]
         for x, y, i in sources:
-            FG_2[y + sizes.N // 2, x + sizes.N // 2] += i
+            FG_2[y + distr_fft_class.N // 2, x + distr_fft_class.N // 2] += i
         G_2 = ifft(FG_2)
 
     else:
         # without sources
         G_2 = (
-            numpy.exp(2j * numpy.pi * numpy.random.rand(sizes.N, sizes.N))
-            * numpy.random.rand(sizes.N, sizes.N)
+            numpy.exp(2j * numpy.pi * numpy.random.rand(distr_fft_class.N, distr_fft_class.N))
+            * numpy.random.rand(distr_fft_class.N, distr_fft_class.N)
             / 2
         )
         FG_2 = fft(G_2)
@@ -576,14 +479,7 @@ def main(to_plot=True, fig_name=None, use_dask=False):
         subgrid_2, facet_2, NMBF_NMBF, BMNAF_BMNAF = _run_algorithm(
             G_2,
             FG_2,
-            sizes,
-            subgrid_A,
-            facet_B,
-            subgrid_off,
-            facet_off,
-            Fb,
-            Fn,
-            facet_m0_trunc,
+            distr_fft_class,
             use_dask=True,
         )
 
@@ -600,36 +496,20 @@ def main(to_plot=True, fig_name=None, use_dask=False):
         subgrid_2, facet_2, NMBF_NMBF, BMNAF_BMNAF = _run_algorithm(
             G_2,
             FG_2,
-            sizes,
-            subgrid_A,
-            facet_B,
-            subgrid_off,
-            facet_off,
-            Fb,
-            Fn,
-            facet_m0_trunc,
+            distr_fft_class,
             use_dask=False,
         )
 
     errors_facet_to_subgrid_2d(
         NMBF_NMBF,
-        sizes,
-        facet_off,
+        distr_fft_class,
         subgrid_2,
-        subgrid_A,
         to_plot=to_plot,
         fig_name=fig_name,
     )
 
     test_accuracy_facet_to_subgrid(
-        sizes,
-        subgrid_off,
-        subgrid_A,
-        facet_off,
-        facet_B,
-        Fb,
-        facet_m0_trunc,
-        Fn,
+        distr_fft_class,
         xs=252,
         ys=252,
         to_plot=to_plot,
@@ -639,21 +519,14 @@ def main(to_plot=True, fig_name=None, use_dask=False):
     errors_subgrid_to_facet_2d(
         BMNAF_BMNAF,
         facet_2,
-        sizes.nfacet,
-        sizes.yB_size,
+        distr_fft_class.nfacet,
+        distr_fft_class.yB_size,
         to_plot=to_plot,
         fig_name=fig_name,
     )
 
     test_accuracy_subgrid_to_facet(
-        sizes,
-        subgrid_off,
-        subgrid_A,
-        facet_off,
-        facet_B,
-        Fb,
-        facet_m0_trunc,
-        Fn,
+        distr_fft_class,
         xs=252,
         ys=252,
         to_plot=to_plot,
