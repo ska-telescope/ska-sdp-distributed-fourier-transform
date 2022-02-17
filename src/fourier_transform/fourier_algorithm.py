@@ -1042,13 +1042,15 @@ def generate_mask(n_image, ndata_point, true_usable_size, offset):
     :return: mask: subgrid_A or facet_B
     """
     mask = numpy.zeros((ndata_point, true_usable_size), dtype=int)
-    subgrid_border = (offset + numpy.hstack([offset[1:], [n_image + offset[0]]])) // 2
+    border = (offset + numpy.hstack([offset[1:], [n_image + offset[0]]])) // 2
+
     for i in range(ndata_point):
-        left = (subgrid_border[i - 1] - offset[i] + true_usable_size // 2) % n_image
-        right = subgrid_border[i] - offset[i] + true_usable_size // 2
-        assert (
-            left >= 0 and right <= true_usable_size
-        ), "xA / yB not large enough to cover subgrids / facets!"
+        left = (border[i - 1] - offset[i] + true_usable_size // 2) % n_image
+        right = border[i] - offset[i] + true_usable_size // 2
+
+        if not (left >= 0 and right <= true_usable_size):
+            raise(ValueError("xA / yB not large enough to cover subgrids / facets!"))
+
         mask[i, left:right] = 1
 
     return mask
