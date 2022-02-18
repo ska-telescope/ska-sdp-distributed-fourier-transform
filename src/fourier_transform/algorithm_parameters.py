@@ -39,10 +39,11 @@ class ConstantParams:
     :param N: total image size
     :param Nx: subgrid spacing: subgrid offsets need to be divisible by Nx
     :param yB_size: effective facet size
-    :param yP_size: padded (rough) facet size
+    :param yP_size: padded facet size (pad facet with zeros at margins to reach this size)
     :param xA_size: effective subgrid size
-    :param xM_size: padded (rough) subgrid size
-    :param yN_size: needed padding
+    :param xM_size: padded subgrid size (pad subgrid with zeros at margins to reach this size)
+    :param yN_size: padded facet size which evenly divides the image size,
+                    used for resampling facets into image space
 
     The class, in addition, derives the following, commonly used sizes:
 
@@ -125,8 +126,8 @@ class ConstantArrays(ConstantParams):
 
         facet_off: facet offset
         subgrid_off: subgrid offset
-        facet_B:
-        subgrid_A:
+        facet_B: facet mask
+        subgrid_A: subgrid mask
         Fb: Fourier transform of grid correction function
         Fn: Fourier transform of gridding function
         facet_m0_trunc: mask truncated to a facet (image space)
