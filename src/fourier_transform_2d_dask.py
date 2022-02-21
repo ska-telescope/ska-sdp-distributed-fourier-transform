@@ -33,6 +33,7 @@ from src.fourier_transform.utils import (
     test_accuracy_subgrid_to_facet,
     errors_subgrid_to_facet_2d,
 )
+from src.swift_configs import SWIFT_CONFIGS
 
 log = logging.getLogger("fourier-logger")
 log.setLevel(logging.INFO)
@@ -424,15 +425,16 @@ def _run_algorithm(
     return subgrid_2, facet_2, NMBF_NMBF, BMNAF_BMNAF
 
 
-def main(to_plot=True, fig_name=None, use_dask=False):
+def main(parameter_dict, to_plot=True, fig_name=None, use_dask=False):
     """
+    :param parameter_dict: dictionary of parameters that initialize the DistributedFFT class
     :param to_plot: run plotting?
     :param fig_name: If given, figures will be saved with this prefix into PNG files.
                      If to_plot is set to False, fig_name doesn't have an effect.
     :param use_dask: boolean; use dask?
     """
     log.info("== Chosen configuration")
-    distr_fft_class = DistributedFFT(**TARGET_PARS)
+    distr_fft_class = DistributedFFT(**parameter_dict)
     log.info(distr_fft_class)
 
     if to_plot:
@@ -538,9 +540,11 @@ if __name__ == "__main__":
     # Fixing seed of numpy random
     numpy.random.seed(123456789)
 
+    test_conf = SWIFT_CONFIGS["3k[1]-n1536-512"]
+
     client = set_up_dask()
     with performance_report(filename="dask-report-2d.html"):
-        main(to_plot=False, use_dask=True)
+        main(test_conf, to_plot=False, use_dask=True)
     tear_down_dask(client)
 
     # all above needs commenting and this uncommenting if want to run it without dask
