@@ -1,6 +1,8 @@
 import logging
 import functools
 import dask
+import os
+
 from distributed import Client
 
 log = logging.getLogger("fourier-logger")
@@ -26,7 +28,8 @@ def dask_wrapper(func):
 
 
 def set_up_dask():
-    client = Client()  # set up local cluster on your laptop
+    scheduler = os.environ.get("DASK_SCHEDULER", None)
+    client = Client(scheduler)  # if scheduler is None, set up local cluster on your laptop
     log.info(client.dashboard_link)
     return client
 
