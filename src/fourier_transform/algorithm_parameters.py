@@ -142,6 +142,7 @@ class ConstantArrays(ConstantParams):
         instead of one per facet/subgrid) is that we assume that they are all the same function,
         just shifted in grid and image space respectively (to the positions of the subgrids and facets)
     """
+
     def __init__(self, **fundamental_constants):
         super().__init__(**fundamental_constants)
 
@@ -233,7 +234,9 @@ class ConstantArrays(ConstantParams):
         :param alpha: TODO: ???, int
         """
         if self._pswf is None:
-            self._pswf = anti_aliasing_function(self.yN_size, alpha, numpy.pi * self.W / 2).real
+            self._pswf = anti_aliasing_function(
+                self.yN_size, alpha, numpy.pi * self.W / 2
+            ).real
             self._pswf /= numpy.prod(
                 numpy.arange(2 * alpha - 1, 0, -2, dtype=float)
             )  # double factorial
@@ -246,5 +249,6 @@ class DistributedFFT(ConstantArrays):
     Placeholder-class that will connect all elements of the distributed FFT code.
     Currently it provides the necessary constants and constant arrays through its parent classes.
     """
+
     def __init__(self, **fundamental_constants):
         super().__init__(**fundamental_constants)

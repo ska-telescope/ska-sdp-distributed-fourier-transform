@@ -25,3 +25,39 @@ include:
   - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/finaliser.gitlab-ci.yml'
 
+python-lint:
+  image: python:3.8
+  stage: lint
+  dependencies:
+    - test
+  before_script:
+    - pip3 install black
+  script:
+    - black --check src/ tests/
+  artifacts:
+    paths:
+      - build
+    expire_in: 1 week
+    when: always
+
+python-test:
+  image: python:3.8
+  stage: test
+  except:
+    - tags
+  tags:
+    - k8srunner
+  script:
+    - pytest tests/test_end_to_end_fourier_transform.py
+  after_script:
+    - mkdir -p build/reports
+    - mv unit-tests.xml build/reports
+  environment:
+    name: test/$CI_COMMIT_REF_NAME
+    kubernetes:
+      namespace: $KUBE_NAMESPACE
+  artifacts:
+    paths:
+      - build
+    expire_in: 1 week
+    when: always

@@ -97,9 +97,7 @@ def _algorithm_with_dask_array(
     # - redistribution of nmbfs here -
     log.info("Redistributed data: %s %s", nmbfs.shape, nmbfs.size)
 
-    approx_subgrid = reconstruct_subgrid_1d_dask_array(
-        nmbfs, distr_fft_class
-    )
+    approx_subgrid = reconstruct_subgrid_1d_dask_array(nmbfs, distr_fft_class)
     log.info("Reconstructed subgrids: %s %s", approx_subgrid.shape, approx_subgrid.size)
 
     # ==============================================
@@ -154,9 +152,7 @@ def _algorithm_with_dask_delayed(
     # ==============================================
     log.info("\n== RUN: Subgrid to facet")
 
-    nafs = subgrid_to_facet_1d(
-        subgrid, distr_fft_class, use_dask=True
-    )
+    nafs = subgrid_to_facet_1d(subgrid, distr_fft_class, use_dask=True)
 
     approx_facet = reconstruct_facet_1d(
         nafs,
@@ -252,7 +248,10 @@ def main(to_plot=True, fig_name=None, use_dask=False, dask_option="array"):
 
     log.info("\n== Generate layout (factes and subgrids")
     # Layout subgrids + facets
-    log.info("%d subgrids, %d facets needed to cover" % (distr_fft_class.nsubgrid, distr_fft_class.nfacet))
+    log.info(
+        "%d subgrids, %d facets needed to cover"
+        % (distr_fft_class.nsubgrid, distr_fft_class.nfacet)
+    )
     distr_fft_class.check_offsets()
 
     log.info("\n== Generate A/B masks and subgrid/facet offsets")
