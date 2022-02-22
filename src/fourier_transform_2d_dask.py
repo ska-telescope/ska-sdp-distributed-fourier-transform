@@ -778,15 +778,17 @@ def main(to_plot=True, fig_name=None, use_dask=False):
         fig_name=fig_name,
     )
 
+    return subgrid_2, facet_2, NMBF_NMBF, BMNAF_BMNAF
+
 
 if __name__ == "__main__":
     # Fixing seed of numpy random
     numpy.random.seed(123456789)
 
-    client = set_up_dask()
-    with performance_report(filename="dask-report-2d.html"):
-        main(to_plot=False, use_dask=True)
-    tear_down_dask(client)
+    # client = set_up_dask()
+    # with performance_report(filename="dask-report-2d.html"):
+    #     main(to_plot=False, use_dask=True)
+    # tear_down_dask(client)
 
-    # all above needs commenting and this uncommenting if want to run it without dask
-    # main(to_plot=False)
+    #   all above needs commenting and this uncommenting if want to run it without dask
+    main(to_plot=False)

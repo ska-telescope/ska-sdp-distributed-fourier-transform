@@ -96,6 +96,55 @@ def test_end_to_end_1d_dask(use_dask, dask_option):
 
 
 @pytest.mark.parametrize("use_dask", [False, True])
+def test_end_to_end_2d_dask(use_dask):
+    """
+    Test that the 2d algorithm produces the same results without dask,
+    and with dask with array or delayed.
+    """
+    # Fixing seed of numpy random
+    numpy.random.seed(123456789)
+
+    if use_dask:
+        client = set_up_dask()
+
+    result_subgrid, result_facet, result_approx_subgrid, result_approx_facet = main_2d(
+        to_plot=False, use_dask=use_dask
+    )
+
+    # check array shapes
+    assert result_subgrid.shape == (6, 6, 188, 188)
+    assert result_facet.shape == (4, 4, 256, 256)
+    # TODO assert result_approx_subgrid.shape == result_subgrid.shape
+    assert result_approx_facet.shape == result_facet.shape
+
+    # # check array values
+    # print(result_subgrid[numpy.where(result_subgrid != 0)])
+    # assert_array_almost_equal(
+    #     result_subgrid[numpy.where(result_subgrid != 0)],
+    #     EXPECTED_NONZERO_SUBGRID_1D,
+    #     decimal=9,
+    # )
+    # assert_array_almost_equal(
+    #     result_facet[numpy.where(result_facet != 0)].round(8),
+    #     EXPECTED_NONZERO_FACET_1D,
+    #     decimal=7,
+    # )
+    #     # assert_array_almost_equal(
+    #     #     result_approx_subgrid[numpy.where(result_approx_subgrid != 0)],
+    #     #     EXPECTED_NONZERO_APPROX_SUBGRID_1D,
+    #     #     decimal=9,
+    #     # )
+    #     # assert_array_almost_equal(
+    #     #     result_approx_facet[numpy.where(result_approx_facet != 0)].round(8),
+    #     #     EXPECTED_NONZERO_APPROX_FACET_1D,
+    #     #     decimal=7,
+    #     # )
+    #
+    if use_dask:
+        tear_down_dask(client)
+
+
+@pytest.mark.parametrize("use_dask", [False, True])
 def test_end_to_end_2d_dask_logging(use_dask):
     """
     Test that the logged information matches the
