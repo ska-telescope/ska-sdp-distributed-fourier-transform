@@ -38,7 +38,7 @@ python-test:
     - tags
   tags:
     - k8srunner
-  before_install:
+  before_script:
     - pip install poetry
     - poetry install -v
   script:

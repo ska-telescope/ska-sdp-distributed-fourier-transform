@@ -598,11 +598,8 @@ def main(to_plot=True, fig_name=None, use_dask=False):
 
     # Testing
 
-    numpy.printoptions(threshold=sys.maxsize)
+    numpy.printoptions(threshold=500)
     print(NMBF_NMBF)
-    with open("matrix.txt", "w") as testfile:
-        for row in subgrid_2:
-            testfile.write(" ".join([str(a) for a in row]) + "\n")
 
     return subgrid_2, facet_2, NMBF_NMBF, BMNAF_BMNAF
 
