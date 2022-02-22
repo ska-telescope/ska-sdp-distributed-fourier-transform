@@ -19,7 +19,7 @@ include:
     file: 'gitlab-ci/includes/finaliser.gitlab-ci.yml'
 
 python-lint:
-  image: python:3.8
+  image: python:3.9
   stage: lint
   before_script:
     - pip3 install black
@@ -32,7 +32,7 @@ python-lint:
     when: always
 
 python-test:
-  image: python:3.8
+  image: python:3.9
   stage: test
   except:
     - tags
@@ -40,16 +40,13 @@ python-test:
     - k8srunner
   before_script:
     - pip install poetry
+    - poetry config virtualenvs.create false
     - poetry install -v
   script:
     - pytest tests/test_end_to_end_fourier_transform.py
   after_script:
     - mkdir -p build/reports
     - mv unit-tests.xml build/reports
-  environment:
-    name: test/$CI_COMMIT_REF_NAME
-    kubernetes:
-      namespace: $KUBE_NAMESPACE
   artifacts:
     paths:
       - build

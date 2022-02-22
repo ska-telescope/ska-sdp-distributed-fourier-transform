@@ -124,12 +124,12 @@ def test_end_to_end_2d_dask(use_dask):
     assert result_approx_facet.shape == result_facet.shape
 
     # # check array values
-    # print(result_subgrid[numpy.where(result_subgrid != 0)])
-    # assert_array_almost_equal(
-    #     result_subgrid[numpy.where(result_subgrid != 0)],
-    #     EXPECTED_NONZERO_SUBGRID_1D,
-    #     decimal=9,
-    # )
+    print(result_subgrid[numpy.where(result_subgrid != 0)])
+    assert_array_almost_equal(
+        result_subgrid[numpy.where(result_subgrid != 0)],
+        EXPECTED_NONZERO_SUBGRID_2D,
+        decimal=9,
+    )
     # assert_array_almost_equal(
     #     result_facet[numpy.where(result_facet != 0)].round(8),
     #     EXPECTED_NONZERO_FACET_1D,
