@@ -15,9 +15,9 @@ include:
 #  - project: 'ska-telescope/templates-repository'
 #    file: 'gitlab-ci/includes/python.gitlab-ci.yml'
 
-  - project: 'skatelescope/templates-repository'
+  - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/python-lint.gitlab-ci.yml'
-  - project: 'skatelescope/templates-repository'
+  - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/python-test.gitlab-ci.yml'
 
 #    # Docs pages
