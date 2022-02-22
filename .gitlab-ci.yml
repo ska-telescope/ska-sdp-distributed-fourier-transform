@@ -12,8 +12,9 @@ stages:
 
 include:
   # Python
-  - project: 'ska-telescope/templates-repository'
-    file: 'gitlab-ci/includes/python.gitlab-ci.yml'
+  #TODO commenting this out until we get a solution for the python version
+#  - project: 'ska-telescope/templates-repository'
+#    file: 'gitlab-ci/includes/python.gitlab-ci.yml'
 #    # Docs pages
 #  - project: 'ska-telescope/templates-repository'
 #    file: 'gitlab-ci/includes/docs-pages.gitlab-ci.yml'
