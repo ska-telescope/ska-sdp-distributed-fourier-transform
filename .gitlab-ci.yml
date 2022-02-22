@@ -11,13 +11,6 @@ stages:
   - pages
 
 include:
-  # Python
-  #TODO commenting this out until we get a solution for the python version
-#  - project: 'ska-telescope/templates-repository'
-#    file: 'gitlab-ci/includes/python.gitlab-ci.yml'
-#    # Docs pages
-#  - project: 'ska-telescope/templates-repository'
-#    file: 'gitlab-ci/includes/docs-pages.gitlab-ci.yml'
     # Tag Based GitLab Release Management
   - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/release.gitlab-ci.yml'
@@ -28,8 +21,6 @@ include:
 python-lint:
   image: python:3.8
   stage: lint
-  dependencies:
-    - test
   before_script:
     - pip3 install black
   script:
