@@ -38,6 +38,9 @@ python-test:
     - tags
   tags:
     - k8srunner
+  before_install:
+    - pip install poetry
+    - poetry install -v
   script:
     - pytest tests/test_end_to_end_fourier_transform.py
   after_script:
