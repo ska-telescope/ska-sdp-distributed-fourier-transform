@@ -164,7 +164,6 @@ def test_end_to_end_2d_dask_logging(use_dask):
         client = set_up_dask()
 
     expected_log_calls = [
-        call("3x3 facets for FoV of 0.75 (100.0% efficiency)"),
         call("6 subgrids, 4 facets needed to cover"),
         call("%s x %s subgrids %s x %s facets", 6, 6, 4, 4),
         call("Mean grid absolute: %s", 0.2523814510844513),
