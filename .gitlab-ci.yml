@@ -17,38 +17,44 @@ include:
     # .post step finalisers eg: badges
   - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/finaliser.gitlab-ci.yml'
+# Python
+  - project: 'ska-telescope/templates-repository'
+    file: 'gitlab-ci/includes/python.gitlab-ci.yml'
 
 python-lint:
-  image: python:3.9
-  stage: lint
-  before_script:
-    - pip3 install black
-  script:
-    - black --check src/ tests/
-  artifacts:
-    paths:
-      - build
-    expire_in: 1 week
-    when: always
+  image: $SKA_K8S_TOOLS_DOCKER_BUILDER_IMAGE
 
-python-test:
-  image: python:3.9
-  stage: test
-  except:
-    - tags
-  tags:
-    - k8srunner
-  before_script:
-    - pip install poetry
-    - poetry config virtualenvs.create false
-    - poetry install -v
-  script:
-    - pytest tests/test_end_to_end_fourier_transform.py
-  after_script:
-    - mkdir -p build/reports
-    - mv unit-tests.xml build/reports
-  artifacts:
-    paths:
-      - build
-    expire_in: 1 week
-    when: always
+#python-lint:
+#  image: python:3.9
+#  stage: lint
+#  before_script:
+#    - pip3 install black
+#  script:
+#    - black --check src/ tests/
+#  artifacts:
+#    paths:
+#      - build
+#    expire_in: 1 week
+#    when: always
+#
+#python-test:
+#  image: python:3.9
+#  stage: test
+#  except:
+#    - tags
+#  tags:
+#    - k8srunner
+#  before_script:
+#    - pip install poetry
+#    - poetry config virtualenvs.create false
+#    - poetry install -v
+#  script:
+#    - pytest tests/test_end_to_end_fourier_transform.py
+#  after_script:
+#    - mkdir -p build/reports
+#    - mv unit-tests.xml build/reports
+#  artifacts:
+#    paths:
+#      - build
+#    expire_in: 1 week
+#    when: always
