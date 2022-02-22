@@ -533,6 +533,8 @@ def main(to_plot=True, fig_name=None, use_dask=False):
         fig_name=fig_name,
     )
 
+    return subgrid_2, facet_2, NMBF_NMBF, BMNAF_BMNAF
+
 
 if __name__ == "__main__":
     # Fixing seed of numpy random
