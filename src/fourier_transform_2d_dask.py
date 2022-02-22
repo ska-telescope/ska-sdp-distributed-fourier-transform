@@ -3,39 +3,38 @@
 import itertools
 import logging
 import math
+import sys
 import time
 
 import dask
-import numpy
-import sys
 import dask.array
+import numpy
 from distributed import performance_report
-
 from matplotlib import pylab
 
 from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
 from src.fourier_transform.fourier_algorithm import (
-    ifft,
-    fft,
-    prepare_facet,
-    extract_subgrid,
-    get_actual_work_terms,
-    calculate_pswf,
-    generate_mask,
-    prepare_subgrid,
-    extract_facet_contribution,
     add_subgrid_contribution,
+    calculate_pswf,
+    extract_facet_contribution,
+    extract_subgrid,
+    fft,
     finish_facet,
+    generate_mask,
+    get_actual_work_terms,
+    ifft,
     make_subgrid_and_facet,
+    prepare_facet,
+    prepare_subgrid,
 )
 from src.fourier_transform.utils import (
-    whole,
+    errors_facet_to_subgrid_2d,
+    errors_subgrid_to_facet_2d,
     plot_1,
     plot_2,
-    errors_facet_to_subgrid_2d,
     test_accuracy_facet_to_subgrid,
     test_accuracy_subgrid_to_facet,
-    errors_subgrid_to_facet_2d,
+    whole,
 )
 
 log = logging.getLogger("fourier-logger")
@@ -76,14 +75,19 @@ TARGET_ERR = 1e-5
 ALPHA = 0
 
 
-def _generate_naf_naf(Fn, facet_off, nfacet, nsubgrid, subgrid_2, use_dask, xM_yN_size):
+def _generate_naf_naf(
+    Fn, facet_off, nfacet, nsubgrid, subgrid_2, use_dask, xM_yN_size
+):
     naf_naf = numpy.empty(
-        (nsubgrid, nsubgrid, nfacet, nfacet, xM_yN_size, xM_yN_size), dtype=complex
+        (nsubgrid, nsubgrid, nfacet, nfacet, xM_yN_size, xM_yN_size),
+        dtype=complex,
     )
     if use_dask:
         naf_naf = naf_naf.tolist()
     for i0, i1 in itertools.product(range(nsubgrid), range(nsubgrid)):
-        AF_AF = prepare_subgrid(subgrid_2[i0][i1], xM_size, use_dask=use_dask, nout=1)
+        AF_AF = prepare_subgrid(
+            subgrid_2[i0][i1], xM_size, use_dask=use_dask, nout=1
+        )
         for j0 in range(nfacet):
             NAF_AF = extract_facet_contribution(
                 AF_AF,
@@ -132,7 +136,9 @@ def subgrid_to_facet_algorithm(
         Fn, facet_off, nfacet, nsubgrid, subgrid_2, use_dask, xM_yN_size
     )
 
-    BMNAF_BMNAF = numpy.empty((nfacet, nfacet, yB_size, yB_size), dtype=complex)
+    BMNAF_BMNAF = numpy.empty(
+        (nfacet, nfacet, yB_size, yB_size), dtype=complex
+    )
     if use_dask:
         BMNAF_BMNAF = BMNAF_BMNAF.tolist()
 
@@ -172,7 +178,14 @@ def subgrid_to_facet_algorithm(
                         1,
                     )
             NAF_BMNAF = finish_facet(
-                NAF_MNAF, Fb, facet_B, yB_size, j1, 1, use_dask=use_dask, nout=0
+                NAF_MNAF,
+                Fb,
+                facet_B,
+                yB_size,
+                j1,
+                1,
+                use_dask=use_dask,
+                nout=0,
             )
             if use_dask:
                 MNAF_BMNAF = MNAF_BMNAF + dask.array.from_delayed(
@@ -254,13 +267,16 @@ def facet_to_subgrid_2d_method_1(
     """
 
     NMBF_NMBF = numpy.empty(
-        (nsubgrid, nsubgrid, nfacet, nfacet, xM_yN_size, xM_yN_size), dtype=complex
+        (nsubgrid, nsubgrid, nfacet, nfacet, xM_yN_size, xM_yN_size),
+        dtype=complex,
     )
     if use_dask:
         NMBF_NMBF = NMBF_NMBF.tolist()
 
     for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
-        BF_F = prepare_facet(facet[j0][j1], 0, Fb, yP_size, use_dask=use_dask, nout=1)
+        BF_F = prepare_facet(
+            facet[j0][j1], 0, Fb, yP_size, use_dask=use_dask, nout=1
+        )
         BF_BF = prepare_facet(BF_F, 1, Fb, yP_size, use_dask=use_dask, nout=1)
         for i0 in range(nsubgrid):
             NMBF_BF = extract_subgrid(
@@ -338,7 +354,9 @@ def facet_to_subgrid_2d_method_2(
     :param use_dask: use dask.delayed or not
     """
     for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
-        BF_F = prepare_facet(facet[j0][j1], 0, Fb, yP_size, use_dask=use_dask, nout=1)
+        BF_F = prepare_facet(
+            facet[j0][j1], 0, Fb, yP_size, use_dask=use_dask, nout=1
+        )
         for i0 in range(nsubgrid):
             NMBF_F = extract_subgrid(
                 BF_F,
@@ -355,7 +373,9 @@ def facet_to_subgrid_2d_method_2(
                 use_dask=use_dask,
                 nout=1,
             )
-            NMBF_BF = prepare_facet(NMBF_F, 1, Fb, yP_size, use_dask=use_dask, nout=1)
+            NMBF_BF = prepare_facet(
+                NMBF_F, 1, Fb, yP_size, use_dask=use_dask, nout=1
+            )
             for i1 in range(nsubgrid):
                 NMBF_NMBF[i0][i1][j0][j1] = extract_subgrid(
                     NMBF_BF,
@@ -409,7 +429,9 @@ def facet_to_subgrid_2d_method_3(
     :param use_dask: use dask.delayed or not
     """
     for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
-        F_BF = prepare_facet(facet[j0][j1], 1, Fb, yP_size, use_dask=use_dask, nout=1)
+        F_BF = prepare_facet(
+            facet[j0][j1], 1, Fb, yP_size, use_dask=use_dask, nout=1
+        )
         for i1 in range(nsubgrid):
             F_NMBF = extract_subgrid(
                 F_BF,
@@ -426,7 +448,9 @@ def facet_to_subgrid_2d_method_3(
                 use_dask=use_dask,
                 nout=1,
             )
-            BF_NMBF = prepare_facet(F_NMBF, 0, Fb, yP_size, use_dask=use_dask, nout=1)
+            BF_NMBF = prepare_facet(
+                F_NMBF, 0, Fb, yP_size, use_dask=use_dask, nout=1
+            )
             for i0 in range(nsubgrid):
                 NMBF_NMBF[i0][i1][j0][j1] = extract_subgrid(
                     BF_NMBF,
@@ -476,7 +500,9 @@ def _run_algorithm(
         dims=2,
         use_dask=use_dask,
     )
-    log.info("%s x %s subgrids %s x %s facets", nsubgrid, nsubgrid, nfacet, nfacet)
+    log.info(
+        "%s x %s subgrids %s x %s facets", nsubgrid, nsubgrid, nfacet, nfacet
+    )
 
     # ==== Facet to Subgrid ====
     log.info("Executing 2D facet-to-subgrid algorithm")

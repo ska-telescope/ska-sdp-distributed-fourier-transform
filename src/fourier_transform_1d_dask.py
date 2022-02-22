@@ -2,38 +2,36 @@
 # coding: utf-8
 import logging
 import math
-
-import numpy
 import sys
-import dask
 
+import dask
+import numpy
 from distributed import performance_report
 from matplotlib import pylab
 
 from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
-
 from src.fourier_transform.fourier_algorithm import (
-    fft,
-    make_subgrid_and_facet,
-    facets_to_subgrid_1d,
-    reconstruct_subgrid_1d,
-    subgrid_to_facet_1d,
-    reconstruct_facet_1d,
-    get_actual_work_terms,
     calculate_pswf,
-    generate_mask,
-    subgrid_to_facet_1d_dask_array,
+    facets_to_subgrid_1d,
     facets_to_subgrid_1d_dask_array,
+    fft,
+    generate_mask,
+    get_actual_work_terms,
+    make_subgrid_and_facet,
     make_subgrid_and_facet_dask_array,
-    reconstruct_subgrid_1d_dask_array,
+    reconstruct_facet_1d,
     reconstruct_facet_1d_dask_array,
+    reconstruct_subgrid_1d,
+    reconstruct_subgrid_1d_dask_array,
+    subgrid_to_facet_1d,
+    subgrid_to_facet_1d_dask_array,
 )
 from src.fourier_transform.utils import (
-    whole,
+    calculate_and_plot_errors_facet_1d,
+    calculate_and_plot_errors_subgrid_1d,
     plot_1,
     plot_2,
-    calculate_and_plot_errors_subgrid_1d,
-    calculate_and_plot_errors_facet_1d,
+    whole,
 )
 
 log = logging.getLogger("fourier-logger")
@@ -145,7 +143,11 @@ def _algorithm_with_dask_array(
     approx_subgrid = reconstruct_subgrid_1d_dask_array(
         nmbfs, xM_size, nfacet, facet_off, N, subgrid_A, xA_size, nsubgrid
     )
-    log.info("Reconstructed subgrids: %s %s", approx_subgrid.shape, approx_subgrid.size)
+    log.info(
+        "Reconstructed subgrids: %s %s",
+        approx_subgrid.shape,
+        approx_subgrid.size,
+    )
 
     # ==============================================
     log.info("\n== RUN: Subgrid to facet")
@@ -172,7 +174,9 @@ def _algorithm_with_dask_array(
         Fb,
         facet_B,
     )
-    log.info("Reconstructed facets: %s %s", approx_facet.shape, approx_facet.size)
+    log.info(
+        "Reconstructed facets: %s %s", approx_facet.shape, approx_facet.size
+    )
 
     return subgrid, facet, approx_subgrid, approx_facet
 
@@ -246,7 +250,15 @@ def _algorithm_with_dask_delayed(
     log.info("\n== RUN: Subgrid to facet")
 
     nafs = subgrid_to_facet_1d(
-        subgrid, nsubgrid, nfacet, xM_yN_size, xM_size, facet_off, N, Fn, use_dask=True
+        subgrid,
+        nsubgrid,
+        nfacet,
+        xM_yN_size,
+        xM_size,
+        facet_off,
+        N,
+        Fn,
+        use_dask=True,
     )
 
     approx_facet = reconstruct_facet_1d(
@@ -348,7 +360,11 @@ def _algorithm_in_serial(
         nsubgrid,
         use_dask=False,
     )
-    log.info("Reconstructed subgrids: %s %s", approx_subgrid.shape, approx_subgrid.size)
+    log.info(
+        "Reconstructed subgrids: %s %s",
+        approx_subgrid.shape,
+        approx_subgrid.size,
+    )
 
     # ==============================================
     log.info("\n== RUN: Subgrid to facet")
@@ -384,7 +400,9 @@ def _algorithm_in_serial(
         facet_B,
         use_dask=False,
     )
-    log.info("Reconstructed facets: %s %s", approx_facet.shape, approx_facet.size)
+    log.info(
+        "Reconstructed facets: %s %s", approx_facet.shape, approx_facet.size
+    )
 
     return subgrid, facet, approx_subgrid, approx_facet
 
@@ -477,7 +495,12 @@ def main(to_plot=True, fig_name=None, use_dask=False, dask_option="array"):
     dtype = numpy.complex128
 
     if use_dask and dask_option == "array":
-        subgrid, facet, approx_subgrid, approx_facet = _algorithm_with_dask_array(
+        (
+            subgrid,
+            facet,
+            approx_subgrid,
+            approx_facet,
+        ) = _algorithm_with_dask_array(
             G,
             nsubgrid,
             nfacet,
@@ -499,7 +522,12 @@ def main(to_plot=True, fig_name=None, use_dask=False, dask_option="array"):
         )
 
     elif use_dask and dask_option == "delayed":
-        subgrid, facet, approx_subgrid, approx_facet = _algorithm_with_dask_delayed(
+        (
+            subgrid,
+            facet,
+            approx_subgrid,
+            approx_facet,
+        ) = _algorithm_with_dask_delayed(
             G,
             nsubgrid,
             nfacet,

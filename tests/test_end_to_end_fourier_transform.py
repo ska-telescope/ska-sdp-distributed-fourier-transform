@@ -12,23 +12,21 @@ tested code.
 import glob
 import logging
 import os
-from unittest.mock import patch, call
+from unittest.mock import call, patch
 
 import numpy
 import pytest
 from numpy.testing import assert_array_almost_equal
 
 from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
-
-from tests.test_data.reference_data.ref_data import (
-    EXPECTED_NONZERO_SUBGRID_1D,
-    EXPECTED_NONZERO_FACET_1D,
-    EXPECTED_NONZERO_APPROX_SUBGRID_1D,
-    EXPECTED_NONZERO_APPROX_FACET_1D,
-)
-
 from src.fourier_transform_1d_dask import main as main_1d
 from src.fourier_transform_2d_dask import main as main_2d
+from tests.test_data.reference_data.ref_data import (
+    EXPECTED_NONZERO_APPROX_FACET_1D,
+    EXPECTED_NONZERO_APPROX_SUBGRID_1D,
+    EXPECTED_NONZERO_FACET_1D,
+    EXPECTED_NONZERO_SUBGRID_1D,
+)
 
 log = logging.getLogger("fourier-logger")
 log.setLevel(logging.WARNING)
@@ -46,7 +44,8 @@ def _compare_images(expected, result):
 
 
 @pytest.mark.parametrize(
-    "use_dask, dask_option", [(False, None), (True, "delayed"), (True, "array")]
+    "use_dask, dask_option",
+    [(False, None), (True, "delayed"), (True, "array")],
 )
 def test_end_to_end_1d_dask(use_dask, dask_option):
     """
@@ -59,9 +58,12 @@ def test_end_to_end_1d_dask(use_dask, dask_option):
     if use_dask:
         client = set_up_dask()
 
-    result_subgrid, result_facet, result_approx_subgrid, result_approx_facet = main_1d(
-        to_plot=False, use_dask=use_dask, dask_option=dask_option
-    )
+    (
+        result_subgrid,
+        result_facet,
+        result_approx_subgrid,
+        result_approx_facet,
+    ) = main_1d(to_plot=False, use_dask=use_dask, dask_option=dask_option)
 
     # check array shapes
     assert result_subgrid.shape == (6, 188)
@@ -107,9 +109,12 @@ def test_end_to_end_2d_dask(use_dask):
     if use_dask:
         client = set_up_dask()
 
-    result_subgrid, result_facet, result_approx_subgrid, result_approx_facet = main_2d(
-        to_plot=False, use_dask=use_dask
-    )
+    (
+        result_subgrid,
+        result_facet,
+        result_approx_subgrid,
+        result_approx_facet,
+    ) = main_2d(to_plot=False, use_dask=use_dask)
 
     # check array shapes
     assert result_subgrid.shape == (6, 6, 188, 188)
@@ -117,29 +122,29 @@ def test_end_to_end_2d_dask(use_dask):
     # TODO assert result_approx_subgrid.shape == result_subgrid.shape
     assert result_approx_facet.shape == result_facet.shape
 
-    # # check array values
-    # print(result_subgrid[numpy.where(result_subgrid != 0)])
+    # check array values
+    print(result_subgrid[numpy.where(result_subgrid != 0)])
+    assert_array_almost_equal(
+        result_subgrid[numpy.where(result_subgrid != 0)],
+        EXPECTED_NONZERO_SUBGRID_1D,
+        decimal=9,
+    )
+    assert_array_almost_equal(
+        result_facet[numpy.where(result_facet != 0)].round(8),
+        EXPECTED_NONZERO_FACET_1D,
+        decimal=7,
+    )
     # assert_array_almost_equal(
-    #     result_subgrid[numpy.where(result_subgrid != 0)],
-    #     EXPECTED_NONZERO_SUBGRID_1D,
+    #     result_approx_subgrid[numpy.where(result_approx_subgrid != 0)],
+    #     EXPECTED_NONZERO_APPROX_SUBGRID_1D,
     #     decimal=9,
     # )
     # assert_array_almost_equal(
-    #     result_facet[numpy.where(result_facet != 0)].round(8),
-    #     EXPECTED_NONZERO_FACET_1D,
+    #     result_approx_facet[numpy.where(result_approx_facet != 0)].round(8),
+    #     EXPECTED_NONZERO_APPROX_FACET_1D,
     #     decimal=7,
     # )
-    #     # assert_array_almost_equal(
-    #     #     result_approx_subgrid[numpy.where(result_approx_subgrid != 0)],
-    #     #     EXPECTED_NONZERO_APPROX_SUBGRID_1D,
-    #     #     decimal=9,
-    #     # )
-    #     # assert_array_almost_equal(
-    #     #     result_approx_facet[numpy.where(result_approx_facet != 0)].round(8),
-    #     #     EXPECTED_NONZERO_APPROX_FACET_1D,
-    #     #     decimal=7,
-    #     # )
-    #
+
     if use_dask:
         tear_down_dask(client)
 
@@ -164,11 +169,25 @@ def test_end_to_end_2d_dask_logging(use_dask):
         call("%s x %s subgrids %s x %s facets", 6, 6, 4, 4),
         call("Mean grid absolute: %s", 0.2523814510844513),
         # facet to subgrid
-        call("RMSE: %s (image: %s)", 3.6351180911901923e-08, 6.834022011437562e-06),
-        call("RMSE: %s (image: %s)", 1.8993992558912768e-17, 3.5708706010756e-15),
+        call(
+            "RMSE: %s (image: %s)",
+            3.6351180911901923e-08,
+            6.834022011437562e-06,
+        ),
+        call(
+            "RMSE: %s (image: %s)", 1.8993992558912768e-17, 3.5708706010756e-15
+        ),
         # subgrid to facet - not yet added to tested code
-        call("RMSE: %s (image: %s)", 1.9066529538510885e-07, 4.881031561858787e-05),
-        call("RMSE: %s (image: %s)", 3.1048924152453573e-13, 7.948524583028115e-11),
+        call(
+            "RMSE: %s (image: %s)",
+            1.9066529538510885e-07,
+            4.881031561858787e-05,
+        ),
+        call(
+            "RMSE: %s (image: %s)",
+            3.1048924152453573e-13,
+            7.948524583028115e-11,
+        ),
     ]
 
     with patch("logging.Logger.info") as mock_log:

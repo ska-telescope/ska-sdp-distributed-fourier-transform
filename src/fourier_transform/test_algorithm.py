@@ -1,21 +1,21 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import math
-import time
 import itertools
 import logging
+import math
 import sys
-from matplotlib import pylab
+import time
 
 from fourier_algorithm import *
+from matplotlib import pylab
 
 # Plot setup
 from src.fourier_transform.utils import (
     mark_range,
-    whole,
-    test_accuracy_subgrid_to_facet,
     test_accuracy_facet_to_subgrid,
+    test_accuracy_subgrid_to_facet,
+    whole,
 )
 
 log = logging.getLogger("fourier-logger")
@@ -48,9 +48,12 @@ alpha = 0
 W_steps = 32
 Ws = numpy.arange(2, 22, 1 / W_steps)
 res = 1024
-normal = numpy.prod(numpy.arange(2 * alpha - 1, 0, -2, dtype=float))  # double factorial
+normal = numpy.prod(
+    numpy.arange(2 * alpha - 1, 0, -2, dtype=float)
+)  # double factorial
 pswfs = {
-    W: anti_aliasing_function(res, alpha, numpy.pi * W / 2).real / normal for W in Ws
+    W: anti_aliasing_function(res, alpha, numpy.pi * W / 2).real / normal
+    for W in Ws
 }
 
 # Note: cell[-3] (defining `test_degrid_accuracy`) also has some extra
@@ -58,7 +61,17 @@ pswfs = {
 
 
 print("== Chosen configuration")
-for n in ["W", "fov", "N", "Nx", "yB_size", "yN_size", "yP_size", "xA_size", "xM_size"]:
+for n in [
+    "W",
+    "fov",
+    "N",
+    "Nx",
+    "yB_size",
+    "yN_size",
+    "yP_size",
+    "xA_size",
+    "xM_size",
+]:
     exec(f"{n} = target_pars[n]")
     print(f"{n} = {target_pars[n]}")
 
@@ -91,7 +104,9 @@ if fov is not None:
 # Calculate PSWF at the full required resolution (facet size)
 
 pswf = anti_aliasing_function(yN_size, alpha, numpy.pi * W / 2).real
-pswf /= numpy.prod(numpy.arange(2 * alpha - 1, 0, -2, dtype=float))  # double factorial
+pswf /= numpy.prod(
+    numpy.arange(2 * alpha - 1, 0, -2, dtype=float)
+)  # double factorial
 
 x = coordinates(N)
 fx = N * coordinates(N)
@@ -118,14 +133,18 @@ pylab.show()
 # Calculate actual work terms to use. We need both $n$ and $b$ in image space.
 Fb = 1 / extract_mid(pswf, yB_size)
 Fn = pswf[(yN_size // 2) % int(1 / 2 / xM) :: int(1 / 2 / xM)]
-facet_m0_trunc = pswf * numpy.sinc(coordinates(yN_size) * xM_size / N * yN_size)
+facet_m0_trunc = pswf * numpy.sinc(
+    coordinates(yN_size) * xM_size / N * yN_size
+)
 facet_m0_trunc = (
     xM_size
     * yP_size
     / N
     * extract_mid(ifft(pad_mid(facet_m0_trunc, yP_size)), xMxN_yP_size).real
 )
-pylab.semilogy(coordinates(xMxN_yP_size) / yP_size * xMxN_yP_size, facet_m0_trunc)
+pylab.semilogy(
+    coordinates(xMxN_yP_size) / yP_size * xMxN_yP_size, facet_m0_trunc
+)
 mark_range("xM", -xM, xM)
 pylab.grid()
 pylab.show()
@@ -153,7 +172,9 @@ subgrid_border = (
 for i in range(nsubgrid):
     left = (subgrid_border[i - 1] - subgrid_off[i] + xA_size // 2) % N
     right = subgrid_border[i] - subgrid_off[i] + xA_size // 2
-    assert left >= 0 and right <= xA_size, "xA not large enough to cover subgrids!"
+    assert (
+        left >= 0 and right <= xA_size
+    ), "xA not large enough to cover subgrids!"
     subgrid_A[i, left:right] = 1
 
 facet_B = numpy.zeros((nfacet, yB_size), dtype=bool)
@@ -162,13 +183,23 @@ facet_border = (facet_off + numpy.hstack([facet_off[1:], [N]])) // 2
 for j in range(nfacet):
     left = (facet_border[j - 1] - facet_off[j] + yB_size // 2) % N
     right = facet_border[j] - facet_off[j] + yB_size // 2
-    assert left >= 0 and right <= yB_size, "yB not large enough to cover facets!"
+    assert (
+        left >= 0 and right <= yB_size
+    ), "yB not large enough to cover facets!"
     facet_B[j, left:right] = 1
 
 
 G = numpy.random.rand(N) - 0.5
 subgrid, facet = make_subgrid_and_facet(
-    G, nsubgrid, xA_size, subgrid_A, subgrid_off, nfacet, yB_size, facet_B, facet_off
+    G,
+    nsubgrid,
+    xA_size,
+    subgrid_A,
+    subgrid_off,
+    nfacet,
+    yB_size,
+    facet_B,
+    facet_off,
 )
 
 # # With a few more slight optimisations we arrive at a compact representation for our algorithm. For reference, what we are computing here is:
@@ -371,7 +402,9 @@ if add_sources:
 else:
     # without sources
     G_2 = (
-        numpy.exp(2j * numpy.pi * numpy.random.rand(N, N)) * numpy.random.rand(N, N) / 2
+        numpy.exp(2j * numpy.pi * numpy.random.rand(N, N))
+        * numpy.random.rand(N, N)
+        / 2
     )
     FG_2 = fft(G_2)
 
@@ -518,7 +551,9 @@ for i0, i1 in itertools.product(range(nsubgrid), range(nsubgrid)):
     approx = extract_mid(ifft(approx), xA_size)
     approx *= numpy.outer(subgrid_A[i0], subgrid_A[i1])
     err_mean += numpy.abs(approx - subgrid_2[i0, i1]) ** 2 / nsubgrid**2
-    err_mean_img += numpy.abs(fft(approx - subgrid_2[i0, i1])) ** 2 / nsubgrid**2
+    err_mean_img += (
+        numpy.abs(fft(approx - subgrid_2[i0, i1])) ** 2 / nsubgrid**2
+    )
 pylab.imshow(numpy.log(numpy.sqrt(err_mean)) / numpy.log(10))
 pylab.colorbar()
 pylab.show()
@@ -570,7 +605,10 @@ for i in range(nsubgrid):
         naf_new = extract_facet_contribution(
             FSi, Fn, facet_off, j, xM_size, N, xM_yN_size, 0
         )
-        assert numpy.sqrt(numpy.average(numpy.abs(nafs[i, j] - naf_new) ** 2)) < 1e-14
+        assert (
+            numpy.sqrt(numpy.average(numpy.abs(nafs[i, j] - naf_new) ** 2))
+            < 1e-14
+        )
 
 approx_facet = numpy.array(
     [
@@ -610,7 +648,9 @@ for j in range(nfacet):
         )
     approx_facet_new = finish_facet(MiNjSi_sum, Fb, facet_B, yB_size, j, 0)
     assert (
-        numpy.sqrt(numpy.average(numpy.abs(approx_facet_new - approx_facet[j]) ** 2))
+        numpy.sqrt(
+            numpy.average(numpy.abs(approx_facet_new - approx_facet[j]) ** 2)
+        )
         < 1e-12
     )
 
