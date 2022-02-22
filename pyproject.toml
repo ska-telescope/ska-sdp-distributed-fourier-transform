@@ -1,0 +1,31 @@
+[tool.poetry]
+name = "ska-sdp-distributed-fourier-transform"
+version = "0.1.0"
+description = "SKA SDP Distributed Fourier Transform"
+authors = ["SKA SDP Developers"]
+license = "BSD-3-Clause"
+repository = "https://gitlab.com/ska-telescope/sdp/ska-sdp-distributed-fourier-transform"
+
+[tool.poetry.dependencies]
+python = "3.8"
+bokeh = "^2.4.2"
+dask = "^2022.2.0"
+distributed = "^2022.2.0"
+jupyter = "^1.0.0"
+matplotlib = "^3.5.1"
+numpy = "^1.22.2"
+scipy = "^1.8.0"
+
+[tool.poetry.dev-dependencies]
+isort = "^5.10.1"
+black = "^22.1.0"
+flake8 = "^4.0.1"
+pylint = "^2.12.2"
+pylint-junit = "^0.3.2"
+pytest = "^7.0.1"
+pytest-cov = "^3.0.0"
+build = "^0.7.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
