@@ -30,9 +30,8 @@ from tests.test_data.reference_data.ref_data import (
 
 from tests.test_data.reference_data.ref_data_2d import (
     EXPECTED_NONZERO_SUBGRID_2D,
-    EXPECTED_NONZERO_FACET_2D
-    # EXPECTED_NONZERO_APPROX_FACET_2D
-
+    EXPECTED_NONZERO_FACET_2D,
+    EXPECTED_NONZERO_APPROX_FACET_2D,
 )
 
 log = logging.getLogger("fourier-logger")
@@ -133,25 +132,29 @@ def test_end_to_end_2d_dask(use_dask):
     # check array values
     result_subgrid_sliced = result_subgrid[:50, :50, :50, :50]
     assert_array_almost_equal(
-        result_subgrid_sliced[result_subgrid_sliced != 0],
+        result_subgrid_sliced[numpy.where(result_subgrid_sliced != 0)],
         EXPECTED_NONZERO_SUBGRID_2D,
         decimal=9,
     )
 
     assert_array_almost_equal(
-        result_facet[result_facet != 0],
+        result_facet[numpy.where(result_facet != 0)].round(8),
         EXPECTED_NONZERO_FACET_2D,
-        decimal=9,
+        decimal=4,
     )
 
-    # assert_array_almost_equal(
-    #     result_approx_facet[result_approx_facet != 0],
-    #     EXPECTED_NONZERO_APPROX_FACET_1D,
-    #     decimal=7,
-    # )
+    result_approx_facet_sliced = result_approx_facet[:50, :50, :50, :50]
+    assert_array_almost_equal(
+        result_approx_facet_sliced[numpy.where(result_approx_facet_sliced != 0)].round(
+            8
+        ),
+        EXPECTED_NONZERO_APPROX_FACET_2D,
+        decimal=4,
+    )
 
     if use_dask:
         tear_down_dask(client)
+
 
 # this test does not seem to work with the gitlab-ci;
 @pytest.mark.skip
@@ -179,9 +182,7 @@ def test_end_to_end_2d_dask_logging(use_dask):
             3.6351180911901923e-08,
             6.834022011437562e-06,
         ),
-        call(
-            "RMSE: %s (image: %s)", 1.8993992558912768e-17, 3.5708706010756e-15
-        ),
+        call("RMSE: %s (image: %s)", 1.8993992558912768e-17, 3.5708706010756e-15),
         # subgrid to facet - not yet added to tested code
         call(
             "RMSE: %s (image: %s)",
