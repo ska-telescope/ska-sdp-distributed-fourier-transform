@@ -533,9 +533,9 @@ def main(to_plot=True, fig_name=None, use_dask=False):
         fig_name=fig_name,
     )
 
-    # # Testing
-    # with numpy.printoptions(threshold=numpy.inf):
-    #     print(repr(BMNAF_BMNAF[BMNAF_BMNAF != 0]))
+    # Testing
+    with numpy.printoptions(threshold=numpy.inf):
+        print(repr(BMNAF_BMNAF[BMNAF_BMNAF != 0]))
     return subgrid_2, facet_2, NMBF_NMBF, BMNAF_BMNAF
 
 
