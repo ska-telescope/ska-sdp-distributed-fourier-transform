@@ -30,7 +30,7 @@ from tests.test_data.reference_data.ref_data import (
 
 from tests.test_data.reference_data.ref_data_2d import (
     EXPECTED_NONZERO_SUBGRID_2D,
-    EXPECTED_NONZERO_FACET_2D,
+    EXPECTED_FACET_2D,
     EXPECTED_NONZERO_APPROX_FACET_2D,
 )
 
@@ -55,8 +55,7 @@ def _compare_images(expected, result):
 )
 def test_end_to_end_1d_dask(use_dask, dask_option):
     """
-    Test that the 1d algorithm produces the same results without dask,
-    and with dask with array or delayed.
+    Test that the 2d algorithm produces the same results without dask.
     """
     # Fixing seed of numpy random
     numpy.random.seed(123456789)
@@ -131,23 +130,27 @@ def test_end_to_end_2d_dask(use_dask):
 
     # check array values
     result_subgrid_sliced = result_subgrid[:50, :50, :50, :50]
+    result_subgrid_sliced_nonzero = result_subgrid_sliced[
+        numpy.where(result_subgrid_sliced != 0)
+    ]
     assert_array_almost_equal(
-        result_subgrid_sliced[numpy.where(result_subgrid_sliced != 0)],
+        result_subgrid_sliced_nonzero,
         EXPECTED_NONZERO_SUBGRID_2D,
         decimal=9,
     )
 
     assert_array_almost_equal(
         result_facet[numpy.where(result_facet != 0)].round(8),
-        EXPECTED_NONZERO_FACET_2D,
+        EXPECTED_FACET_2D,
         decimal=4,
     )
 
     result_approx_facet_sliced = result_approx_facet[:50, :50, :50, :50]
+    result_approx_facet_sliced_nonzero = result_approx_facet_sliced[
+        numpy.where(result_approx_facet_sliced != 0)
+    ]
     assert_array_almost_equal(
-        result_approx_facet_sliced[numpy.where(result_approx_facet_sliced != 0)].round(
-            8
-        ),
+        result_approx_facet_sliced_nonzero.round(8),
         EXPECTED_NONZERO_APPROX_FACET_2D,
         decimal=4,
     )

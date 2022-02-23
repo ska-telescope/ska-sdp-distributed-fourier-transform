@@ -6,8 +6,6 @@ variables:
 stages:
   - lint
   - test
-  - build
-  - publish
   - pages
 
 include:
