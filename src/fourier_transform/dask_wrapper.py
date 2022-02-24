@@ -1,5 +1,6 @@
-import logging
 import functools
+import logging
+
 import dask
 from distributed import Client
 

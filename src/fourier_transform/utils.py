@@ -110,12 +110,15 @@ def plot_1(pswf, constants_class, fig_name=None):
     pylab.clf()
     pylab.semilogy(
         coordinates(4 * int(xN_size)) * 4 * xN_size / constants_class.N,
-        extract_mid(numpy.abs(ifft(pad_mid(pswf, constants_class.N))), 4 * int(xN_size)),
+        extract_mid(
+            numpy.abs(ifft(pad_mid(pswf, constants_class.N))), 4 * int(xN_size)
+        ),
     )
     pylab.legend(["n"])
     mark_range("$x_n$", -xN, xN)
     pylab.xlim(
-        -2 * int(xN_size) / constants_class.N, (2 * int(xN_size) - 1) / constants_class.N
+        -2 * int(xN_size) / constants_class.N,
+        (2 * int(xN_size) - 1) / constants_class.N,
     )
     pylab.grid()
     if fig_name is None:
@@ -234,7 +237,8 @@ def calculate_and_plot_errors_facet_1d(
         if to_plot:
             ax1.semilogy(coordinates(constants_class.yB_size), numpy.abs(ifft(error)))
             ax2.semilogy(
-                constants_class.yB_size * coordinates(constants_class.yB_size), numpy.abs(error)
+                constants_class.yB_size * coordinates(constants_class.yB_size),
+                numpy.abs(error),
             )
 
     log.info(
@@ -289,21 +293,38 @@ def errors_facet_to_subgrid_2d(
 ):
     err_mean = 0
     err_mean_img = 0
-    for i0, i1 in itertools.product(range(constants_class.nsubgrid), range(constants_class.nsubgrid)):
-        approx = numpy.zeros((constants_class.xM_size, constants_class.xM_size), dtype=complex)
-        for j0, j1 in itertools.product(range(constants_class.nfacet), range(constants_class.nfacet)):
+    for i0, i1 in itertools.product(
+        range(constants_class.nsubgrid), range(constants_class.nsubgrid)
+    ):
+        approx = numpy.zeros(
+            (constants_class.xM_size, constants_class.xM_size), dtype=complex
+        )
+        for j0, j1 in itertools.product(
+            range(constants_class.nfacet), range(constants_class.nfacet)
+        ):
             approx += numpy.roll(
                 pad_mid(NMBF_NMBF[i0, i1, j0, j1], constants_class.xM_size),
                 (
-                    constants_class.facet_off[j0] * constants_class.xM_size // constants_class.N,
-                    constants_class.facet_off[j1] * constants_class.xM_size // constants_class.N,
+                    constants_class.facet_off[j0]
+                    * constants_class.xM_size
+                    // constants_class.N,
+                    constants_class.facet_off[j1]
+                    * constants_class.xM_size
+                    // constants_class.N,
                 ),
                 (0, 1),
             )
         approx = extract_mid(ifft(approx), constants_class.xA_size)
-        approx *= numpy.outer(constants_class.subgrid_A[i0], constants_class.subgrid_A[i1])
-        err_mean += numpy.abs(approx - subgrid_2[i0, i1]) ** 2 / constants_class.nsubgrid ** 2
-        err_mean_img += numpy.abs(fft(approx - subgrid_2[i0, i1])) ** 2 / constants_class.nsubgrid ** 2
+        approx *= numpy.outer(
+            constants_class.subgrid_A[i0], constants_class.subgrid_A[i1]
+        )
+        err_mean += (
+            numpy.abs(approx - subgrid_2[i0, i1]) ** 2 / constants_class.nsubgrid**2
+        )
+        err_mean_img += (
+            numpy.abs(fft(approx - subgrid_2[i0, i1])) ** 2
+            / constants_class.nsubgrid**2
+        )
 
     log.info(
         "RMSE: %s (image: %s)",
@@ -355,28 +376,56 @@ def test_accuracy_facet_to_subgrid(
                      If to_plot is set to False, fig_name doesn't have an effect.
     """
     subgrid_2 = numpy.empty(
-        (constants_class.nsubgrid, constants_class.nsubgrid, constants_class.xA_size, constants_class.xA_size), dtype=complex
+        (
+            constants_class.nsubgrid,
+            constants_class.nsubgrid,
+            constants_class.xA_size,
+            constants_class.xA_size,
+        ),
+        dtype=complex,
     )
     facet_2 = numpy.empty(
-        (constants_class.nfacet, constants_class.nfacet, constants_class.yB_size, constants_class.yB_size), dtype=complex
+        (
+            constants_class.nfacet,
+            constants_class.nfacet,
+            constants_class.yB_size,
+            constants_class.yB_size,
+        ),
+        dtype=complex,
     )
 
     FG_2 = numpy.zeros((constants_class.N, constants_class.N))
     FG_2[ys, xs] = 1
     G_2 = ifft(FG_2)
 
-    for i0, i1 in itertools.product(range(constants_class.nsubgrid), range(constants_class.nsubgrid)):
+    for i0, i1 in itertools.product(
+        range(constants_class.nsubgrid), range(constants_class.nsubgrid)
+    ):
         subgrid_2[i0, i1] = extract_mid(
-            numpy.roll(G_2, (-constants_class.subgrid_off[i0], -constants_class.subgrid_off[i1]), (0, 1)),
+            numpy.roll(
+                G_2,
+                (-constants_class.subgrid_off[i0], -constants_class.subgrid_off[i1]),
+                (0, 1),
+            ),
             constants_class.xA_size,
         )
-        subgrid_2[i0, i1] *= numpy.outer(constants_class.subgrid_A[i0], constants_class.subgrid_A[i1])
-    for j0, j1 in itertools.product(range(constants_class.nfacet), range(constants_class.nfacet)):
+        subgrid_2[i0, i1] *= numpy.outer(
+            constants_class.subgrid_A[i0], constants_class.subgrid_A[i1]
+        )
+    for j0, j1 in itertools.product(
+        range(constants_class.nfacet), range(constants_class.nfacet)
+    ):
         facet_2[j0, j1] = extract_mid(
-            numpy.roll(FG_2, (-constants_class.facet_off[j0], -constants_class.facet_off[j1]), (0, 1)),
+            numpy.roll(
+                FG_2,
+                (-constants_class.facet_off[j0], -constants_class.facet_off[j1]),
+                (0, 1),
+            ),
             constants_class.yB_size,
         )
-        facet_2[j0, j1] *= numpy.outer(constants_class.facet_B[j0], constants_class.facet_B[j1])
+        facet_2[j0, j1] *= numpy.outer(
+            constants_class.facet_B[j0], constants_class.facet_B[j1]
+        )
 
     NMBF_NMBF = numpy.empty(
         (
@@ -389,8 +438,12 @@ def test_accuracy_facet_to_subgrid(
         ),
         dtype=complex,
     )
-    for j0, j1 in itertools.product(range(constants_class.nfacet), range(constants_class.nfacet)):
-        BF_F = prepare_facet(facet_2[j0, j1], 0, constants_class.Fb, constants_class.yP_size)
+    for j0, j1 in itertools.product(
+        range(constants_class.nfacet), range(constants_class.nfacet)
+    ):
+        BF_F = prepare_facet(
+            facet_2[j0, j1], 0, constants_class.Fb, constants_class.yP_size
+        )
         BF_BF = prepare_facet(BF_F, 1, constants_class.Fb, constants_class.yP_size)
         for i0 in range(constants_class.nsubgrid):
             NMBF_BF = extract_subgrid(
@@ -408,21 +461,38 @@ def test_accuracy_facet_to_subgrid(
                 )
 
     err_mean = err_mean_img = 0
-    for i0, i1 in itertools.product(range(constants_class.nsubgrid), range(constants_class.nsubgrid)):
-        approx = numpy.zeros((constants_class.xM_size, constants_class.xM_size), dtype=complex)
-        for j0, j1 in itertools.product(range(constants_class.nfacet), range(constants_class.nfacet)):
+    for i0, i1 in itertools.product(
+        range(constants_class.nsubgrid), range(constants_class.nsubgrid)
+    ):
+        approx = numpy.zeros(
+            (constants_class.xM_size, constants_class.xM_size), dtype=complex
+        )
+        for j0, j1 in itertools.product(
+            range(constants_class.nfacet), range(constants_class.nfacet)
+        ):
             approx += numpy.roll(
                 pad_mid(NMBF_NMBF[i0, i1, j0, j1], constants_class.xM_size),
                 (
-                    constants_class.facet_off[j0] * constants_class.xM_size // constants_class.N,
-                    constants_class.facet_off[j1] * constants_class.xM_size // constants_class.N,
+                    constants_class.facet_off[j0]
+                    * constants_class.xM_size
+                    // constants_class.N,
+                    constants_class.facet_off[j1]
+                    * constants_class.xM_size
+                    // constants_class.N,
                 ),
                 (0, 1),
             )
         approx = extract_mid(ifft(approx), constants_class.xA_size)
-        approx *= numpy.outer(constants_class.subgrid_A[i0], constants_class.subgrid_A[i1])
-        err_mean += numpy.abs(approx - subgrid_2[i0, i1]) ** 2 / constants_class.nsubgrid ** 2
-        err_mean_img += numpy.abs(fft(approx - subgrid_2[i0, i1])) ** 2 / constants_class.nsubgrid ** 2
+        approx *= numpy.outer(
+            constants_class.subgrid_A[i0], constants_class.subgrid_A[i1]
+        )
+        err_mean += (
+            numpy.abs(approx - subgrid_2[i0, i1]) ** 2 / constants_class.nsubgrid**2
+        )
+        err_mean_img += (
+            numpy.abs(fft(approx - subgrid_2[i0, i1])) ** 2
+            / constants_class.nsubgrid**2
+        )
     x = numpy.log(numpy.sqrt(err_mean_img)) / numpy.log(10)
 
     log.info(
@@ -456,28 +526,56 @@ def test_accuracy_subgrid_to_facet(
                      If to_plot is set to False, fig_name doesn't have an effect.
     """
     subgrid_2 = numpy.empty(
-        (constants_class.nsubgrid, constants_class.nsubgrid, constants_class.xA_size, constants_class.xA_size), dtype=complex
+        (
+            constants_class.nsubgrid,
+            constants_class.nsubgrid,
+            constants_class.xA_size,
+            constants_class.xA_size,
+        ),
+        dtype=complex,
     )
     facet_2 = numpy.empty(
-        (constants_class.nfacet, constants_class.nfacet, constants_class.yB_size, constants_class.yB_size), dtype=complex
+        (
+            constants_class.nfacet,
+            constants_class.nfacet,
+            constants_class.yB_size,
+            constants_class.yB_size,
+        ),
+        dtype=complex,
     )
 
     FG_2 = numpy.zeros((constants_class.N, constants_class.N))
     FG_2[ys, xs] = 1
     G_2 = ifft(FG_2)
 
-    for i0, i1 in itertools.product(range(constants_class.nsubgrid), range(constants_class.nsubgrid)):
+    for i0, i1 in itertools.product(
+        range(constants_class.nsubgrid), range(constants_class.nsubgrid)
+    ):
         subgrid_2[i0, i1] = extract_mid(
-            numpy.roll(G_2, (-constants_class.subgrid_off[i0], -constants_class.subgrid_off[i1]), (0, 1)),
+            numpy.roll(
+                G_2,
+                (-constants_class.subgrid_off[i0], -constants_class.subgrid_off[i1]),
+                (0, 1),
+            ),
             constants_class.xA_size,
         )
-        subgrid_2[i0, i1] *= numpy.outer(constants_class.subgrid_A[i0], constants_class.subgrid_A[i1])
-    for j0, j1 in itertools.product(range(constants_class.nfacet), range(constants_class.nfacet)):
+        subgrid_2[i0, i1] *= numpy.outer(
+            constants_class.subgrid_A[i0], constants_class.subgrid_A[i1]
+        )
+    for j0, j1 in itertools.product(
+        range(constants_class.nfacet), range(constants_class.nfacet)
+    ):
         facet_2[j0, j1] = extract_mid(
-            numpy.roll(FG_2, (-constants_class.facet_off[j0], -constants_class.facet_off[j1]), (0, 1)),
+            numpy.roll(
+                FG_2,
+                (-constants_class.facet_off[j0], -constants_class.facet_off[j1]),
+                (0, 1),
+            ),
             constants_class.yB_size,
         )
-        facet_2[j0, j1] *= numpy.outer(constants_class.facet_B[j0], constants_class.facet_B[j1])
+        facet_2[j0, j1] *= numpy.outer(
+            constants_class.facet_B[j0], constants_class.facet_B[j1]
+        )
 
     NAF_NAF = numpy.empty(
         (
@@ -490,7 +588,9 @@ def test_accuracy_subgrid_to_facet(
         ),
         dtype=complex,
     )
-    for i0, i1 in itertools.product(range(constants_class.nsubgrid), range(constants_class.nsubgrid)):
+    for i0, i1 in itertools.product(
+        range(constants_class.nsubgrid), range(constants_class.nsubgrid)
+    ):
         AF_AF = prepare_subgrid(subgrid_2[i0, i1], constants_class.xM_size)
         for j0 in range(constants_class.nfacet):
             NAF_AF = extract_facet_contribution(
@@ -502,9 +602,17 @@ def test_accuracy_subgrid_to_facet(
                 )
 
     BMNAF_BMNAF = numpy.empty(
-        (constants_class.nfacet, constants_class.nfacet, constants_class.yB_size, constants_class.yB_size), dtype=complex
+        (
+            constants_class.nfacet,
+            constants_class.nfacet,
+            constants_class.yB_size,
+            constants_class.yB_size,
+        ),
+        dtype=complex,
     )
-    for j0, j1 in itertools.product(range(constants_class.nfacet), range(constants_class.nfacet)):
+    for j0, j1 in itertools.product(
+        range(constants_class.nfacet), range(constants_class.nfacet)
+    ):
         MNAF_BMNAF = numpy.zeros(
             (constants_class.yP_size, constants_class.yB_size), dtype=complex
         )
@@ -520,7 +628,13 @@ def test_accuracy_subgrid_to_facet(
                     constants_class,
                     1,
                 )
-            NAF_BMNAF = finish_facet(NAF_MNAF, constants_class.Fb, constants_class.facet_B[j1], constants_class.yB_size, 1)
+            NAF_BMNAF = finish_facet(
+                NAF_MNAF,
+                constants_class.Fb,
+                constants_class.facet_B[j1],
+                constants_class.yB_size,
+                1,
+            )
             MNAF_BMNAF = MNAF_BMNAF + add_subgrid_contribution(
                 len(MNAF_BMNAF.shape),
                 NAF_BMNAF,
@@ -529,17 +643,29 @@ def test_accuracy_subgrid_to_facet(
                 0,
             )
         BMNAF_BMNAF[j0, j1] = finish_facet(
-            MNAF_BMNAF, constants_class.Fb, constants_class.facet_B[j0], constants_class.yB_size, 0
+            MNAF_BMNAF,
+            constants_class.Fb,
+            constants_class.facet_B[j0],
+            constants_class.yB_size,
+            0,
         )
 
     pylab.rcParams["figure.figsize"] = 16, 8
     err_mean = err_mean_img = 0
 
-    for j0, j1 in itertools.product(range(constants_class.nfacet), range(constants_class.nfacet)):
-        approx = numpy.zeros((constants_class.yB_size, constants_class.yB_size), dtype=complex)
+    for j0, j1 in itertools.product(
+        range(constants_class.nfacet), range(constants_class.nfacet)
+    ):
+        approx = numpy.zeros(
+            (constants_class.yB_size, constants_class.yB_size), dtype=complex
+        )
         approx += BMNAF_BMNAF[j0, j1]
-        err_mean += numpy.abs(ifft(approx - facet_2[j0, j1])) ** 2 / constants_class.nfacet ** 2
-        err_mean_img += numpy.abs(approx - facet_2[j0, j1]) ** 2 / constants_class.nfacet ** 2
+        err_mean += (
+            numpy.abs(ifft(approx - facet_2[j0, j1])) ** 2 / constants_class.nfacet**2
+        )
+        err_mean_img += (
+            numpy.abs(approx - facet_2[j0, j1]) ** 2 / constants_class.nfacet**2
+        )
 
     x = numpy.log(numpy.sqrt(err_mean_img)) / numpy.log(10)
     log.info(
