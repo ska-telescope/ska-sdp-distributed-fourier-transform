@@ -111,7 +111,11 @@ def plot_1(pswf, constants_class, fig_name=None):
     pylab.semilogy(
         coordinates(4 * int(xN_size)) * 4 * xN_size / constants_class.N,
         extract_mid_along_axis(
-            numpy.abs(ifft_along_axis(pad_mid_along_axis(pswf, constants_class.N, axis=0), axis=0)),
+            numpy.abs(
+                ifft_along_axis(
+                    pad_mid_along_axis(pswf, constants_class.N, axis=0), axis=0
+                )
+            ),
             4 * int(xN_size),
             axis=0,
         ),
@@ -194,7 +198,9 @@ def calculate_and_plot_errors_subgrid_1d(
         error = approx_subgrid[i] - subgrid[i]
         if to_plot:
             ax1.semilogy(xA * 2 * coordinates(xA_size), numpy.abs(error))
-            ax2.semilogy(N * coordinates(xA_size), numpy.abs(fft_along_axis(error, axis=0)))
+            ax2.semilogy(
+                N * coordinates(xA_size), numpy.abs(fft_along_axis(error, axis=0))
+            )
         err_sum += numpy.abs(error) ** 2 / nsubgrid
         err_sum_img += numpy.abs(fft_along_axis(error, axis=0)) ** 2 / nsubgrid
 
@@ -237,7 +243,10 @@ def calculate_and_plot_errors_facet_1d(
         err_sum += numpy.abs(ifft_along_axis(error, axis=0)) ** 2
         err_sum_img += numpy.abs(error) ** 2
         if to_plot:
-            ax1.semilogy(coordinates(constants_class.yB_size), numpy.abs(ifft_along_axis(error, axis=0)))
+            ax1.semilogy(
+                coordinates(constants_class.yB_size),
+                numpy.abs(ifft_along_axis(error, axis=0)),
+            )
             ax2.semilogy(
                 constants_class.yB_size * coordinates(constants_class.yB_size),
                 numpy.abs(error),
@@ -324,7 +333,11 @@ def errors_facet_to_subgrid_2d(
                 (0, 1),
             )
         approx = extract_mid_along_axis(
-            extract_mid_along_axis(ifft_along_axis(ifft_along_axis(approx, axis=0), axis=1), constants_class.xA_size, axis=0),
+            extract_mid_along_axis(
+                ifft_along_axis(ifft_along_axis(approx, axis=0), axis=1),
+                constants_class.xA_size,
+                axis=0,
+            ),
             constants_class.xA_size,
             axis=1,
         )
@@ -334,10 +347,11 @@ def errors_facet_to_subgrid_2d(
         err_mean += (
             numpy.abs(approx - subgrid_2[i0, i1]) ** 2 / constants_class.nsubgrid**2
         )
-        err_mean_img += (
-            numpy.abs(fft_along_axis(fft_along_axis(approx - subgrid_2[i0, i1], axis=0), axis=1) ** 2
-                      / constants_class.nsubgrid ** 2
-                      ))
+        err_mean_img += numpy.abs(
+            fft_along_axis(fft_along_axis(approx - subgrid_2[i0, i1], axis=0), axis=1)
+            ** 2
+            / constants_class.nsubgrid**2
+        )
 
     log.info(
         "RMSE: %s (image: %s)",
@@ -358,7 +372,15 @@ def errors_subgrid_to_facet_2d(
         approx = numpy.zeros((yB_size, yB_size), dtype=complex)
         approx += BMNAF_BMNAF[j0, j1]
 
-        err_mean += numpy.abs(ifft_along_axis(ifft_along_axis(approx - facet_2[j0, j1], axis=0), axis=1)) ** 2 / nfacet ** 2
+        err_mean += (
+            numpy.abs(
+                ifft_along_axis(
+                    ifft_along_axis(approx - facet_2[j0, j1], axis=0), axis=1
+                )
+            )
+            ** 2
+            / nfacet**2
+        )
         err_mean_img += numpy.abs(approx - facet_2[j0, j1]) ** 2 / nfacet**2
 
     log.info(
@@ -515,7 +537,11 @@ def test_accuracy_facet_to_subgrid(
                 (0, 1),
             )
         approx = extract_mid_along_axis(
-            extract_mid_along_axis(ifft_along_axis(ifft_along_axis(approx, axis=0), axis=1), constants_class.xA_size, axis=0),
+            extract_mid_along_axis(
+                ifft_along_axis(ifft_along_axis(approx, axis=0), axis=1),
+                constants_class.xA_size,
+                axis=0,
+            ),
             constants_class.xA_size,
             axis=1,
         )
@@ -526,8 +552,13 @@ def test_accuracy_facet_to_subgrid(
             numpy.abs(approx - subgrid_2[i0, i1]) ** 2 / constants_class.nsubgrid**2
         )
         err_mean_img += (
-                numpy.abs(fft_along_axis(fft_along_axis(approx - subgrid_2[i0, i1], axis=0), axis=1)) ** 2
-                / constants_class.nsubgrid ** 2
+            numpy.abs(
+                fft_along_axis(
+                    fft_along_axis(approx - subgrid_2[i0, i1], axis=0), axis=1
+                )
+            )
+            ** 2
+            / constants_class.nsubgrid**2
         )
     x = numpy.log(numpy.sqrt(err_mean_img)) / numpy.log(10)
 
@@ -710,7 +741,13 @@ def test_accuracy_subgrid_to_facet(
         )
         approx += BMNAF_BMNAF[j0, j1]
         err_mean += (
-                numpy.abs(ifft_along_axis(ifft_along_axis(approx - facet_2[j0, j1], axis=0), axis=1)) ** 2 / constants_class.nfacet ** 2
+            numpy.abs(
+                ifft_along_axis(
+                    ifft_along_axis(approx - facet_2[j0, j1], axis=0), axis=1
+                )
+            )
+            ** 2
+            / constants_class.nfacet**2
         )
         err_mean_img += (
             numpy.abs(approx - facet_2[j0, j1]) ** 2 / constants_class.nfacet**2
