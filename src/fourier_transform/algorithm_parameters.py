@@ -24,7 +24,7 @@ from src.fourier_transform.fourier_algorithm import (
     extract_mid,
     coordinates,
     ifft,
-    pad_mid,
+    pad_mid_on_axis,
     anti_aliasing_function,
 )
 from src.fourier_transform.utils import whole
@@ -219,7 +219,8 @@ class ConstantArrays(ConstantParams):
                 * self.yP_size
                 / self.N
                 * extract_mid(
-                    ifft(pad_mid(temp_facet_m0_trunc, self.yP_size)), self.xMxN_yP_size
+                    ifft(pad_mid_on_axis(temp_facet_m0_trunc, self.yP_size, axis=0)),
+                    self.xMxN_yP_size,
                 ).real
             )
 

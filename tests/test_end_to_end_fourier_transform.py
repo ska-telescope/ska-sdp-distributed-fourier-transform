@@ -160,8 +160,8 @@ def test_end_to_end_2d_dask(use_dask):
 
 
 # this test does not seem to work with the gitlab-ci;
-@pytest.mark.skip
-@pytest.mark.parametrize("use_dask", [False, True])
+# @pytest.mark.skip
+@pytest.mark.parametrize("use_dask", [False])
 def test_end_to_end_2d_dask_logging(use_dask):
     """
     Test that the logged information matches the

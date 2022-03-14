@@ -7,7 +7,7 @@ from src.fourier_transform.fourier_algorithm import (
     coordinates,
     extract_mid,
     ifft,
-    pad_mid,
+    pad_mid_on_axis,
     prepare_facet,
     extract_subgrid,
     fft,
@@ -111,7 +111,8 @@ def plot_1(pswf, constants_class, fig_name=None):
     pylab.semilogy(
         coordinates(4 * int(xN_size)) * 4 * xN_size / constants_class.N,
         extract_mid(
-            numpy.abs(ifft(pad_mid(pswf, constants_class.N))), 4 * int(xN_size)
+            numpy.abs(ifft(pad_mid_on_axis(pswf, constants_class.N, axis=0))),
+            4 * int(xN_size),
         ),
     )
     pylab.legend(["n"])
@@ -302,8 +303,15 @@ def errors_facet_to_subgrid_2d(
         for j0, j1 in itertools.product(
             range(constants_class.nfacet), range(constants_class.nfacet)
         ):
+            padded_nmbf = pad_mid_on_axis(
+                pad_mid_on_axis(
+                    NMBF_NMBF[i0, i1, j0, j1], constants_class.xM_size, axis=0
+                ),
+                constants_class.xM_size,
+                axis=1,
+            )
             approx += numpy.roll(
-                pad_mid(NMBF_NMBF[i0, i1, j0, j1], constants_class.xM_size),
+                padded_nmbf,
                 (
                     constants_class.facet_off[j0]
                     * constants_class.xM_size
@@ -471,7 +479,13 @@ def test_accuracy_facet_to_subgrid(
             range(constants_class.nfacet), range(constants_class.nfacet)
         ):
             approx += numpy.roll(
-                pad_mid(NMBF_NMBF[i0, i1, j0, j1], constants_class.xM_size),
+                pad_mid_on_axis(
+                    pad_mid_on_axis(
+                        NMBF_NMBF[i0, i1, j0, j1], constants_class.xM_size, axis=0
+                    ),
+                    constants_class.xM_size,
+                    axis=1,
+                ),
                 (
                     constants_class.facet_off[j0]
                     * constants_class.xM_size
