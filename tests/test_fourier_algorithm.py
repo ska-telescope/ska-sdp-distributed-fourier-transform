@@ -3,10 +3,12 @@ import numpy
 from src.fourier_transform.fourier_algorithm import (
     pad_mid_along_axis,
     extract_mid_along_axis,
+    fft_along_axis,
+    ifft_along_axis,
 )
 
 
-def test_pad_mid_on_axis_1d():
+def test_pad_mid_along_axis_1d():
     """
     1 1 1 --> 0 1 1 1 0
     """
@@ -17,7 +19,7 @@ def test_pad_mid_on_axis_1d():
     assert (result == numpy.array([0, 1, 1, 1, 0])).all()
 
 
-def test_pad_mid_on_axis_2d_axis0():
+def test_pad_mid_along_axis_2d_axis0():
     """
                 0 0 0
     1 1 1       1 1 1
@@ -35,7 +37,7 @@ def test_pad_mid_on_axis_2d_axis0():
     assert (result == expected_array).all()
 
 
-def test_pad_mid_on_axis_2d_axis1():
+def test_pad_mid_along_axis_2d_axis1():
     """
     1 1 1       0 1 1 1 0
     1 1 1  -->  0 1 1 1 0
@@ -55,7 +57,7 @@ def test_pad_mid_on_axis_2d_axis1():
     assert (result == expected_array).all()
 
 
-def test_pad_mid_on_axis_2d_full():
+def test_pad_mid_along_axis_2d_full():
     """
                 0 0 0 0 0
     1 1 1       0 1 1 1 0
@@ -80,7 +82,7 @@ def test_pad_mid_on_axis_2d_full():
     assert (result == expected_array).all()
 
 
-def test_extract_mid_a_1d():
+def test_extract_mid_along_axis_1d():
     """
     if new size can be evenly extracted from original size:
     7 -> 5
@@ -103,7 +105,7 @@ def test_extract_mid_a_1d():
     assert (result == numpy.array([1, 2, 3, 4])).all()
 
 
-def test_extract_mid_a_2d_axis0():
+def test_extract_mid_along_axis_2d_axis0():
     """
     if new size can be evenly extracted from original size:
     3 -> 1
@@ -132,7 +134,7 @@ def test_extract_mid_a_2d_axis0():
     assert (result == expected_array).all()
 
 
-def test_extract_mid_a_2d_axis1():
+def test_extract_mid_along_axis_2d_axis1():
     """
     if new size can be evenly extracted from original size:
     4 -> 2
@@ -162,7 +164,7 @@ def test_extract_mid_a_2d_axis1():
     assert (result == expected_array).all()
 
 
-def test_extract_mid_a_2d_full():
+def test_extract_mid_along_axis_2d_full():
     """
     square matrix (input and output too):
     5x5 -> 3x3
@@ -207,3 +209,110 @@ def test_extract_mid_a_2d_full():
     )
 
     assert (result == expected_array).all()
+
+
+def test_fft_along_axis_1d():
+    """
+    input array: -->  fft (complex):
+    1 1 1 1 1         0 0 5 0 0
+    """
+    array = numpy.ones(5)
+    result = fft_along_axis(array, axis=0)
+    assert result.dtype == complex
+    assert (result == numpy.array([0, 0, 5, 0, 0], dtype=complex)).all()
+
+
+def test_fft_along_axis_2d_axis0():
+    """
+    input array: -->  fft (complex):
+    1 1 1 1 1         0 0 0 0 0
+    1 1 1 1 1         3 3 3 3 3
+    1 1 1 1 1         0 0 0 0 0
+    """
+    array = numpy.ones((3, 5))
+    result = fft_along_axis(array, axis=0)
+    assert result.dtype == complex
+    assert (
+        result[numpy.where(result != 0)] == numpy.array([3, 3, 3, 3, 3], dtype=complex)
+    ).all()
+
+
+def test_fft_along_axis_2d_axis1():
+    """
+    input array: -->  fft (complex):
+    1 1 1 1 1         0 0 5 0 0
+    1 1 1 1 1         0 0 5 0 0
+    1 1 1 1 1         0 0 5 0 0
+    """
+    array = numpy.ones((3, 5))
+    result = fft_along_axis(array, axis=1)
+    assert result.dtype == complex
+    assert (
+        result[numpy.where(result != 0)] == numpy.array([[5], [5], [5]], dtype=complex)
+    ).all()
+
+
+def test_fft_along_axis_2d_full():
+    """
+    input array: -->  fft (complex):
+    1 1 1 1 1         0 0 0 0 0
+    1 1 1 1 1         0 0 15 0 0
+    1 1 1 1 1         0 0 0 0 0
+    """
+    array = numpy.ones((3, 5))
+    result = fft_along_axis(fft_along_axis(array, axis=0), axis=1)
+    assert result.dtype == complex
+    assert (result[numpy.where(result != 0)] == numpy.array([15], dtype=complex)).all()
+
+
+def test_ifft_along_axis_1d():
+    result = ifft_along_axis(numpy.array([0, 0, 5, 0, 0], dtype=complex), axis=0)
+    assert (result == numpy.ones(5)).all()
+
+
+def test_ifft_along_axis_2d_axis0():
+    array = numpy.array(
+        [
+            [0, 0, 0, 0, 0],
+            [0, 0, 15, 0, 0],
+            [0, 0, 0, 0, 0],
+        ],
+        dtype=complex,
+    )
+
+    result = ifft_along_axis(array, axis=0)
+
+    assert (
+        result == numpy.array([[0, 0, 5, 0, 0], [0, 0, 5, 0, 0], [0, 0, 5, 0, 0]])
+    ).all()
+
+
+def test_ifft_along_axis_2d_axis1():
+    array = numpy.array(
+        [
+            [0, 0, 0, 0, 0],
+            [0, 0, 15, 0, 0],
+            [0, 0, 0, 0, 0],
+        ],
+        dtype=complex,
+    )
+
+    result = ifft_along_axis(array, axis=1)
+
+    assert (
+        result == numpy.array([[0, 0, 0, 0, 0], [3, 3, 3, 3, 3], [0, 0, 0, 0, 0]])
+    ).all()
+
+
+def test_ifft_along_axis_2d_full():
+    array = numpy.array(
+        [
+            [0, 0, 0, 0, 0],
+            [0, 0, 15, 0, 0],
+            [0, 0, 0, 0, 0],
+        ],
+        dtype=complex,
+    )
+    result = ifft_along_axis(ifft_along_axis(array, axis=0), axis=1)
+
+    assert (result == numpy.ones((3, 5))).all()
