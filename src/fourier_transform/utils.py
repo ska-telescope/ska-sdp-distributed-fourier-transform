@@ -5,9 +5,9 @@ from matplotlib import pylab, patches as patches
 
 from src.fourier_transform.fourier_algorithm import (
     coordinates,
-    extract_mid,
+    extract_mid_along_axis,
     ifft,
-    pad_mid_on_axis,
+    pad_mid_along_axis,
     prepare_facet,
     extract_subgrid,
     fft,
@@ -110,9 +110,9 @@ def plot_1(pswf, constants_class, fig_name=None):
     pylab.clf()
     pylab.semilogy(
         coordinates(4 * int(xN_size)) * 4 * xN_size / constants_class.N,
-        extract_mid(
-            numpy.abs(ifft(pad_mid_on_axis(pswf, constants_class.N, axis=0))),
-            4 * int(xN_size),
+        extract_mid_along_axis(
+            numpy.abs(ifft(pad_mid_along_axis(pswf, constants_class.N, axis=0))),
+            4 * int(xN_size), axis=0
         ),
     )
     pylab.legend(["n"])
@@ -303,8 +303,8 @@ def errors_facet_to_subgrid_2d(
         for j0, j1 in itertools.product(
             range(constants_class.nfacet), range(constants_class.nfacet)
         ):
-            padded_nmbf = pad_mid_on_axis(
-                pad_mid_on_axis(
+            padded_nmbf = pad_mid_along_axis(
+                pad_mid_along_axis(
                     NMBF_NMBF[i0, i1, j0, j1], constants_class.xM_size, axis=0
                 ),
                 constants_class.xM_size,
@@ -322,7 +322,8 @@ def errors_facet_to_subgrid_2d(
                 ),
                 (0, 1),
             )
-        approx = extract_mid(ifft(approx), constants_class.xA_size)
+        approx = extract_mid_along_axis(extract_mid_along_axis(ifft(approx), constants_class.xA_size, axis=0),
+                                        constants_class.xA_size, axis=1)
         approx *= numpy.outer(
             constants_class.subgrid_A[i0], constants_class.subgrid_A[i1]
         )
@@ -409,28 +410,28 @@ def test_accuracy_facet_to_subgrid(
     for i0, i1 in itertools.product(
         range(constants_class.nsubgrid), range(constants_class.nsubgrid)
     ):
-        subgrid_2[i0, i1] = extract_mid(
+        subgrid_2[i0, i1] = extract_mid_along_axis(extract_mid_along_axis(
             numpy.roll(
                 G_2,
                 (-constants_class.subgrid_off[i0], -constants_class.subgrid_off[i1]),
                 (0, 1),
             ),
-            constants_class.xA_size,
-        )
+            constants_class.xA_size, axis=0
+        ), constants_class.xA_size, axis=1)
         subgrid_2[i0, i1] *= numpy.outer(
             constants_class.subgrid_A[i0], constants_class.subgrid_A[i1]
         )
     for j0, j1 in itertools.product(
         range(constants_class.nfacet), range(constants_class.nfacet)
     ):
-        facet_2[j0, j1] = extract_mid(
+        facet_2[j0, j1] = extract_mid_along_axis(extract_mid_along_axis(
             numpy.roll(
                 FG_2,
                 (-constants_class.facet_off[j0], -constants_class.facet_off[j1]),
                 (0, 1),
             ),
-            constants_class.yB_size,
-        )
+            constants_class.yB_size, axis=0
+        ), constants_class.yB_size, axis=1)
         facet_2[j0, j1] *= numpy.outer(
             constants_class.facet_B[j0], constants_class.facet_B[j1]
         )
@@ -479,8 +480,8 @@ def test_accuracy_facet_to_subgrid(
             range(constants_class.nfacet), range(constants_class.nfacet)
         ):
             approx += numpy.roll(
-                pad_mid_on_axis(
-                    pad_mid_on_axis(
+                pad_mid_along_axis(
+                    pad_mid_along_axis(
                         NMBF_NMBF[i0, i1, j0, j1], constants_class.xM_size, axis=0
                     ),
                     constants_class.xM_size,
@@ -496,7 +497,8 @@ def test_accuracy_facet_to_subgrid(
                 ),
                 (0, 1),
             )
-        approx = extract_mid(ifft(approx), constants_class.xA_size)
+        approx = extract_mid_along_axis(extract_mid_along_axis(ifft(approx), constants_class.xA_size, axis=0),
+                                        constants_class.xA_size, axis=1)
         approx *= numpy.outer(
             constants_class.subgrid_A[i0], constants_class.subgrid_A[i1]
         )
@@ -565,28 +567,28 @@ def test_accuracy_subgrid_to_facet(
     for i0, i1 in itertools.product(
         range(constants_class.nsubgrid), range(constants_class.nsubgrid)
     ):
-        subgrid_2[i0, i1] = extract_mid(
+        subgrid_2[i0, i1] = extract_mid_along_axis(extract_mid_along_axis(
             numpy.roll(
                 G_2,
                 (-constants_class.subgrid_off[i0], -constants_class.subgrid_off[i1]),
                 (0, 1),
             ),
-            constants_class.xA_size,
-        )
+            constants_class.xA_size, axis=0
+        ),constants_class.xA_size, axis=1)
         subgrid_2[i0, i1] *= numpy.outer(
             constants_class.subgrid_A[i0], constants_class.subgrid_A[i1]
         )
     for j0, j1 in itertools.product(
         range(constants_class.nfacet), range(constants_class.nfacet)
     ):
-        facet_2[j0, j1] = extract_mid(
+        facet_2[j0, j1] = extract_mid_along_axis(extract_mid_along_axis(
             numpy.roll(
                 FG_2,
                 (-constants_class.facet_off[j0], -constants_class.facet_off[j1]),
                 (0, 1),
             ),
-            constants_class.yB_size,
-        )
+            constants_class.yB_size, axis=0
+        ),constants_class.yB_size, axis=1)
         facet_2[j0, j1] *= numpy.outer(
             constants_class.facet_B[j0], constants_class.facet_B[j1]
         )

@@ -29,42 +29,41 @@ def slice_a(fill_val, axis_val, dims, axis):
     return tuple([axis_val if i == axis else fill_val for i in range(dims)])
 
 
-def pad_mid_on_axis(a, N, axis):
+def pad_mid_along_axis(a, n, axis):
     """
     Pad an array to a desired size with zeros at a given axis.
     (Surround the middle with zeros till it reaches the given size)
 
     param a: array to be padded
-    param N: size to be padded to (desired size)
+    param n: size to be padded to (desired size)
     param axis: axis along which to pad
 
     return: padded array
     """
-    N0 = a.shape[axis]
-    if N == N0:
+    n0 = a.shape[axis]
+    if n == n0:
         return a
     pad = slice_a(
-        (0, 0), (N // 2 - N0 // 2, (N + 1) // 2 - (N0 + 1) // 2), len(a.shape), axis
+        (0, 0), (n // 2 - n0 // 2, (n + 1) // 2 - (n0 + 1) // 2), len(a.shape), axis
     )
     return numpy.pad(a, pad, mode="constant", constant_values=0.0)
 
 
-def extract_mid_a(a, N, axis):
+def extract_mid_along_axis(a, n, axis):
     """
-    Extract mid A
+    Extract a section from middle of a map (array).
+    This is the reverse operation to pad.
 
-    param a: A
-    param N: Total image size on a side
-    param axis: Axis
-
-    return:
+    :param a: grid from which to extract
+    :param n: size of section
+    :param axis: axis along which to extract (int: 0, 1)
     """
-    assert N <= a.shape[axis]
+    assert n <= a.shape[axis]
     cx = a.shape[axis] // 2
-    if N % 2 != 0:
-        slc = slice(cx - N // 2, cx + N // 2 + 1)
+    if n % 2 != 0:
+        slc = slice(cx - n // 2, cx + n // 2 + 1)
     else:
-        slc = slice(cx - N // 2, cx + N // 2)
+        slc = slice(cx - n // 2, cx + n // 2)
     return a[slice_a(slice(None), slc, len(a.shape), axis)]
 
 
@@ -149,36 +148,6 @@ def ifft(a):
     assert False, "Unsupported grid shape for iFFT!"
 
 
-def extract_mid(a, N):
-    """
-    Extract a section from middle of a map
-
-    Suitable for zero frequencies at N/2. This is the reverse
-    operation to pad.
-
-    :param a: grid from which to extract
-    :param s: size of section
-    """
-
-    assert N <= a.shape[0]
-    cx = a.shape[0] // 2
-    s = N // 2
-    if len(a.shape) == 2:
-        assert N <= a.shape[1]
-        cy = a.shape[1] // 2
-        if N % 2 != 0:
-            return a[cx - s : cx + s + 1, cy - s : cy + s + 1]
-        else:
-            return a[cx - s : cx + s, cy - s : cy + s]
-    elif len(a.shape) == 1:
-        if N % 2 != 0:
-            return a[cx - s : cx + s + 1]
-        else:
-            return a[cx - s : cx + s]
-    else:
-        assert False, "Unsupported grid shape for extract_mid!"
-
-
 def anti_aliasing_function(shape, m, c):
     """
     Compute the prolate spheroidal anti-aliasing function
@@ -217,9 +186,17 @@ def _ith_subgrid_facet_element(
             use_dask: True
             nout: <number of function outputs> --> 1
     """
-    result = mask_element * extract_mid(
-        numpy.roll(true_image, offset_i, axis), true_usable_size
-    )
+    if isinstance(axis, int):
+        extracted = extract_mid_along_axis(
+            numpy.roll(true_image, offset_i, axis), true_usable_size, axis
+        )
+
+    if isinstance(axis, tuple) and len(axis) == 2:
+        extracted = extract_mid_along_axis(extract_mid_along_axis(
+            numpy.roll(true_image, offset_i, axis), true_usable_size, axis[0]
+        ), true_usable_size, axis[1])
+
+    result = mask_element * extracted
     return result
 
 
@@ -260,7 +237,7 @@ def make_subgrid_and_facet(
                 -constants_class.subgrid_off[i],
                 constants_class.xA_size,
                 constants_class.subgrid_A[i],
-                axis=None,
+                axis=0,
                 use_dask=use_dask,
                 nout=1,
             )
@@ -271,7 +248,7 @@ def make_subgrid_and_facet(
                 -constants_class.facet_off[j],
                 constants_class.yB_size,
                 constants_class.facet_B[j],
-                axis=None,
+                axis=0,
                 use_dask=use_dask,
                 nout=1,
             )
@@ -351,7 +328,7 @@ def make_subgrid_and_facet_dask_array(
                 -constants_class.subgrid_off[i],
                 constants_class.xA_size,
                 constants_class.subgrid_A[i],
-                axis=None,
+                axis=0,
             )
             for i in range(constants_class.nsubgrid)
         ],
@@ -365,7 +342,7 @@ def make_subgrid_and_facet_dask_array(
                 -constants_class.facet_off[j],
                 constants_class.yB_size,
                 constants_class.facet_B[j],
-                axis=None,
+                axis=0,
             )
             for j in range(constants_class.nfacet)
         ],
@@ -395,11 +372,11 @@ def facet_contribution_to_subgrid_1d(
 
     :return: facet_in_a_subgrid: facet contribution to a subgrid
     """
-    MiBjFj = constants_class.facet_m0_trunc * extract_mid(
+    MiBjFj = constants_class.facet_m0_trunc * extract_mid_along_axis(
         numpy.roll(BjFj, -offset_i * constants_class.yP_size // constants_class.N),
-        constants_class.xMxN_yP_size,
+        constants_class.xMxN_yP_size, axis=0
     )
-    MiBjFj_sum = extract_mid(MiBjFj, constants_class.xM_yP_size)
+    MiBjFj_sum = extract_mid_along_axis(MiBjFj, constants_class.xM_yP_size, axis=0)
     MiBjFj_sum[: constants_class.xN_yP_size // 2] = (
         MiBjFj_sum[: constants_class.xN_yP_size // 2]
         + MiBjFj[-constants_class.xN_yP_size // 2 :]
@@ -409,8 +386,8 @@ def facet_contribution_to_subgrid_1d(
         + MiBjFj[: constants_class.xN_yP_size // 2 :]
     )
 
-    facet_in_a_subgrid = constants_class.Fn * extract_mid(
-        fft(MiBjFj_sum), constants_class.xM_yN_size
+    facet_in_a_subgrid = constants_class.Fn * extract_mid_along_axis(
+        fft(MiBjFj_sum), constants_class.xM_yN_size, axis=0
     )
 
     return facet_in_a_subgrid
@@ -428,11 +405,11 @@ def facet_contribution_to_subgrid_1d_dask_array(
 
     Returns a dask.array.
     """
-    MiBjFj = constants_class.facet_m0_trunc * extract_mid(
+    MiBjFj = constants_class.facet_m0_trunc * extract_mid_along_axis(
         numpy.roll(BjFj, -offset_i * constants_class.yP_size // constants_class.N),
-        constants_class.xMxN_yP_size,
+        constants_class.xMxN_yP_size, axis=0
     ).rechunk(constants_class.xMxN_yP_size)
-    MiBjFj_sum = extract_mid(MiBjFj, constants_class.xM_yP_size).rechunk(
+    MiBjFj_sum = extract_mid_along_axis(MiBjFj, constants_class.xM_yP_size, axis=0).rechunk(
         constants_class.xM_yP_size
     )
     MiBjFj_sum[: constants_class.xN_yP_size // 2] += MiBjFj[
@@ -442,8 +419,8 @@ def facet_contribution_to_subgrid_1d_dask_array(
         : constants_class.xN_yP_size // 2 :
     ]
 
-    facet_in_a_subgrid = constants_class.Fn * extract_mid(
-        fft(MiBjFj_sum), constants_class.xM_yN_size
+    facet_in_a_subgrid = constants_class.Fn * extract_mid_along_axis(
+        fft(MiBjFj_sum), constants_class.xM_yN_size, axis=0
     ).rechunk(constants_class.xM_yN_size)
 
     return facet_in_a_subgrid
@@ -459,7 +436,7 @@ def prepare_facet_1d(facet_j, Fb, yP_size, **kwargs):
             use_dask: True
             nout: <number of function outputs> --> 1
     """
-    return ifft(pad_mid_on_axis(facet_j * Fb, yP_size, axis=0))  # prepare facet
+    return ifft(pad_mid_along_axis(facet_j * Fb, yP_size, axis=0))  # prepare facet
 
 
 def facets_to_subgrid_1d(
@@ -524,7 +501,7 @@ def facets_to_subgrid_1d_dask_array(
             [
                 facet_contribution_to_subgrid_1d_dask_array(
                     ifft(
-                        pad_mid_on_axis(
+                        pad_mid_along_axis(
                             facet[i] * constants_class.Fb,
                             constants_class.yP_size,
                             axis=0,
@@ -555,7 +532,7 @@ def _add_padded_value(nmbf, facet_off_j, xM_size, N, **kwargs):
             nout: <number of function outputs> --> 1
     """
     return numpy.roll(
-        pad_mid_on_axis(nmbf, xM_size, axis=0), facet_off_j * xM_size // N
+        pad_mid_along_axis(nmbf, xM_size, axis=0), facet_off_j * xM_size // N
     )
 
 
@@ -601,8 +578,8 @@ def reconstruct_subgrid_1d(nmbfs, constants_class, use_dask):
             approx_array = dask.array.from_delayed(
                 approx[i], (constants_class.xM_size,), dtype=complex
             )
-            approx_subgrid[i] = constants_class.subgrid_A[i] * extract_mid(
-                ifft(approx_array), constants_class.xA_size
+            approx_subgrid[i] = constants_class.subgrid_A[i] * extract_mid_along_axis(
+                ifft(approx_array), constants_class.xA_size, axis=0
             )
     else:
         for i in range(constants_class.nsubgrid):
@@ -614,8 +591,8 @@ def reconstruct_subgrid_1d(nmbfs, constants_class, use_dask):
                     constants_class.xM_size,
                     constants_class.N,
                 )
-            approx_subgrid[i, :] = constants_class.subgrid_A[i] * extract_mid(
-                ifft(approx), constants_class.xA_size
+            approx_subgrid[i, :] = constants_class.subgrid_A[i] * extract_mid_along_axis(
+                ifft(approx), constants_class.xA_size, axis=0
             )
 
     return approx_subgrid
@@ -641,7 +618,7 @@ def reconstruct_subgrid_1d_dask_array(nmbfs, constants_class):
     )
     for i in range(constants_class.nsubgrid):
         for j in range(constants_class.nfacet):
-            padded = pad_mid_on_axis(
+            padded = pad_mid_along_axis(
                 nmbfs[i, j, :], constants_class.xM_size, axis=0
             ).rechunk(constants_class.xM_size)
             approx[i, :] += numpy.roll(
@@ -651,8 +628,8 @@ def reconstruct_subgrid_1d_dask_array(nmbfs, constants_class):
                 // constants_class.N,
             )
 
-        approx_subgrid[i, :] = constants_class.subgrid_A[i] * extract_mid(
-            ifft(approx[i]), constants_class.xA_size
+        approx_subgrid[i, :] = constants_class.subgrid_A[i] * extract_mid_along_axis(
+            ifft(approx[i]), constants_class.xA_size, axis=0
         ).rechunk(constants_class.xA_size)
 
     return approx_subgrid
@@ -669,12 +646,12 @@ def _calculate_fns_term(subgrid_ith, facet_off_jth, constants_class, **kwargs):
             use_dask: True
             nout: <number of function outputs> --> 1
     """
-    return constants_class.Fn * extract_mid(
+    return constants_class.Fn * extract_mid_along_axis(
         numpy.roll(
-            fft(pad_mid_on_axis(subgrid_ith, constants_class.xM_size, axis=0)),
+            fft(pad_mid_along_axis(subgrid_ith, constants_class.xM_size, axis=0)),
             -facet_off_jth * constants_class.xM_size // constants_class.N,
         ),
-        constants_class.xM_yN_size,
+        constants_class.xM_yN_size, axis=0
     )
 
 
@@ -721,10 +698,10 @@ def subgrid_to_facet_1d_dask_array(subgrid, constants_class):
     FNjSi = dask.array.from_array(
         [
             [
-                extract_mid(
+                extract_mid_along_axis(
                     numpy.roll(
                         fft(
-                            pad_mid_on_axis(
+                            pad_mid_along_axis(
                                 subgrid[j], constants_class.xM_size, axis=0
                             ).rechunk(constants_class.xM_size)
                         ),
@@ -732,7 +709,7 @@ def subgrid_to_facet_1d_dask_array(subgrid, constants_class):
                         * constants_class.xM_size
                         // constants_class.N,
                     ),
-                    constants_class.xM_yN_size,
+                    constants_class.xM_yN_size, axis=0
                 )
                 for i in range(constants_class.nfacet)
             ]
@@ -765,9 +742,9 @@ def add_subgrid_contribution_1d(
     :return: subgrid contribution
     """
     NjSi = numpy.zeros(constants_class.xMxN_yP_size, dtype=complex)
-    NjSi_mid = extract_mid(NjSi, constants_class.xM_yP_size)
+    NjSi_mid = extract_mid_along_axis(NjSi, constants_class.xM_yP_size, axis=0)
     NjSi_mid[:] = ifft(
-        pad_mid_on_axis(nafs_ij, constants_class.xM_yP_size, axis=0)
+        pad_mid_along_axis(nafs_ij, constants_class.xM_yP_size, axis=0)
     )  # updates NjSi via reference!
     NjSi[-constants_class.xN_yP_size // 2 :] = NjSi_mid[
         : constants_class.xN_yP_size // 2
@@ -777,13 +754,13 @@ def add_subgrid_contribution_1d(
     ]
     FMiNjSi = fft(
         numpy.roll(
-            pad_mid_on_axis(
+            pad_mid_along_axis(
                 constants_class.facet_m0_trunc * NjSi, constants_class.yP_size, axis=0
             ),
             subgrid_off_i * constants_class.yP_size // constants_class.N,
         )
     )
-    subgrid_contrib = extract_mid(FMiNjSi, constants_class.yB_size)
+    subgrid_contrib = extract_mid_along_axis(FMiNjSi, constants_class.yB_size, axis=0)
     return subgrid_contrib
 
 
@@ -800,9 +777,9 @@ def add_subgrid_contribution_1d_dask_array(
     Returns a dask.array.
     """
     NjSi = numpy.zeros(constants_class.xMxN_yP_size, dtype=complex)
-    NjSi_mid = extract_mid(NjSi, constants_class.xM_yP_size)
+    NjSi_mid = extract_mid_along_axis(NjSi, constants_class.xM_yP_size, axis=0)
     NjSi_mid[:] = ifft(
-        pad_mid_on_axis(nafs_ij, constants_class.xM_yP_size, axis=0).rechunk(
+        pad_mid_along_axis(nafs_ij, constants_class.xM_yP_size, axis=0).rechunk(
             constants_class.xM_yP_size
         )
     )  # updates NjSi via reference!
@@ -814,13 +791,13 @@ def add_subgrid_contribution_1d_dask_array(
     ]
     FMiNjSi = fft(
         numpy.roll(
-            pad_mid_on_axis(
+            pad_mid_along_axis(
                 constants_class.facet_m0_trunc * NjSi, constants_class.yP_size, axis=0
             ),
             subgrid_off_i * constants_class.yP_size // constants_class.N,
         )
     )
-    subgrid_contrib = extract_mid(FMiNjSi, constants_class.yB_size)
+    subgrid_contrib = extract_mid_along_axis(FMiNjSi, constants_class.yB_size, axis=0)
     return subgrid_contrib
 
 
@@ -929,7 +906,7 @@ def prepare_facet(facet, axis, Fb, yP_size, **kwargs):
 
     :return: BF
     """
-    BF = pad_mid_on_axis(facet * broadcast_a(Fb, len(facet.shape), axis), yP_size, axis)
+    BF = pad_mid_along_axis(facet * broadcast_a(Fb, len(facet.shape), axis), yP_size, axis)
     BF = ifft_a(BF, axis)
     return BF
 
@@ -959,7 +936,7 @@ def extract_subgrid(
     :return:
     """
     dims = len(BF.shape)
-    BF_mid = extract_mid_a(
+    BF_mid = extract_mid_along_axis(
         numpy.roll(
             BF, -subgrid_off_i * constants_class.yP_size // constants_class.N, axis
         ),
@@ -967,7 +944,7 @@ def extract_subgrid(
         axis,
     )
     MBF = broadcast_a(constants_class.facet_m0_trunc, dims, axis) * BF_mid
-    MBF_sum = numpy.array(extract_mid_a(MBF, constants_class.xM_yP_size, axis))
+    MBF_sum = numpy.array(extract_mid_along_axis(MBF, constants_class.xM_yP_size, axis))
     xN_yP_size = constants_class.xMxN_yP_size - constants_class.xM_yP_size
     # [:xN_yP_size//2] / [-xN_yP_size//2:] for axis, [:] otherwise
     slc1 = slice_a(slice(None), slice(xN_yP_size // 2), dims, axis)
@@ -975,7 +952,7 @@ def extract_subgrid(
     MBF_sum[slc1] += MBF[slc2]
     MBF_sum[slc2] += MBF[slc1]
 
-    return broadcast_a(constants_class.Fn, len(BF.shape), axis) * extract_mid_a(
+    return broadcast_a(constants_class.Fn, len(BF.shape), axis) * extract_mid_along_axis(
         fft_a(MBF_sum, axis), constants_class.xM_yN_size, axis
     )
 
@@ -993,7 +970,7 @@ def prepare_subgrid(subgrid, xM_size, **kwargs):
 
     :return: the FS term
     """
-    padded = pad_mid_on_axis(pad_mid_on_axis(subgrid, xM_size, axis=0), xM_size, axis=1)
+    padded = pad_mid_along_axis(pad_mid_along_axis(subgrid, xM_size, axis=0), xM_size, axis=1)
     return fft(padded)
 
 
@@ -1014,7 +991,7 @@ def extract_facet_contribution(FSi, facet_off_j, constants_class, axis, **kwargs
     :return: Contribution of facet on the subgrid
 
     """
-    return broadcast_a(constants_class.Fn, len(FSi.shape), axis) * extract_mid_a(
+    return broadcast_a(constants_class.Fn, len(FSi.shape), axis) * extract_mid_along_axis(
         numpy.roll(
             FSi, -facet_off_j * constants_class.xM_size // constants_class.N, axis
         ),
@@ -1049,8 +1026,8 @@ def add_subgrid_contribution(
 
     """
     xN_yP_size = constants_class.xMxN_yP_size - constants_class.xM_yP_size
-    NjSi_mid = ifft_a(pad_mid_on_axis(NjSi, constants_class.xM_yP_size, axis), axis)
-    NjSi_temp = pad_mid_on_axis(NjSi_mid, constants_class.xMxN_yP_size, axis)
+    NjSi_mid = ifft_a(pad_mid_along_axis(NjSi, constants_class.xM_yP_size, axis), axis)
+    NjSi_temp = pad_mid_along_axis(NjSi_mid, constants_class.xMxN_yP_size, axis)
     slc1 = slice_a(slice(None), slice(xN_yP_size // 2), dims, axis)
     slc2 = slice_a(slice(None), slice(-xN_yP_size // 2, None), dims, axis)
     NjSi_temp[slc1] = NjSi_mid[slc2]
@@ -1060,7 +1037,7 @@ def add_subgrid_contribution(
     )
 
     return numpy.roll(
-        pad_mid_on_axis(NjSi_temp, constants_class.yP_size, axis),
+        pad_mid_along_axis(NjSi_temp, constants_class.yP_size, axis),
         subgrid_off_i * constants_class.yP_size // constants_class.N,
         axis=axis,
     )
@@ -1082,7 +1059,7 @@ def finish_facet(MiNjSi_sum, Fb, facet_B_j, yB_size, axis, **kwargs):
 
     :return: The finished facet (in BMNAF term)
     """
-    return extract_mid_a(fft_a(MiNjSi_sum, axis), yB_size, axis) * broadcast_a(
+    return extract_mid_along_axis(fft_a(MiNjSi_sum, axis), yB_size, axis) * broadcast_a(
         Fb * facet_B_j, len(MiNjSi_sum.shape), axis
     )
 
