@@ -13,7 +13,7 @@ from src.fourier_transform.algorithm_parameters import DistributedFFT
 from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
 
 from src.fourier_transform.fourier_algorithm import (
-    fft_along_axis,
+    fft,
     make_subgrid_and_facet,
     facets_to_subgrid_1d,
     reconstruct_subgrid_1d,
@@ -76,7 +76,7 @@ def _algorithm_with_dask_array(
     distr_fft_class,
     dtype,
 ):
-    FG = fft_along_axis(G, axis=0)
+    FG = fft(G, axis=0)
     subgrid, facet = make_subgrid_and_facet_dask_array(
         G,
         FG,
@@ -125,7 +125,7 @@ def _algorithm_with_dask_delayed(
     distr_fft_class,
     dtype,
 ):
-    FG = fft_along_axis(G, axis=0)
+    FG = fft(G, axis=0)
     subgrid, facet = make_subgrid_and_facet(
         G,
         FG,
@@ -177,7 +177,7 @@ def _algorithm_in_serial(
     distr_fft_class,
     dtype,
 ):
-    FG = fft_along_axis(G, axis=0)
+    FG = fft(G, axis=0)
     subgrid, facet = make_subgrid_and_facet(
         G,
         FG,

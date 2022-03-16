@@ -21,10 +21,10 @@ import numpy
 
 from src.fourier_transform.fourier_algorithm import (
     generate_mask,
-    extract_mid_along_axis,
+    extract_mid,
     coordinates,
-    ifft_along_axis,
-    pad_mid_along_axis,
+    ifft,
+    pad_mid,
     anti_aliasing_function,
 )
 from src.fourier_transform.utils import whole
@@ -194,7 +194,7 @@ class ConstantArrays(ConstantParams):
     @property
     def Fb(self):
         if self._Fb is None:
-            self._Fb = 1 / extract_mid_along_axis(self.pswf, self.yB_size, axis=0)
+            self._Fb = 1 / extract_mid(self.pswf, self.yB_size, axis=0)
 
         return self._Fb
 
@@ -218,9 +218,9 @@ class ConstantArrays(ConstantParams):
                 self.xM_size
                 * self.yP_size
                 / self.N
-                * extract_mid_along_axis(
-                    ifft_along_axis(
-                        pad_mid_along_axis(temp_facet_m0_trunc, self.yP_size, axis=0),
+                * extract_mid(
+                    ifft(
+                        pad_mid(temp_facet_m0_trunc, self.yP_size, axis=0),
                         axis=0,
                     ),
                     self.xMxN_yP_size,
