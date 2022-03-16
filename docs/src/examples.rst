@@ -1,0 +1,5 @@
+. _algorithm:
+
+Usage Examples
+============
+
