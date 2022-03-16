@@ -16,7 +16,7 @@ from src.fourier_transform.fourier_algorithm import (
     fft,
     make_subgrid_and_facet,
 )
-from src.oned_algorithm.fourier_algorithm import (
+from src.algorithm_1d.fourier_algorithm import (
     facets_to_subgrid_1d,
     facets_to_subgrid_1d_dask_array,
     reconstruct_subgrid_1d,
@@ -31,7 +31,7 @@ from src.utils import (
     plot_1,
     plot_2,
 )
-from src.oned_algorithm.utils import (
+from src.algorithm_1d.utils import (
     calculate_and_plot_errors_subgrid_1d,
     calculate_and_plot_errors_facet_1d,
 )

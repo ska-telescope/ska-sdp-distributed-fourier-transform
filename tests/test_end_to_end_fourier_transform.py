@@ -19,7 +19,7 @@ import pytest
 from numpy.testing import assert_array_almost_equal
 
 from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
-from src.fourier_transform_1d_dask import main as main_1d
+from src.algorithm_1d.fourier_transform_1d_dask import main as main_1d
 from src.fourier_transform_2d_dask import main as main_2d
 from tests.test_data.reference_data.ref_data import (
     EXPECTED_NONZERO_APPROX_FACET_1D,
@@ -103,7 +103,7 @@ def test_end_to_end_1d_dask(use_dask, dask_option):
         tear_down_dask(client)
 
 
-@pytest.mark.parametrize("use_dask", [False, True])
+@pytest.mark.parametrize("use_dask", [True])
 def test_end_to_end_2d_dask(use_dask):
     """
     Test that the 2d algorithm produces the same results with and without dask.
