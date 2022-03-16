@@ -15,22 +15,15 @@ from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
 from src.fourier_transform.fourier_algorithm import (
     fft,
     make_subgrid_and_facet,
-    facets_to_subgrid_1d,
-    reconstruct_subgrid_1d,
-    subgrid_to_facet_1d,
-    reconstruct_facet_1d,
-    subgrid_to_facet_1d_dask_array,
-    facets_to_subgrid_1d_dask_array,
-    make_subgrid_and_facet_dask_array,
-    reconstruct_subgrid_1d_dask_array,
-    reconstruct_facet_1d_dask_array,
 )
-from src.fourier_transform.utils import (
+from src.oned_algorithm.fourier_algorithm import facets_to_subgrid_1d, facets_to_subgrid_1d_dask_array, \
+    reconstruct_subgrid_1d, reconstruct_subgrid_1d_dask_array, subgrid_to_facet_1d, subgrid_to_facet_1d_dask_array, \
+    reconstruct_facet_1d, reconstruct_facet_1d_dask_array, make_subgrid_and_facet_dask_array
+from src.utils import (
     plot_1,
     plot_2,
-    calculate_and_plot_errors_subgrid_1d,
-    calculate_and_plot_errors_facet_1d,
 )
+from src.oned_algorithm.utils import calculate_and_plot_errors_subgrid_1d, calculate_and_plot_errors_facet_1d
 
 log = logging.getLogger("fourier-logger")
 log.setLevel(logging.INFO)
@@ -311,7 +304,7 @@ if __name__ == "__main__":
     numpy.random.seed(123456789)
 
     client = set_up_dask()
-    with performance_report(filename="dask-report.html"):
+    with performance_report(filename="../dask-report.html"):
         main(to_plot=False, use_dask=True)
     tear_down_dask(client)
 

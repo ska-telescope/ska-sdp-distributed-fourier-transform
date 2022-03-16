@@ -27,7 +27,7 @@ from src.fourier_transform.fourier_algorithm import (
     pad_mid,
     anti_aliasing_function,
 )
-from src.fourier_transform.utils import whole
+from src.utils import whole
 
 
 class ConstantParams:
