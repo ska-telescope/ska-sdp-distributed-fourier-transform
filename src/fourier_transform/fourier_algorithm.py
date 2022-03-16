@@ -282,31 +282,6 @@ def make_subgrid_and_facet(
     return subgrid, facet
 
 
-def generate_mask(n_image, ndata_point, true_usable_size, offset):
-    """
-    Determine the appropriate A/B masks for cutting the subgrid/facet out.
-    We are aiming for full coverage here: Every pixel is part of exactly one subgrid / facet.
-
-    :param n_image: total image size in one side (N)
-    :param ndata_point: number of data points (nsubgrid or nfacet)
-    :param true_usable_size: true usable size (xA_size or yB_size)
-    :param offset: subgrid or facet offset (subgrid_off or facet_off)
-
-    :return: mask: subgrid_A or facet_B
-    """
-    mask = numpy.zeros((ndata_point, true_usable_size), dtype=int)
-    subgrid_border = (offset + numpy.hstack([offset[1:], [n_image + offset[0]]])) // 2
-    for i in range(ndata_point):
-        left = (subgrid_border[i - 1] - offset[i] + true_usable_size // 2) % n_image
-        right = subgrid_border[i] - offset[i] + true_usable_size // 2
-        assert (
-            left >= 0 and right <= true_usable_size
-        ), "xA / yB not large enough to cover subgrids / facets!"
-        mask[i, left:right] = 1
-
-    return mask
-
-
 # 2D FOURIER ALGORITHM FUNCTIONS (facet to subgrid)
 @dask_wrapper
 def prepare_facet(facet, axis, Fb, yP_size, **kwargs):

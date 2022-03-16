@@ -2,7 +2,13 @@ import dask.array
 import numpy
 
 from src.fourier_transform.dask_wrapper import dask_wrapper
-from src.fourier_transform.fourier_algorithm import extract_mid, fft, ifft, pad_mid, _ith_subgrid_facet_element
+from src.fourier_transform.fourier_algorithm import (
+    extract_mid,
+    fft,
+    ifft,
+    pad_mid,
+    _ith_subgrid_facet_element,
+)
 
 
 def make_subgrid_and_facet_dask_array(

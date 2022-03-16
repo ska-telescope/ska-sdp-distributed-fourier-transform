@@ -20,7 +20,6 @@ import math
 import numpy
 
 from src.fourier_transform.fourier_algorithm import (
-    generate_mask,
     extract_mid,
     coordinates,
     ifft,
@@ -173,11 +172,36 @@ class ConstantArrays(ConstantParams):
         assert whole(numpy.outer(self.subgrid_off, self.facet_off) / self.N)
         assert whole(self.facet_off * self.xM_size / self.N)
 
+    def _generate_mask(self, ndata_point, true_usable_size, offset):
+        """
+        Determine the appropriate A/B masks for cutting the subgrid/facet out.
+        We are aiming for full coverage here: Every pixel is part of exactly one subgrid / facet.
+
+        :param ndata_point: number of data points (nsubgrid or nfacet)
+        :param true_usable_size: true usable size (xA_size or yB_size)
+        :param offset: subgrid or facet offset (subgrid_off or facet_off)
+
+        :return: mask: subgrid_A or facet_B
+        """
+        mask = numpy.zeros((ndata_point, true_usable_size), dtype=int)
+        subgrid_border = (
+            offset + numpy.hstack([offset[1:], [self.N + offset[0]]])
+        ) // 2
+        for i in range(ndata_point):
+            left = (subgrid_border[i - 1] - offset[i] + true_usable_size // 2) % self.N
+            right = subgrid_border[i] - offset[i] + true_usable_size // 2
+            assert (
+                left >= 0 and right <= true_usable_size
+            ), "xA / yB not large enough to cover subgrids / facets!"
+            mask[i, left:right] = 1
+
+        return mask
+
     @property
     def facet_B(self):
         if self._facet_B is None:
-            self._facet_B = generate_mask(
-                self.N, self.nfacet, self.yB_size, self.facet_off
+            self._facet_B = self._generate_mask(
+                self.nfacet, self.yB_size, self.facet_off
             )
 
         return self._facet_B
@@ -185,8 +209,8 @@ class ConstantArrays(ConstantParams):
     @property
     def subgrid_A(self):
         if self._subgrid_A is None:
-            self._subgrid_A = generate_mask(
-                self.N, self.nsubgrid, self.xA_size, self.subgrid_off
+            self._subgrid_A = self._generate_mask(
+                self.nsubgrid, self.xA_size, self.subgrid_off
             )
 
         return self._subgrid_A
