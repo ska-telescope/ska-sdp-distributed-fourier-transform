@@ -1,8 +1,5 @@
 """Distributed Fourier Transform Module."""
 import itertools
-
-import scipy.special
-import scipy.signal
 import numpy
 
 from src.fourier_transform.dask_wrapper import dask_wrapper
@@ -10,29 +7,37 @@ from src.fourier_transform.dask_wrapper import dask_wrapper
 
 def create_slice(fill_val, axis_val, dims, axis):
     """
-    TODO: docstring + tests
-    Slice A
+    Create a tuple of length = dims.
+    Elements of the tuple:
+        fill_val if axis != dim_index
+        axis_val if axis == dim_index,
+        where dim_index is each value in range(dims)
+    See test for examples.
 
-    param fill_val: Fill value
-    param axis_val: Axis value
-    param dims: Dimensions
-    param axis: Axis
+    param fill_val: value to use for dimensions where dim != axis
+    param axis_val: value to use for dimensions where dim == axis
+    param dims: length of tuple to be produced (i.e. number of dimensions); int
+    param axis: axis (index) along which axis_val to be used; int
 
-    return:
+    return: tuple of length dims
     """
+    if not isinstance(axis, int) or not isinstance(dims, int):
+        raise ValueError("create_slice: axis and dims values have to be integers.")
+
     return tuple([axis_val if i == axis else fill_val for i in range(dims)])
 
 
 def broadcast(a, dims, axis):
     """
-    TODO: docstring + tests
-    Broadcast A
+    Stretch input array to shape determined by the dims and axis values.
+    See tests for examples of how the shape of the input array will change
+    depending on what dims-axis combination is given
 
-    param a: A
-    param dims: Dimensions
-    param axis: Axis
+    :param a: input numpy ndarray
+    :param dims: dimensions to broadcast ("stretch") input array to; int
+    :param axis: axis along which the new dimension(s) should be added; int
 
-    return:
+    return: array with new shape
     """
     return a[create_slice(numpy.newaxis, slice(None), dims, axis)]
 
@@ -108,8 +113,13 @@ def ifft(a, axis):
 
 def coordinates(n):
     """
-    TODO: docstring + tests
-    1D array which spans [-.5,.5[ with 0 at position N/2"""
+    Generate a 1D array with length n,
+    which spans [-0.5,0.5] with 0 at position n/2.
+    See also docs for numpy.mgrid.
+
+    :param n: length of array to be generated
+    :return: 1D numpy array
+    """
     n2 = n // 2
     if n % 2 == 0:
         return numpy.mgrid[-n2:n2] / n
@@ -117,35 +127,13 @@ def coordinates(n):
         return numpy.mgrid[-n2 : n2 + 1] / n
 
 
-def anti_aliasing_function(shape, m, c):
-    """
-    TODO: tests
-    Compute the prolate spheroidal anti-aliasing function
-
-    See VLA Scientific Memoranda 129, 131, 132
-    :param shape: (height, width) pair or just width
-    :param m: mode parameter
-    :param c: spheroidal parameter
-    """
-
-    # One dimensional?
-    if len(numpy.array(shape).shape) == 0:
-
-        pswf = scipy.special.pro_ang1(m, m, c, 2 * coordinates(shape))[0]
-        pswf[0] = 0  # zap NaN
-        return pswf
-
-    # 2D Prolate spheroidal angular function is separable
-    return numpy.outer(
-        anti_aliasing_function(shape[0], m, c), anti_aliasing_function(shape[1], m, c)
-    )
-
-
 @dask_wrapper
 def _ith_subgrid_facet_element(
     true_image, offset_i, true_usable_size, mask_element, axis=(0, 1), **kwargs
 ):
     """
+    Calculate a single facet or subgrid element.
+
     :param true_image: true image, G (1D or 2D)
     :param offset_i: ith offset (subgrid or facet)
     :param true_usable_size: xA_size for subgrid, and yB_size for facet

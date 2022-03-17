@@ -18,6 +18,8 @@ https://skao.slack.com/archives/C02R9BQFK7W/p1645017383044429
 """
 import math
 import numpy
+import scipy.special
+import scipy.signal
 
 from src.fourier_transform.dask_wrapper import dask_wrapper
 from src.fourier_transform.fourier_algorithm import (
@@ -25,7 +27,6 @@ from src.fourier_transform.fourier_algorithm import (
     coordinates,
     ifft,
     pad_mid,
-    anti_aliasing_function,
     broadcast,
     create_slice,
     fft,
@@ -270,15 +271,20 @@ class ConstantArrays(ConstantParams):
     @property
     def pswf(self, alpha=0):
         """
-        Calculate PSWF (prolate-spheroidal wave function) at the
+        Calculate 1D PSWF (prolate-spheroidal wave function) at the
         full required resolution (facet size)
+
+        See also: VLA Scientific Memoranda 129, 131, 132
 
         :param alpha: TODO: ???, int
         """
         if self._pswf is None:
-            self._pswf = anti_aliasing_function(
-                self.yN_size, alpha, numpy.pi * self.W / 2
-            ).real
+            pswf = scipy.special.pro_ang1(
+                alpha, alpha, numpy.pi * self.W / 2, 2 * coordinates(self.yN_size)
+            )[0]
+            pswf[0] = 0  # zap NaN
+
+            self._pswf = pswf.real
             self._pswf /= numpy.prod(
                 numpy.arange(2 * alpha - 1, 0, -2, dtype=float)
             )  # double factorial
@@ -288,8 +294,13 @@ class ConstantArrays(ConstantParams):
 
 class DistributedFFT(ConstantArrays):
     """
-    Placeholder-class that will connect all elements of the distributed FFT code.
-    Currently it provides the necessary constants and constant arrays through its parent classes.
+    Distributed FFT class
+
+    It takes the fundamental_constants dict as input (see ConstantParams class).
+    It encompasses all building blocks of the algorithm for
+    both subgrid -> facet and facet -> subgrid directions.
+
+    The algorithm was developed for 2D input arrays (images).
     """
 
     def __init__(self, **fundamental_constants):

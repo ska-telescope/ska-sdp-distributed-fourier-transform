@@ -1,10 +1,14 @@
 import numpy
+import pytest
 
 from src.fourier_transform.fourier_algorithm import (
     pad_mid,
     extract_mid,
     fft,
     ifft,
+    coordinates,
+    broadcast,
+    create_slice,
 )
 
 
@@ -352,3 +356,115 @@ def test_ifft_2d_axis01():
     result = ifft(ifft(array, axis=0), axis=1)
 
     assert (result == numpy.ones((3, 5))).all()
+
+
+@pytest.mark.parametrize(
+    "n, minimum, maximum",
+    [
+        (8, -0.5, 0.375),
+        (10, -0.5, 0.4),
+        (23, -0.47826087, 0.47826087),
+        (50, -0.5, 0.48),
+        (100, -0.5, 0.49),
+        (1000, -0.5, 0.499),
+    ],
+)
+def test_coordinates(n, minimum, maximum):
+    """
+    Test values are chosen to illustrate how min and max
+    values in the array change depending on the array length.
+    """
+    result = coordinates(n)
+
+    assert len(result) == n
+    assert result[0].round(8) == round(minimum, 8)
+    assert result[n // 2] == 0.0
+    assert result[-1].round(8) == round(maximum, 8)
+
+
+@pytest.mark.parametrize(
+    "dims, axis, expected_shape",
+    [
+        (0, 0, (10, 10)),
+        (1, 0, (10, 10)),
+        (2, 0, (10, 1, 10)),
+        (3, 0, (10, 1, 1, 10)),
+        (4, 0, (10, 1, 1, 1, 10)),
+        (0, 1, (10, 10)),
+        (1, 1, (1, 10, 10)),
+        (2, 1, (1, 10, 10)),
+        (3, 1, (1, 10, 1, 10)),
+        (4, 1, (1, 10, 1, 1, 10)),
+        (0, 2, (10, 10)),
+        (1, 2, (1, 10, 10)),
+        (2, 2, (1, 1, 10, 10)),
+        (3, 2, (1, 1, 10, 10)),
+        (4, 2, (1, 1, 10, 1, 10)),
+        (0, 3, (10, 10)),
+        (1, 3, (1, 10, 10)),
+        (2, 3, (1, 1, 10, 10)),
+        (3, 3, (1, 1, 1, 10, 10)),
+        (4, 3, (1, 1, 1, 10, 10)),
+        (5, 3, (1, 1, 1, 10, 1, 10)),
+        (0, 3, (10, 10)),
+    ],
+)
+def test_broadcast(dims, axis, expected_shape):
+    """
+    Provide a large set of cases to indicate how
+    the shape of the input array changes
+    with input dims-axis combinations.
+    """
+    array = numpy.ones((10, 10))
+    result = broadcast(array, dims, axis)
+    assert result.shape == expected_shape
+
+
+@pytest.mark.parametrize(
+    "dims, axis",
+    [
+        (1, (0, 1)),
+        (2, (0, 2)),
+        (3, (1, 1)),
+        ((2, 4), 4),
+        ("str", (3, 4)),
+    ],
+)
+def test_broadcast_raises_error(dims, axis):
+    """
+    ValueError is raised when either dims or axis is not an integer.
+    See docstring and test for create_slice.
+    """
+    with pytest.raises(ValueError):
+        broadcast(numpy.ones((10, 10)), dims, axis)
+
+
+@pytest.mark.parametrize(
+    "dims, axis, expected_tuple",
+    [
+        (0, 0, ()),  # if dims is 0, result is always an empty tuple
+        (1, 0, (6,)),  # range(1) --> 0, which equals to axis -> use axis_value
+        (1, 1, (2,)),  # range(1) --> 0, which doesn't equal to axis -> use fill_value
+        (3, 2, (2, 2, 6)),  # axis=2 (3rd value in tuple) is axis_val
+        (6, 3, (2, 2, 2, 6, 2, 2)),
+    ],
+)
+def test_create_slice(dims, axis, expected_tuple):
+    fill_val = 2
+    axis_val = 6
+    result = create_slice(fill_val, axis_val, dims, axis)
+    assert result == expected_tuple
+
+
+@pytest.mark.parametrize(
+    "dims, axis", [(5, (0, 2)), ((2, 3), 4), ((2, 2), (0, 1)), ("bla", 5), (3, "bla")]
+)
+def test_create_slice_raises_error(dims, axis):
+    """
+    Only integers of dims and axis are allowed.
+    While axis could be other things too, that would not have an
+    effect, since in that case axis would never be in range(dims),
+    hence we do not allow it in the code.
+    """
+    with pytest.raises(ValueError):
+        create_slice(2, 6, dims, axis)
