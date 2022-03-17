@@ -143,14 +143,14 @@ def anti_aliasing_function(shape, m, c):
 
 @dask_wrapper
 def _ith_subgrid_facet_element(
-    true_image, offset_i, true_usable_size, mask_element, axis=None, **kwargs
+    true_image, offset_i, true_usable_size, mask_element, axis=(0, 1), **kwargs
 ):
     """
     :param true_image: true image, G (1D or 2D)
     :param offset_i: ith offset (subgrid or facet)
     :param true_usable_size: xA_size for subgrid, and yB_size for facet
     :param mask_element: an element of subgrid_A or facet_B (masks)
-    :param axis: axis (0 or 1)
+    :param axis: axis (0, 1, or a tuple of both)
     :param kwargs: needs to contain the following if dask is used:
             use_dask: True
             nout: <number of function outputs> --> 1

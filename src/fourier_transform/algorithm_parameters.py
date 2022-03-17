@@ -27,6 +27,10 @@ from src.fourier_transform.fourier_algorithm import (
     ifft,
     pad_mid,
     anti_aliasing_function,
+    broadcast,
+    create_slice,
+    fft,
+    _ith_subgrid_facet_element,
 )
 from src.utils import whole
 
@@ -52,6 +56,8 @@ class ConstantParams:
     :param xM_size: padded subgrid size (pad subgrid with zeros at margins to reach this size)
     :param yN_size: padded facet size which evenly divides the image size,
                     used for resampling facets into image space
+
+    A / x --> grid (frequency) space; B / y --> image (facet) space
 
     The class, in addition, derives the following, commonly used sizes:
 
@@ -294,43 +300,6 @@ class DistributedFFT(ConstantArrays):
         self._subgrid = None
         self._facet = None
 
-    @dask_wrapper
-    def _ith_subgrid_facet_element(
-        self,
-        true_image,
-        offset_i,
-        true_usable_size,
-        mask_element,
-        axis=(0, 1),
-        **kwargs,
-    ):
-        """
-        :param true_image: true image, G
-        :param offset_i: ith offset (subgrid or facet)
-        :param true_usable_size: xA_size for subgrid, and yB_size for facet
-        :param mask_element: an element of subgrid_A or facet_B (masks)
-        :param axis: axis (0, 1, or a tuple of both)
-        :param kwargs: needs to contain the following if dask is used:
-                use_dask: True
-                nout: <number of function outputs> --> 1
-        """
-        if isinstance(axis, int):
-            extracted = extract_mid(
-                numpy.roll(true_image, offset_i, axis), true_usable_size, axis
-            )
-
-        if isinstance(axis, tuple) and len(axis) == 2:
-            extracted = extract_mid(
-                extract_mid(
-                    numpy.roll(true_image, offset_i, axis), true_usable_size, axis[0]
-                ),
-                true_usable_size,
-                axis[1],
-            )
-
-        result = mask_element * extracted
-        return result
-
     def make_subgrid(self, g, dims=2, use_dask=False):
         """
         Calculate the actual subgrids.
@@ -349,7 +318,7 @@ class DistributedFFT(ConstantArrays):
                 self._subgrid = self._subgrid.tolist()
 
             for i in range(self.nsubgrid):
-                self._subgrid[i] = self._ith_subgrid_facet_element(
+                self._subgrid[i] = _ith_subgrid_facet_element(
                     g,
                     -self.subgrid_off[i],
                     self.xA_size,
@@ -374,7 +343,7 @@ class DistributedFFT(ConstantArrays):
                 self._subgrid = self._subgrid.tolist()
 
             for i0, i1 in itertools.product(range(self.nsubgrid), range(self.nsubgrid)):
-                self._subgrid[i0][i1] = self._ith_subgrid_facet_element(
+                self._subgrid[i0][i1] = _ith_subgrid_facet_element(
                     g,
                     (-self.subgrid_off[i0], -self.subgrid_off[i1]),
                     self.xA_size,
@@ -421,7 +390,7 @@ class DistributedFFT(ConstantArrays):
                 self._facet = self._facet.tolist()
 
             for j in range(self.nfacet):
-                self._facet[j] = self._ith_subgrid_facet_element(
+                self._facet[j] = _ith_subgrid_facet_element(
                     fg,
                     -self.facet_off[j],
                     self.yB_size,
@@ -446,7 +415,7 @@ class DistributedFFT(ConstantArrays):
                 self._facet = self._facet.tolist()
 
             for j0, j1 in itertools.product(range(self.nfacet), range(self.nfacet)):
-                self._facet[j0][j1] = self._ith_subgrid_facet_element(
+                self._facet[j0][j1] = _ith_subgrid_facet_element(
                     fg,
                     (-self.facet_off[j0], -self.facet_off[j1]),
                     self.yB_size,
@@ -472,4 +441,160 @@ class DistributedFFT(ConstantArrays):
         raise NotPermittedError(
             "Facet array cannot be manually set. Please"
             "call the make_facet method to calculate it."
+        )
+
+    # facet to subgrid algorithm
+    @dask_wrapper
+    def prepare_facet(self, facet, axis, **kwargs):
+        """
+        TODO: description
+
+        :param facet: single facet element
+        :param axis: axis along which operations are performed (0 or 1)
+        :param kwargs: needs to contain the following if dask is used:
+                use_dask: True
+                nout: <number of function outputs> --> 1
+
+        :return: TODO: BF?
+        """
+        BF = pad_mid(
+            facet * broadcast(self.Fb, len(facet.shape), axis), self.yP_size, axis
+        )
+        BF = ifft(BF, axis)
+        return BF
+
+    @dask_wrapper
+    def extract_subgrid(
+        self,
+        BF,
+        axis,
+        subgrid_off_i,
+        **kwargs,
+    ):
+        """
+        Extract the facet contribution of a subgrid.
+        TODO: maybe rename function to reflect this definition
+            See discussion at https://gitlab.com/ska-telescope/sdp/ska-sdp-distributed-fourier-transform/-/merge_requests/4#note_825003275
+
+        :param BF: TODO: ? prepared facet
+        :param axis: axis along which the operations are performed (0 or 1)
+        :param subgrid_off_i: ith subgrid offset element
+        :param kwargs: needs to contain the following if dask is used:
+                use_dask: True
+                nout: <number of function outputs> --> 1
+
+        :return: TODO???
+        """
+        dims = len(BF.shape)
+        BF_mid = extract_mid(
+            numpy.roll(BF, -subgrid_off_i * self.yP_size // self.N, axis),
+            self.xMxN_yP_size,
+            axis,
+        )
+        MBF = broadcast(self.facet_m0_trunc, dims, axis) * BF_mid
+        MBF_sum = numpy.array(extract_mid(MBF, self.xM_yP_size, axis))
+        xN_yP_size = self.xMxN_yP_size - self.xM_yP_size
+        # [:xN_yP_size//2] / [-xN_yP_size//2:] for axis, [:] otherwise
+        slc1 = create_slice(slice(None), slice(xN_yP_size // 2), dims, axis)
+        slc2 = create_slice(slice(None), slice(-xN_yP_size // 2, None), dims, axis)
+        MBF_sum[slc1] += MBF[slc2]
+        MBF_sum[slc2] += MBF[slc1]
+
+        return broadcast(self.Fn, len(BF.shape), axis) * extract_mid(
+            fft(MBF_sum, axis), self.xM_yN_size, axis
+        )
+
+    # subgrid to facet algorithm
+    @dask_wrapper
+    def prepare_subgrid(self, subgrid, **kwargs):
+        """
+        Initial shared work per subgrid - no reason to do this per-axis, so always do it for all
+
+        :param subgrid: single subgrid array element
+        :param kwargs: needs to contain the following if dask is used:
+                use_dask: True
+                nout: <number of function outputs> --> 1
+
+        :return: TODO: the FS ??? term
+        """
+        padded = pad_mid(pad_mid(subgrid, self.xM_size, axis=0), self.xM_size, axis=1)
+        ftransformed = fft(fft(padded, axis=0), axis=1)
+
+        return ftransformed
+
+    @dask_wrapper
+    def extract_facet_contribution(self, FSi, facet_off_j, axis, **kwargs):
+        """
+        Extract contribution of subgrid to a facet
+
+        :param Fsi: TODO???
+        :param facet_off_j: ith facet offset element
+        :param axis: axis along which the operations are performed (0 or 1)
+        :param kwargs: needs to contain the following if dask is used:
+                use_dask: True
+                nout: <number of function outputs> --> 1
+
+        :return: Contribution of facet to the subgrid
+
+        """
+        return broadcast(self.Fn, len(FSi.shape), axis) * extract_mid(
+            numpy.roll(FSi, -facet_off_j * self.xM_size // self.N, axis),
+            self.xM_yN_size,
+            axis,
+        )
+
+    @dask_wrapper
+    def add_subgrid_contribution(
+        self,
+        dims,
+        NjSi,
+        subgrid_off_i,
+        axis,
+        **kwargs,
+    ):
+        """
+        Add subgrid contribution to a facet
+
+        :param dims: TODO
+        :param NjSi: TODO
+        :param subgrid_off_i: ith sugbrid offset element
+        :param axis: axis along which operations are performed (0 or 1)
+        :param kwargs: needs to contain the following if dask is used:
+                use_dask: True
+                nout: <number of function outputs> --> 1
+
+        :return MiNjSi_sum: TODO
+
+        """
+        xN_yP_size = self.xMxN_yP_size - self.xM_yP_size
+        NjSi_mid = ifft(pad_mid(NjSi, self.xM_yP_size, axis), axis)
+        NjSi_temp = pad_mid(NjSi_mid, self.xMxN_yP_size, axis)
+        slc1 = create_slice(slice(None), slice(xN_yP_size // 2), dims, axis)
+        slc2 = create_slice(slice(None), slice(-xN_yP_size // 2, None), dims, axis)
+        NjSi_temp[slc1] = NjSi_mid[slc2]
+        NjSi_temp[slc2] = NjSi_mid[slc1]
+        NjSi_temp = NjSi_temp * broadcast(self.facet_m0_trunc, len(NjSi.shape), axis)
+
+        return numpy.roll(
+            pad_mid(NjSi_temp, self.yP_size, axis),
+            subgrid_off_i * self.yP_size // self.N,
+            axis=axis,
+        )
+
+    @dask_wrapper
+    def finish_facet(self, MiNjSi_sum, facet_B_j, axis, **kwargs):
+        """
+        Obtain finished facet
+
+        :param MiNjSi_sum: TODO
+        :param facet_B_j: TODO ??
+        :param axis: axis along which operations are performed (0 or 1)
+        :param kwargs: needs to contain the following if dask is used:
+                use_dask: True
+                nout: <number of function outputs> --> 1
+
+        :return: TODO?? The finished facet (in BMNAF term)
+        """
+        return extract_mid(fft(MiNjSi_sum, axis), self.yB_size, axis) * broadcast(
+            self.Fb * facet_B_j, len(MiNjSi_sum.shape), axis
         )

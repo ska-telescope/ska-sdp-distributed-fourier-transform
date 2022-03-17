@@ -37,6 +37,19 @@ from tests.test_data.reference_data.ref_data_2d import (
 log = logging.getLogger("fourier-logger")
 log.setLevel(logging.WARNING)
 
+TARGET_PARS = {
+    "W": 13.25,  # PSWF parameter (grid-space support)
+    "fov": 0.75,  # field of view?
+    "N": 1024,  # total image size
+    "Nx": 4,  # subgrid spacing: it tells you what subgrid offsets are permissible:
+    # here it is saying that they need to be divisible by 4.
+    "yB_size": 256,  # true usable image size (facet)
+    "yN_size": 320,  # padding needed to transfer the data?
+    "yP_size": 512,  # padded (rough) image size (facet)
+    "xA_size": 188,  # true usable subgrid size
+    "xM_size": 256,  # padded (rough) subgrid size
+}
+
 
 def _compare_images(expected, result):
     with open(expected, "rb") as f1, open(result, "rb") as f2:
@@ -103,7 +116,7 @@ def test_end_to_end_1d_dask(use_dask, dask_option):
         tear_down_dask(client)
 
 
-@pytest.mark.parametrize("use_dask", [True])
+@pytest.mark.parametrize("use_dask", [False])
 def test_end_to_end_2d_dask(use_dask):
     """
     Test that the 2d algorithm produces the same results with and without dask.
@@ -119,7 +132,7 @@ def test_end_to_end_2d_dask(use_dask):
         result_facet,
         result_approx_subgrid,
         result_approx_facet,
-    ) = main_2d(to_plot=False, use_dask=use_dask)
+    ) = main_2d(TARGET_PARS, to_plot=False, use_dask=use_dask)
 
     # check array shapes
     assert result_subgrid.shape == (6, 6, 188, 188)
