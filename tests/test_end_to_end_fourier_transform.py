@@ -175,27 +175,29 @@ def test_end_to_end_2d_dask_logging(use_dask):
     if use_dask:
         client = set_up_dask()
 
+    # the values in this test slightly changed (10-5 - 10-10)
+    # could this be because originally numpy.fft2 was used for the 2d version?
     expected_log_calls = [
         call("6 subgrids, 4 facets needed to cover"),
         call("%s x %s subgrids %s x %s facets", 6, 6, 4, 4),
-        call("Mean grid absolute: %s", 0.2523814510844513),
+        call("Mean grid absolute: %s", 0.25238145108445126),
         # facet to subgrid
         call(
             "RMSE: %s (image: %s)",
-            3.6351180911901923e-08,
-            6.834022011437562e-06,
+            3.635118091200949e-08,
+            6.834022011457784e-06,
         ),
-        call("RMSE: %s (image: %s)", 1.8993992558912768e-17, 3.5708706010756e-15),
+        call("RMSE: %s (image: %s)", 1.8993993540584405e-17, 3.5708707856298686e-15),
         # subgrid to facet - not yet added to tested code
         call(
             "RMSE: %s (image: %s)",
-            1.9066529538510885e-07,
-            4.881031561858787e-05,
+            1.906652955419094e-07,
+            4.881031565872881e-05,
         ),
         call(
             "RMSE: %s (image: %s)",
-            3.1048924152453573e-13,
-            7.948524583028115e-11,
+            3.1048926297115777e-13,
+            7.948525132061639e-11,
         ),
     ]
 

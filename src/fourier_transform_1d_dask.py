@@ -76,7 +76,7 @@ def _algorithm_with_dask_array(
     distr_fft_class,
     dtype,
 ):
-    FG = fft(G)
+    FG = fft(G, axis=0)
     subgrid, facet = make_subgrid_and_facet_dask_array(
         G,
         FG,
@@ -125,7 +125,7 @@ def _algorithm_with_dask_delayed(
     distr_fft_class,
     dtype,
 ):
-    FG = fft(G)
+    FG = fft(G, axis=0)
     subgrid, facet = make_subgrid_and_facet(
         G,
         FG,
@@ -177,7 +177,7 @@ def _algorithm_in_serial(
     distr_fft_class,
     dtype,
 ):
-    FG = fft(G)
+    FG = fft(G, axis=0)
     subgrid, facet = make_subgrid_and_facet(
         G,
         FG,

@@ -523,7 +523,7 @@ def main(to_plot=True, fig_name=None, use_dask=False):
         ]
         for x, y, i in sources:
             FG_2[y + distr_fft_class.N // 2, x + distr_fft_class.N // 2] += i
-        G_2 = ifft(FG_2)
+        G_2 = ifft(ifft(FG_2, axis=0), axis=1)
 
     else:
         # without sources
@@ -534,7 +534,7 @@ def main(to_plot=True, fig_name=None, use_dask=False):
             * numpy.random.rand(distr_fft_class.N, distr_fft_class.N)
             / 2
         )
-        FG_2 = fft(G_2)
+        FG_2 = fft(fft(G_2, axis=0), axis=1)
 
     log.info("Mean grid absolute: %s", numpy.mean(numpy.abs(G_2)))
 
