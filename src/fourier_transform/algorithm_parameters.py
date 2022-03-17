@@ -16,11 +16,9 @@ See Slack conversation with Peter:
 https://skao.slack.com/archives/C02R9BQFK7W/p1645017383044429
 (#proj-sp-2086-dask-distributed-pipeline, Feb 16)
 """
-import itertools
 import math
 import numpy
 
-from src.fourier_transform.dask_wrapper import dask_wrapper
 from src.fourier_transform.fourier_algorithm import (
     extract_mid,
     coordinates,
@@ -29,13 +27,6 @@ from src.fourier_transform.fourier_algorithm import (
     anti_aliasing_function,
 )
 from src.utils import whole
-
-
-class NotPermittedError(Exception):
-    """
-    Raise this error when an operation, such as updating (setting)
-    an attribute is not permitted.
-    """
 
 
 class ConstantParams:

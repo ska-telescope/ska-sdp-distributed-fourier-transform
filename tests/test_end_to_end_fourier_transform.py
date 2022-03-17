@@ -103,7 +103,7 @@ def test_end_to_end_1d_dask(use_dask, dask_option):
         tear_down_dask(client)
 
 
-@pytest.mark.parametrize("use_dask", [True])
+@pytest.mark.parametrize("use_dask", [False, True])
 def test_end_to_end_2d_dask(use_dask):
     """
     Test that the 2d algorithm produces the same results with and without dask.
