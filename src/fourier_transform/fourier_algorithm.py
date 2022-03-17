@@ -161,7 +161,7 @@ def _ith_subgrid_facet_element(
     return result
 
 
-# I tried adding this function as method to the class
+# I (GH) tried adding this function as method to the class
 # separate for subgrid and facet, but when calling dask on it
 # the computation becomes extremely slow and my laptop cannot handle it.
 # This suggests that something wasn't right and the dask setup wasn't ideal

@@ -503,7 +503,7 @@ def main(fundamental_params, to_plot=True, fig_name=None, use_dask=False):
         )
 
         subgrid_2, facet_2, NMBF_NMBF, BMNAF_BMNAF = dask.compute(
-            subgrid_2, facet_2, NMBF_NMBF, BMNAF_BMNAF
+            subgrid_2, facet_2, NMBF_NMBF, BMNAF_BMNAF, sync=True
         )
 
         subgrid_2 = numpy.array(subgrid_2)

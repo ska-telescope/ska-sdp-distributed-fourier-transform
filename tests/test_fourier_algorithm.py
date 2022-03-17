@@ -1,3 +1,4 @@
+import dask
 import numpy
 import pytest
 
@@ -9,7 +10,10 @@ from src.fourier_transform.fourier_algorithm import (
     coordinates,
     broadcast,
     create_slice,
+    _ith_subgrid_facet_element,
 )
+
+# TODO: test make_subgrid_and_facet
 
 
 def test_pad_mid_1d():
@@ -468,3 +472,63 @@ def test_create_slice_raises_error(dims, axis):
     """
     with pytest.raises(ValueError):
         create_slice(2, 6, dims, axis)
+
+
+@pytest.mark.parametrize("use_dask", [False, True])
+def test_ith_subgrid_facet_element_axis_int(use_dask):
+    """
+    Input array is one dimensional, i.e. the axis argument is an integer.
+    Steps the code takes with example data in test:
+        * input array: [13, 44, 12, 23, 33, 1, 53, 1234, 332, 54, 9]
+        * roll by 2: [54, 9, 13, 44, 12, 23, 33, 1, 53, 1234, 332]
+        * extract mid (5): [44, 12, 23, 33, 1]
+        * masked: [0, 0, 23, 33, 1] ==> expected result
+    """
+    image = numpy.array([13, 44, 12, 23, 33, 1, 53, 1234, 332, 54, 9])
+    offset = 2
+    true_size = 5
+    mask = [0, 0, 1, 1, 1]  # length of mask = true_size
+
+    result = _ith_subgrid_facet_element(
+        image, offset, true_size, mask, axis=0, use_dask=use_dask, nout=1
+    )
+    if use_dask:
+        result = dask.compute(result, sync=True)
+
+    assert (result == numpy.array([0, 0, 23, 33, 1])).all()
+
+
+@pytest.mark.parametrize("use_dask", [False, True])
+def test_ith_subgrid_facet_element_axis_tuple(use_dask):
+    """
+    Input array is two dimensional, i.e. the axis argument is a tuple of length two.
+    Steps the code takes with example data in test:
+        * input array:
+            [[1, 44, 12, 23, 33],
+            [13, 53, 1234, 332, 54],
+            [123, -53, 32, -55, -452]]
+        * roll by 1 along axis=0 and 3 along axis=1:
+            [[32, -55, -452, 123, -53],
+            [12, 23, 33, 1, 44],
+            [332, 54, 13, 53, 1234]]
+        * extract mid (5):
+            [[-55, -452],
+            [23, 33]]
+        * masked:
+            [[0, 0],
+            [0, 33]] ==> expected result
+    """
+    image = numpy.array(
+        [[1, 44, 12, 23, 33], [13, 53, 1234, 332, 54], [123, -53, 32, -55, -452]]
+    )
+    offset = (1, 3)
+    true_size = 2
+    mask = numpy.array([[0, 0], [0, 1]])
+
+    result = _ith_subgrid_facet_element(
+        image, offset, true_size, mask, axis=(0, 1), use_dask=use_dask, nout=1
+    )
+    if use_dask:
+        result = dask.compute(result, sync=True)
+
+    assert (result == numpy.array([[0, 0], [0, 33]])).all()
