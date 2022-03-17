@@ -8,13 +8,7 @@ from src.fourier_transform.fourier_algorithm import (
     extract_mid,
     ifft,
     pad_mid,
-    prepare_facet,
-    extract_subgrid,
     fft,
-    prepare_subgrid,
-    extract_facet_contribution,
-    add_subgrid_contribution,
-    finish_facet,
 )
 
 log = logging.getLogger("fourier-logger")
@@ -373,23 +367,19 @@ def test_accuracy_facet_to_subgrid(
     for j0, j1 in itertools.product(
         range(constants_class.nfacet), range(constants_class.nfacet)
     ):
-        BF_F = prepare_facet(
-            facet_2[j0, j1], 0, constants_class.Fb, constants_class.yP_size
-        )
-        BF_BF = prepare_facet(BF_F, 1, constants_class.Fb, constants_class.yP_size)
+        BF_F = constants_class.prepare_facet(facet_2[j0, j1], 0)
+        BF_BF = constants_class.prepare_facet(BF_F, 1)
         for i0 in range(constants_class.nsubgrid):
-            NMBF_BF = extract_subgrid(
+            NMBF_BF = constants_class.extract_subgrid(
                 BF_BF,
                 0,
                 constants_class.subgrid_off[i0],
-                constants_class,
             )
             for i1 in range(constants_class.nsubgrid):
-                NMBF_NMBF[i0, i1, j0, j1] = extract_subgrid(
+                NMBF_NMBF[i0, i1, j0, j1] = constants_class.extract_subgrid(
                     NMBF_BF,
                     1,
                     constants_class.subgrid_off[i1],
-                    constants_class,
                 )
 
     err_mean = err_mean_img = 0
@@ -548,14 +538,14 @@ def test_accuracy_subgrid_to_facet(
     for i0, i1 in itertools.product(
         range(constants_class.nsubgrid), range(constants_class.nsubgrid)
     ):
-        AF_AF = prepare_subgrid(subgrid_2[i0, i1], constants_class.xM_size)
+        AF_AF = constants_class.prepare_subgrid(subgrid_2[i0, i1])
         for j0 in range(constants_class.nfacet):
-            NAF_AF = extract_facet_contribution(
-                AF_AF, constants_class.facet_off[j0], constants_class, 0
+            NAF_AF = constants_class.extract_facet_contribution(
+                AF_AF, constants_class.facet_off[j0], 0
             )
             for j1 in range(constants_class.nfacet):
-                NAF_NAF[i0, i1, j0, j1] = extract_facet_contribution(
-                    NAF_AF, constants_class.facet_off[j1], constants_class, 1
+                NAF_NAF[i0, i1, j0, j1] = constants_class.extract_facet_contribution(
+                    NAF_AF, constants_class.facet_off[j1], 1
                 )
 
     BMNAF_BMNAF = numpy.empty(
@@ -578,32 +568,26 @@ def test_accuracy_subgrid_to_facet(
                 (constants_class.xM_yN_size, constants_class.yP_size), dtype=complex
             )
             for i1 in range(constants_class.nsubgrid):
-                NAF_MNAF = NAF_MNAF + add_subgrid_contribution(
+                NAF_MNAF = NAF_MNAF + constants_class.add_subgrid_contribution(
                     len(NAF_MNAF.shape),
                     NAF_NAF[i0, i1, j0, j1],
                     constants_class.subgrid_off[i1],
-                    constants_class,
                     1,
                 )
-            NAF_BMNAF = finish_facet(
+            NAF_BMNAF = constants_class.finish_facet(
                 NAF_MNAF,
-                constants_class.Fb,
                 constants_class.facet_B[j1],
-                constants_class.yB_size,
                 1,
             )
-            MNAF_BMNAF = MNAF_BMNAF + add_subgrid_contribution(
+            MNAF_BMNAF = MNAF_BMNAF + constants_class.add_subgrid_contribution(
                 len(MNAF_BMNAF.shape),
                 NAF_BMNAF,
                 constants_class.subgrid_off[i0],
-                constants_class,
                 0,
             )
-        BMNAF_BMNAF[j0, j1] = finish_facet(
+        BMNAF_BMNAF[j0, j1] = constants_class.finish_facet(
             MNAF_BMNAF,
-            constants_class.Fb,
             constants_class.facet_B[j0],
-            constants_class.yB_size,
             0,
         )
 

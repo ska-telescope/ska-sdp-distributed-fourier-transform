@@ -16,7 +16,6 @@ See Slack conversation with Peter:
 https://skao.slack.com/archives/C02R9BQFK7W/p1645017383044429
 (#proj-sp-2086-dask-distributed-pipeline, Feb 16)
 """
-import itertools
 import math
 import numpy
 
@@ -30,7 +29,6 @@ from src.fourier_transform.fourier_algorithm import (
     broadcast,
     create_slice,
     fft,
-    _ith_subgrid_facet_element,
 )
 from src.utils import whole
 
@@ -296,152 +294,6 @@ class DistributedFFT(ConstantArrays):
 
     def __init__(self, **fundamental_constants):
         super().__init__(**fundamental_constants)
-
-        self._subgrid = None
-        self._facet = None
-
-    def make_subgrid(self, g, dims=2, use_dask=False):
-        """
-        Calculate the actual subgrids.
-        Results are accessible through self.subgrid property
-
-        :param g: "ground truth", the actual input data
-        :param dims: Dimensions; integer 1 or 2 for 1D or 2D
-        :param use_dask: run function with dask.delayed or not?
-
-        :return: numpy.ndarray (subgrid array)
-        """
-        if dims == 1:
-            self._subgrid = numpy.empty((self.nsubgrid, self.xA_size), dtype=complex)
-
-            if use_dask:
-                self._subgrid = self._subgrid.tolist()
-
-            for i in range(self.nsubgrid):
-                self._subgrid[i] = _ith_subgrid_facet_element(
-                    g,
-                    -self.subgrid_off[i],
-                    self.xA_size,
-                    self.subgrid_A[i],
-                    axis=0,
-                    use_dask=use_dask,
-                    nout=1,
-                )
-
-        elif dims == 2:
-            self._subgrid = numpy.empty(
-                (
-                    self.nsubgrid,
-                    self.nsubgrid,
-                    self.xA_size,
-                    self.xA_size,
-                ),
-                dtype=complex,
-            )
-
-            if use_dask:
-                self._subgrid = self._subgrid.tolist()
-
-            for i0, i1 in itertools.product(range(self.nsubgrid), range(self.nsubgrid)):
-                self._subgrid[i0][i1] = _ith_subgrid_facet_element(
-                    g,
-                    (-self.subgrid_off[i0], -self.subgrid_off[i1]),
-                    self.xA_size,
-                    numpy.outer(self.subgrid_A[i0], self.subgrid_A[i1]),
-                    axis=(0, 1),
-                    use_dask=use_dask,
-                    nout=1,
-                )
-
-        else:
-            raise ValueError("Wrong dimensions. Only 1D and 2D are supported.")
-
-    @property
-    def subgrid(self):
-        if self._subgrid is None:
-            raise ValueError(
-                "Subgrid array is not calculated. Please call"
-                "the make_subgrid method first."
-            )
-        return self._subgrid
-
-    @subgrid.setter
-    def subgrid(self, new_value):
-        raise NotPermittedError(
-            "Subgrid array cannot be manually set. Please"
-            "call the make_subgrid method to calculate it."
-        )
-
-    def make_facet(self, fg, dims=2, use_dask=False):
-        """
-        Calculate the actual facets.
-        Results are accessible through self.facet property
-
-        :param fg: FFT of input data ("ground truth" data "G")
-        :param dims: Dimensions; integer 1 or 2 for 1D or 2D
-        :param use_dask: run function with dask.delayed or not?
-
-        :return: numpy.ndarray (facet array)
-        """
-        if dims == 1:
-            self._facet = numpy.empty((self.nfacet, self.yB_size), dtype=complex)
-
-            if use_dask:
-                self._facet = self._facet.tolist()
-
-            for j in range(self.nfacet):
-                self._facet[j] = _ith_subgrid_facet_element(
-                    fg,
-                    -self.facet_off[j],
-                    self.yB_size,
-                    self.facet_B[j],
-                    axis=0,
-                    use_dask=use_dask,
-                    nout=1,
-                )
-
-        elif dims == 2:
-            self._facet = numpy.empty(
-                (
-                    self.nfacet,
-                    self.nfacet,
-                    self.yB_size,
-                    self.yB_size,
-                ),
-                dtype=complex,
-            )
-
-            if use_dask:
-                self._facet = self._facet.tolist()
-
-            for j0, j1 in itertools.product(range(self.nfacet), range(self.nfacet)):
-                self._facet[j0][j1] = _ith_subgrid_facet_element(
-                    fg,
-                    (-self.facet_off[j0], -self.facet_off[j1]),
-                    self.yB_size,
-                    numpy.outer(self.facet_B[j0], self.facet_B[j1]),
-                    axis=(0, 1),
-                    use_dask=use_dask,
-                    nout=1,
-                )
-        else:
-            raise ValueError("Wrong dimensions. Only 1D and 2D are supported.")
-
-    @property
-    def facet(self):
-        if self._facet is None:
-            raise ValueError(
-                "Facet array is not calculated. Please call"
-                "the make_facet method first."
-            )
-        return self._facet
-
-    @facet.setter
-    def facet(self, new_value):
-        raise NotPermittedError(
-            "Facet array cannot be manually set. Please"
-            "call the make_facet method to calculate it."
-        )
 
     # facet to subgrid algorithm
     @dask_wrapper
