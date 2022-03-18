@@ -19,14 +19,7 @@ import pytest
 from numpy.testing import assert_array_almost_equal
 
 from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
-from src.algorithm_1d.fourier_transform_1d_dask import main as main_1d
 from src.fourier_transform_2d_dask import main as main_2d
-from tests.test_data.reference_data.ref_data import (
-    EXPECTED_NONZERO_APPROX_FACET_1D,
-    EXPECTED_NONZERO_APPROX_SUBGRID_1D,
-    EXPECTED_NONZERO_FACET_1D,
-    EXPECTED_NONZERO_SUBGRID_1D,
-)
 
 from tests.test_data.reference_data.ref_data_2d import (
     EXPECTED_NONZERO_SUBGRID_2D,
@@ -47,60 +40,6 @@ def _compare_images(expected, result):
         except AssertionError:
             log.error("Assertion Failed: %s, %s", expected, result)
             raise AssertionError
-
-
-@pytest.mark.parametrize(
-    "use_dask, dask_option",
-    [(False, None), (True, "delayed"), (True, "array")],
-)
-def test_end_to_end_1d_dask(use_dask, dask_option):
-    """
-    Test that the 1d algorithm produces the same results without dask,
-    and with dask with array or delayed.
-    """
-    # Fixing seed of numpy random
-    numpy.random.seed(123456789)
-
-    if use_dask:
-        client = set_up_dask()
-
-    (
-        result_subgrid,
-        result_facet,
-        result_approx_subgrid,
-        result_approx_facet,
-    ) = main_1d(to_plot=False, use_dask=use_dask, dask_option=dask_option)
-
-    # check array shapes
-    assert result_subgrid.shape == (6, 188)
-    assert result_facet.shape == (4, 256)
-    assert result_approx_subgrid.shape == result_subgrid.shape
-    assert result_approx_facet.shape == result_facet.shape
-
-    # check array values
-    assert_array_almost_equal(
-        result_subgrid[numpy.where(result_subgrid != 0)],
-        EXPECTED_NONZERO_SUBGRID_1D,
-        decimal=9,
-    )
-    assert_array_almost_equal(
-        result_facet[numpy.where(result_facet != 0)].round(8),
-        EXPECTED_NONZERO_FACET_1D,
-        decimal=7,
-    )
-    assert_array_almost_equal(
-        result_approx_subgrid[numpy.where(result_approx_subgrid != 0)],
-        EXPECTED_NONZERO_APPROX_SUBGRID_1D,
-        decimal=9,
-    )
-    assert_array_almost_equal(
-        result_approx_facet[numpy.where(result_approx_facet != 0)].round(8),
-        EXPECTED_NONZERO_APPROX_FACET_1D,
-        decimal=7,
-    )
-
-    if use_dask:
-        tear_down_dask(client)
 
 
 @pytest.mark.parametrize("use_dask", [False, True])

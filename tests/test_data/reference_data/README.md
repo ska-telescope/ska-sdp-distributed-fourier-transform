@@ -7,7 +7,7 @@ Important: I commented the non-relevant code out in test_algorithm.py before run
 i.e. when I needed the results for the 1D case, I only ran that; when I needed them for
 the 2D case, I commented the 1D parts out. This is to make sure results don't change
 due to numpy.random being called different number of times between reference code and
-tested code.
+tested code. UPDATE: on 18 Mar 2022, the 1d case was removed from main.
 
 In addition, the following information is used for testing. It was printed by
 test_algorithm.py. The code was run with numpy.random.seed(123456789).
@@ -45,21 +45,6 @@ xN_size=42.4 xM_yP_size=128, xMxN_yP_size=150, xM_yN_size=80
 6 subgrids, 4 facets needed to cover
 
 
-1D:
-
-(facet to subgrid)
-Facet data: (4, 256) 1024
-Redistributed data: (6, 4, 80) 1920
-Reconstructed subgrids: (6, 188) 1128
-RMSE: 4.2565524670253074e-08 (image: 5.836290700482092e-07 )
-
-(subgrid to facet)
-Subgrid data: (6, 188) 1128
-Intermediate data: (6, 4, 80) 1920
-Reconstructed facets: (4, 256) 1024
-RMSE: 1.1820730237627836e-07 (image: 1.8913168380204536e-06 )
-
-
 2D:
 
 6 x 6 subgrids, 4 x 4 facets
@@ -74,4 +59,4 @@ RMSE: 1.9066529538510885e-07 (image: 4.881031561858787e-05 )
 RMSE: 3.1048924152453573e-13 (image: 7.948524583028115e-11)
 
 
-File ref_data.py contains numpy arrays which are meant as reference/expected data for testing the 1D pipeline.
+File ref_data_2d.py contains numpy arrays which are meant as reference/expected data for testing the 2D pipeline.
