@@ -20,10 +20,8 @@ To install the repository, use git::
     git clone https://gitlab.com/ska-telescope/sdp/ska-sdp-distributed-fourier-transform.git
 
 
-Please ensure you have all the dependency packages installed ::
-
-    pip3 install -r requirements.txt
-
+Please ensure you have all the dependency packages installed. The installation is managed through poetry (https://python-poetry.org/docs/).
+Refer to their page for instructions.
 
 .. toctree::
    :maxdepth: 2
