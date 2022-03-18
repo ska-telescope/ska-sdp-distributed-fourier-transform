@@ -83,7 +83,7 @@ master_doc = "index"
 # General information about the project.
 project = "ska-sdp-distributed-fourier-transform"
 copyright = "2022, SKA Organization"
-author = ""
+author = "See CONTRIBUTORS"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -167,7 +167,7 @@ html_static_path = ["_static"]
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = "developerskatelescopeorgdoc"
+htmlhelp_basename = "ska-sdp-distributed-fourier-transform-doc"
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -193,8 +193,8 @@ latex_elements = {
 latex_documents = [
     (
         master_doc,
-        "developerskatelescopeorg.tex",
-        "developer.skatelescope.org Documentation",
+        "ska-sdp-distributed-fourier-transform.tex",
+        "ska-sdp-distributed-fourier-transform Documentation",
         author,
         "manual",
     ),
@@ -208,8 +208,8 @@ latex_documents = [
 man_pages = [
     (
         master_doc,
-        "developerskatelescopeorg",
-        "developer.skatelescope.org Documentation",
+        "ska-sdp-distributed-fourier-transform,
+        "ska-sdp-distributed-fourier-transform Documentation",
         [author],
         1,
     )
@@ -224,11 +224,11 @@ man_pages = [
 texinfo_documents = [
     (
         master_doc,
-        "developerskatelescopeorg",
-        "developer.skatelescope.org Documentation",
+        "ska-sdp-distributed-fourier-transform",
+        "ska-sdp-distributed-fourier-transform Documentation",
         author,
-        "developerskatelescopeorg",
-        "One line description of project.",
+        "ska-sdp-distributed-fourier-transform",
+        "SKA SDP Distributed Fourier Transform Code.",
         "Miscellaneous",
     ),
 ]
