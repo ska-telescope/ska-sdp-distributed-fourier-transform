@@ -19,7 +19,7 @@ import pytest
 from numpy.testing import assert_array_almost_equal
 
 from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
-from src.fourier_transform_1d_dask import main as main_1d
+from src.algorithm_1d.fourier_transform_1d_dask import main as main_1d
 from src.fourier_transform_2d_dask import main as main_2d
 from tests.test_data.reference_data.ref_data import (
     EXPECTED_NONZERO_APPROX_FACET_1D,

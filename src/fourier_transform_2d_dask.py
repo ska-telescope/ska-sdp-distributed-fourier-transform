@@ -25,7 +25,7 @@ from src.fourier_transform.fourier_algorithm import (
     finish_facet,
     make_subgrid_and_facet,
 )
-from src.fourier_transform.utils import (
+from src.utils import (
     plot_1,
     plot_2,
     errors_facet_to_subgrid_2d,
