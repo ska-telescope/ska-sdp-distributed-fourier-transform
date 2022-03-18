@@ -64,7 +64,7 @@ def _generate_naf_naf(subgrid_2, constants_class, use_dask):
             nout=1,
         )
         for j0 in range(constants_class.nfacet):
-            NAF_AF = constants_class.extract_facet_contribution(
+            NAF_AF = constants_class.extract_subgrid_contrib_to_facet(
                 AF_AF,
                 constants_class.facet_off[j0],
                 0,
@@ -72,7 +72,9 @@ def _generate_naf_naf(subgrid_2, constants_class, use_dask):
                 nout=1,
             )
             for j1 in range(constants_class.nfacet):
-                naf_naf[i0][i1][j0][j1] = constants_class.extract_facet_contribution(
+                naf_naf[i0][i1][j0][
+                    j1
+                ] = constants_class.extract_subgrid_contrib_to_facet(
                     NAF_AF,
                     constants_class.facet_off[j1],
                     1,
@@ -230,7 +232,7 @@ def facet_to_subgrid_2d_method_1(
             nout=1,
         )
         for i0 in range(constants_class.nsubgrid):
-            NMBF_BF = constants_class.extract_subgrid(
+            NMBF_BF = constants_class.extract_facet_contrib_to_subgrid(
                 BF_BF,
                 0,
                 constants_class.subgrid_off[i0],
@@ -238,7 +240,9 @@ def facet_to_subgrid_2d_method_1(
                 nout=1,
             )
             for i1 in range(constants_class.nsubgrid):
-                NMBF_NMBF[i0][i1][j0][j1] = constants_class.extract_subgrid(
+                NMBF_NMBF[i0][i1][j0][
+                    j1
+                ] = constants_class.extract_facet_contrib_to_subgrid(
                     NMBF_BF,
                     1,
                     constants_class.subgrid_off[i1],
@@ -282,7 +286,7 @@ def facet_to_subgrid_2d_method_2(
             nout=1,
         )
         for i0 in range(constants_class.nsubgrid):
-            NMBF_F = constants_class.extract_subgrid(
+            NMBF_F = constants_class.extract_facet_contrib_to_subgrid(
                 BF_F,
                 0,
                 constants_class.subgrid_off[i0],
@@ -296,7 +300,9 @@ def facet_to_subgrid_2d_method_2(
                 nout=1,
             )
             for i1 in range(constants_class.nsubgrid):
-                NMBF_NMBF[i0][i1][j0][j1] = constants_class.extract_subgrid(
+                NMBF_NMBF[i0][i1][j0][
+                    j1
+                ] = constants_class.extract_facet_contrib_to_subgrid(
                     NMBF_BF,
                     1,
                     constants_class.subgrid_off[i1],
@@ -333,7 +339,7 @@ def facet_to_subgrid_2d_method_3(
             nout=1,
         )
         for i1 in range(constants_class.nsubgrid):
-            F_NMBF = constants_class.extract_subgrid(
+            F_NMBF = constants_class.extract_facet_contrib_to_subgrid(
                 F_BF,
                 1,
                 constants_class.subgrid_off[i1],
@@ -347,7 +353,9 @@ def facet_to_subgrid_2d_method_3(
                 nout=1,
             )
             for i0 in range(constants_class.nsubgrid):
-                NMBF_NMBF[i0][i1][j0][j1] = constants_class.extract_subgrid(
+                NMBF_NMBF[i0][i1][j0][
+                    j1
+                ] = constants_class.extract_facet_contrib_to_subgrid(
                     BF_NMBF,
                     0,
                     constants_class.subgrid_off[i0],
@@ -385,6 +393,8 @@ def _run_algorithm(
     #   - they all give the same result, but with a different speed
     #   - #1 is slowest, because that prepares all facets first, which substantially increases their size
     #     and hence, puts a large amount of data into the following loops
+
+    # TODO: facet to subgrid algorithm isn't finished: missing add_facet_contribution and finish_subgrid methods
 
     t = time.time()
     NMBF_NMBF = facet_to_subgrid_2d_method_1(

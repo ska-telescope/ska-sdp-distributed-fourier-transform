@@ -14,12 +14,6 @@ from src.fourier_transform.fourier_algorithm import (
 log = logging.getLogger("fourier-logger")
 
 
-# MANUAL TESTING UTILS
-def whole(xs):
-    """."""
-    return numpy.all(numpy.abs(xs - numpy.around(xs)) < 1e-13)
-
-
 # PLOTTING UTILS
 def mark_range(
     lbl, x0, x1=None, y0=None, y1=None, ax=None, x_offset=1 / 200, linestyle="--"
@@ -370,13 +364,15 @@ def test_accuracy_facet_to_subgrid(
         BF_F = constants_class.prepare_facet(facet_2[j0, j1], 0)
         BF_BF = constants_class.prepare_facet(BF_F, 1)
         for i0 in range(constants_class.nsubgrid):
-            NMBF_BF = constants_class.extract_subgrid(
+            NMBF_BF = constants_class.extract_facet_contrib_to_subgrid(
                 BF_BF,
                 0,
                 constants_class.subgrid_off[i0],
             )
             for i1 in range(constants_class.nsubgrid):
-                NMBF_NMBF[i0, i1, j0, j1] = constants_class.extract_subgrid(
+                NMBF_NMBF[
+                    i0, i1, j0, j1
+                ] = constants_class.extract_facet_contrib_to_subgrid(
                     NMBF_BF,
                     1,
                     constants_class.subgrid_off[i1],
@@ -540,11 +536,13 @@ def test_accuracy_subgrid_to_facet(
     ):
         AF_AF = constants_class.prepare_subgrid(subgrid_2[i0, i1])
         for j0 in range(constants_class.nfacet):
-            NAF_AF = constants_class.extract_facet_contribution(
+            NAF_AF = constants_class.extract_subgrid_contrib_to_facet(
                 AF_AF, constants_class.facet_off[j0], 0
             )
             for j1 in range(constants_class.nfacet):
-                NAF_NAF[i0, i1, j0, j1] = constants_class.extract_facet_contribution(
+                NAF_NAF[
+                    i0, i1, j0, j1
+                ] = constants_class.extract_subgrid_contrib_to_facet(
                     NAF_AF, constants_class.facet_off[j1], 1
                 )
 
