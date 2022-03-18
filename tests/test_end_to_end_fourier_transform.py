@@ -19,14 +19,7 @@ import pytest
 from numpy.testing import assert_array_almost_equal
 
 from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
-from src.fourier_transform_1d_dask import main as main_1d
 from src.fourier_transform_2d_dask import main as main_2d
-from tests.test_data.reference_data.ref_data import (
-    EXPECTED_NONZERO_APPROX_FACET_1D,
-    EXPECTED_NONZERO_APPROX_SUBGRID_1D,
-    EXPECTED_NONZERO_FACET_1D,
-    EXPECTED_NONZERO_SUBGRID_1D,
-)
 
 from tests.test_data.reference_data.ref_data_2d import (
     EXPECTED_NONZERO_SUBGRID_2D,
@@ -47,60 +40,6 @@ def _compare_images(expected, result):
         except AssertionError:
             log.error("Assertion Failed: %s, %s", expected, result)
             raise AssertionError
-
-
-@pytest.mark.parametrize(
-    "use_dask, dask_option",
-    [(False, None), (True, "delayed"), (True, "array")],
-)
-def test_end_to_end_1d_dask(use_dask, dask_option):
-    """
-    Test that the 1d algorithm produces the same results without dask,
-    and with dask with array or delayed.
-    """
-    # Fixing seed of numpy random
-    numpy.random.seed(123456789)
-
-    if use_dask:
-        client = set_up_dask()
-
-    (
-        result_subgrid,
-        result_facet,
-        result_approx_subgrid,
-        result_approx_facet,
-    ) = main_1d(to_plot=False, use_dask=use_dask, dask_option=dask_option)
-
-    # check array shapes
-    assert result_subgrid.shape == (6, 188)
-    assert result_facet.shape == (4, 256)
-    assert result_approx_subgrid.shape == result_subgrid.shape
-    assert result_approx_facet.shape == result_facet.shape
-
-    # check array values
-    assert_array_almost_equal(
-        result_subgrid[numpy.where(result_subgrid != 0)],
-        EXPECTED_NONZERO_SUBGRID_1D,
-        decimal=9,
-    )
-    assert_array_almost_equal(
-        result_facet[numpy.where(result_facet != 0)].round(8),
-        EXPECTED_NONZERO_FACET_1D,
-        decimal=7,
-    )
-    assert_array_almost_equal(
-        result_approx_subgrid[numpy.where(result_approx_subgrid != 0)],
-        EXPECTED_NONZERO_APPROX_SUBGRID_1D,
-        decimal=9,
-    )
-    assert_array_almost_equal(
-        result_approx_facet[numpy.where(result_approx_facet != 0)].round(8),
-        EXPECTED_NONZERO_APPROX_FACET_1D,
-        decimal=7,
-    )
-
-    if use_dask:
-        tear_down_dask(client)
 
 
 @pytest.mark.parametrize("use_dask", [False, True])
@@ -175,27 +114,29 @@ def test_end_to_end_2d_dask_logging(use_dask):
     if use_dask:
         client = set_up_dask()
 
+    # the values in this test slightly changed (10-5 - 10-10)
+    # could this be because originally numpy.fft2 was used for the 2d version?
     expected_log_calls = [
         call("6 subgrids, 4 facets needed to cover"),
         call("%s x %s subgrids %s x %s facets", 6, 6, 4, 4),
-        call("Mean grid absolute: %s", 0.2523814510844513),
+        call("Mean grid absolute: %s", 0.25238145108445126),
         # facet to subgrid
         call(
             "RMSE: %s (image: %s)",
-            3.6351180911901923e-08,
-            6.834022011437562e-06,
+            3.635118091200949e-08,
+            6.834022011457784e-06,
         ),
-        call("RMSE: %s (image: %s)", 1.8993992558912768e-17, 3.5708706010756e-15),
+        call("RMSE: %s (image: %s)", 1.8993993540584405e-17, 3.5708707856298686e-15),
         # subgrid to facet - not yet added to tested code
         call(
             "RMSE: %s (image: %s)",
-            1.9066529538510885e-07,
-            4.881031561858787e-05,
+            1.906652955419094e-07,
+            4.881031565872881e-05,
         ),
         call(
             "RMSE: %s (image: %s)",
-            3.1048924152453573e-13,
-            7.948524583028115e-11,
+            3.1048926297115777e-13,
+            7.948525132061639e-11,
         ),
     ]
 
