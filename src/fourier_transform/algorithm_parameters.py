@@ -33,13 +33,6 @@ from src.fourier_transform.fourier_algorithm import (
 )
 
 
-class NotPermittedError(Exception):
-    """
-    Raise this error when an operation, such as updating (setting)
-    an attribute is not permitted.
-    """
-
-
 class ConstantParams:
     """
     **fundamental_constants contains the following keys:
@@ -357,7 +350,6 @@ class DistributedFFT(ConstantArrays):
         MBF = broadcast(self.facet_m0_trunc, dims, axis) * BF_mid
         MBF_sum = numpy.array(extract_mid(MBF, self.xM_yP_size, axis))
         xN_yP_size = self.xMxN_yP_size - self.xM_yP_size
-        # [:xN_yP_size//2] / [-xN_yP_size//2:] for axis, [:] otherwise
         slc1 = create_slice(slice(None), slice(xN_yP_size // 2), dims, axis)
         slc2 = create_slice(slice(None), slice(-xN_yP_size // 2, None), dims, axis)
         MBF_sum[slc1] += MBF[slc2]
@@ -366,6 +358,23 @@ class DistributedFFT(ConstantArrays):
         return broadcast(self.Fn, len(BF.shape), axis) * extract_mid(
             fft(MBF_sum, axis), self.xM_yN_size, axis
         )
+
+    def add_facet_contribution(self, nmbf_elem, facet_off_elem, axis):
+        """
+        TODO: is this correct? per axis version, since the facet one also does it this way
+        """
+        # nmbf_elem = NMBF_NMBF[i0, i1, j0, j1]
+        return numpy.roll(
+            pad_mid(nmbf_elem, self.xM_size, axis),
+            facet_off_elem * self.xM_size // self.N,
+            axis=axis,
+        )
+
+    def finish_subgrid(self, approx, subgrid_A_elem, axis):
+        """
+        TODO: is this correct? per axis version, since the facet one also does it this way
+        """
+        return extract_mid(ifft(approx, axis), self.xA_size, axis) * subgrid_A_elem
 
     # subgrid to facet algorithm
     @dask_wrapper

@@ -29,16 +29,15 @@ log = logging.getLogger("fourier-logger")
 log.setLevel(logging.WARNING)
 
 TARGET_PARS = {
-    "W": 13.25,  # PSWF parameter (grid-space support)
-    "fov": 0.75,  # field of view?
-    "N": 1024,  # total image size
-    "Nx": 4,  # subgrid spacing: it tells you what subgrid offsets are permissible:
-    # here it is saying that they need to be divisible by 4.
-    "yB_size": 256,  # true usable image size (facet)
-    "yN_size": 320,  # padding needed to transfer the data?
-    "yP_size": 512,  # padded (rough) image size (facet)
-    "xA_size": 188,  # true usable subgrid size
-    "xM_size": 256,  # padded (rough) subgrid size
+    "W": 13.25,
+    "fov": 0.75,
+    "N": 1024,
+    "Nx": 4,
+    "yB_size": 256,
+    "yN_size": 320,
+    "yP_size": 512,
+    "xA_size": 188,
+    "xM_size": 256,
 }
 
 
@@ -63,7 +62,7 @@ def test_end_to_end_2d_dask(use_dask):
     # check array shapes
     assert result_subgrid.shape == (6, 6, 188, 188)
     assert result_facet.shape == (4, 4, 256, 256)
-    # TODO Why is this?
+    # TODO Why is this? --> algorithm is not finished, missing two functions
     # assert result_approx_subgrid.shape == (6, 6, 4, 4, 80, 80)
     assert result_approx_facet.shape == result_facet.shape
 

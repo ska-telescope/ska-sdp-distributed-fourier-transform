@@ -4,7 +4,6 @@ import pytest
 from src.fourier_transform.algorithm_parameters import (
     ConstantParams,
     ConstantArrays,
-    DistributedFFT,
 )
 
 TEST_PARAMS = {
