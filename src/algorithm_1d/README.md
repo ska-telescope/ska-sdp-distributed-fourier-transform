@@ -40,7 +40,7 @@ some other size-parameters mentioned above. These arrays will form the input to 
 but also act as comparison to the output of the algorithm. Both 1D and 2D versions perform 
 calculations in two directions:
 
-- take the array of facets as input and obtain an array of approximat sub-grids 
+- take the array of facets as input and obtain an array of approximate sub-grids 
 - take the array of sub-grids as input and obtain an array of approximate facets
 
 In an ideal situation, the approximate arrays would match their pre-generated equivalents 
@@ -51,6 +51,13 @@ In an ideal situation, the approximate arrays would match their pre-generated eq
 This directory (`algorithm_1d`) contains all the relevant code that we developed
 and worked on for the 1D version of the distributed FFT algorithm. This version
 was intended as an introduction to the algorithm and not as a final version of the code.
+
+The main function resides in fourier_transform_1d_dask.py. 
+There are three versions that can be run:
+1. Serial
+2. Dask wit dask.array
+3. Dask with dask.delayed
+The version to be run can be specified by the dask_option argument. (See relevant tests.)
 
 In a future commit, we are going to remove this directory from main,
 and only keep the 2D and more general version of the code for simplicity and clarity.
