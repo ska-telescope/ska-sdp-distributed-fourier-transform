@@ -1,4 +1,5 @@
 numpy
+scipy
 sphinx
 sphinx-argparse
 sphinx-rtd-theme
