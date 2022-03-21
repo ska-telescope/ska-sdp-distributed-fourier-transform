@@ -1,4 +1,3 @@
-. _structure:
 
 Code Structure and APIs
 ============
@@ -7,6 +6,7 @@ Data Models
 --------------------------------------
 
 The main data classes are:
+.. py:currentmodule:: src.fourier_transform.algorithm_parameters
 
 .. automodapi::    src.fourier_transform.algorithm_parameters
    :no-inheritance-diagram:

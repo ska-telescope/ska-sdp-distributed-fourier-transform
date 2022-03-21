@@ -1,4 +1,3 @@
-. _algorithm:
 
 Usage Examples
 ============
