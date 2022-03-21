@@ -13,8 +13,6 @@ from src.fourier_transform.fourier_algorithm import (
     _ith_subgrid_facet_element,
 )
 
-# TODO: test make_subgrid_and_facet
-
 
 def test_pad_mid_1d():
     """

@@ -14,7 +14,7 @@ An alternative way of calculating nfacet is::
 This makes sure that if we have a specific FoV we care about, then we don't create facets outside that.
 See Slack conversation with Peter:
 https://skao.slack.com/archives/C02R9BQFK7W/p1645017383044429
-(#proj-sp-2086-dask-distributed-pipeline, Feb 16)
+(#proj-sp-2375-dask-performance, Feb 16)
 """
 import math
 import numpy
