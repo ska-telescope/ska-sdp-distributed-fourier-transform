@@ -27,4 +27,4 @@ The code performs calculations in two directions:
 
 In an ideal situation, the approximate arrays would match their pre-generated equivalents (i.e. approx_subgrid == subgrid and approx_facet == facet).
 
-Previously, we have also implemented a 1D version with the same structure. Please checkout the tag version ... if you'd like to explore further the 1D cases.
+Previously, we have also implemented a 1D version with the same structure. Please checkout the tag version 0.0.1 if you'd like to explore further the 1D cases.

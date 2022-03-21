@@ -208,7 +208,7 @@ latex_documents = [
 man_pages = [
     (
         master_doc,
-        "ska-sdp-distributed-fourier-transform,
+        "ska-sdp-distributed-fourier-transform",
         "ska-sdp-distributed-fourier-transform Documentation",
         [author],
         1,
