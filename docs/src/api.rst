@@ -9,13 +9,8 @@ APIs
    :no-inheritance-diagram:
 
 
-
-
 .. automodapi::    src.fourier_transform.fourier_algorithm
    :no-inheritance-diagram:
-
-
-
 
 
 .. automodapi::    src.fourier_transform.dask_wrapper
@@ -24,9 +19,6 @@ APIs
 
 .. automodapi::    src.fourier_transform_2d_dask
    :no-inheritance-diagram:
-
-Checking the Results and Plotting
---------------------------------------
 
 .. automodapi::    src.utils
    :no-inheritance-diagram:
