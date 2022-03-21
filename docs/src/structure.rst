@@ -1,49 +1,11 @@
 
-Code Structure and APIs
+Code Structure
 ============
 
-Data Models
---------------------------------------
+The main processing functions (2D) implemented with Dask is shown in fourier_transform_2d_dask.py.
 
-The main data classes are:
+In utils.py there are functions used for the plotting test.
 
-.. py:currentmodule:: src.fourier_transform.algorithm_parameters
+In src/fourier_transform, we define the data models and base functions that are essential for distributed FFT.
 
-
-.. automodapi::    src.fourier_transform.algorithm_parameters
-   :no-inheritance-diagram:
-
-
-
-Base Functions
---------------------------------------
-
-Here are a list of base functions that are used across the code.
-
-.. automodapi::    src.fourier_transform.fourier_algorithm
-   :no-inheritance-diagram:
-
-
-Main Processing Functions (2D) with Dask
---------------------------------------
-
-The dask wrapper:
-
-We wrap the Dask delayed implementation in a dask wrapper where if use_dask is set to True, the dask wrapper function will call the dask.delayed option for the computation.
-
-.. automodapi::    src.fourier_transform.dask_wrapper
-   :no-inheritance-diagram:
-
-The functions that conduct the main dask implemented algorithm include the subgrid to facet, and facet to subgrid transformations.
-They are listed below. The main function calls all the functions.
-
-.. automodapi::    src.fourier_transform_2d_dask
-   :no-inheritance-diagram:
-
-Checking the Results and Plotting
---------------------------------------
-
-In utils.py, we provide functions that help the plotting test.
-
-.. automodapi::    src.utils
-   :no-inheritance-diagram:
+Please refer to the API page for the details of each function.

@@ -1,8 +1,7 @@
 """
-TODO: we should probably move the following and the
- information from the related Slack conversation into the docs:
+The main data classes are listed in this module.
 
-An alternative way of calculating nfacet is::
+Note: An alternative way of calculating nfacet is::
 
     if sizes.fov is not None:
         nfacet = int(numpy.ceil(sizes.N * sizes.fov / sizes.yB_size))
@@ -12,9 +11,6 @@ An alternative way of calculating nfacet is::
         )
 
 This makes sure that if we have a specific FoV we care about, then we don't create facets outside that.
-See Slack conversation with Peter:
-https://skao.slack.com/archives/C02R9BQFK7W/p1645017383044429
-(#proj-sp-2086-dask-distributed-pipeline, Feb 16)
 """
 import math
 import numpy

@@ -1,3 +1,9 @@
+"""
+Utility Functions
+
+In utils.py, we provide functions that help the plotting test.
+"""
+
 import itertools
 import logging
 import numpy
