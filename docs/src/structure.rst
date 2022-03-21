@@ -6,7 +6,9 @@ Data Models
 --------------------------------------
 
 The main data classes are:
+
 .. py:currentmodule:: src.fourier_transform.algorithm_parameters
+
 
 .. automodapi::    src.fourier_transform.algorithm_parameters
    :no-inheritance-diagram:
@@ -15,6 +17,8 @@ The main data classes are:
 
 Base Functions
 --------------------------------------
+
+Here are a list of base functions that are used across the code.
 
 .. automodapi::    src.fourier_transform.fourier_algorithm
    :no-inheritance-diagram:
@@ -38,6 +42,8 @@ They are listed below. The main function calls all the functions.
 
 Checking the Results and Plotting
 --------------------------------------
+
+In utils.py, we provide functions that help the plotting test.
 
 .. automodapi::    src.utils
    :no-inheritance-diagram:
