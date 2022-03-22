@@ -361,20 +361,25 @@ class DistributedFFT(ConstantArrays):
 
     def add_facet_contribution(self, nmbf_elem, facet_off_elem, axis):
         """
-        TODO: is this correct? per axis version, since the facet one also does it this way
+        TODO: update docstring, fix arg names; this is per axis
         """
-        # nmbf_elem = NMBF_NMBF[i0, i1, j0, j1]
         return numpy.roll(
             pad_mid(nmbf_elem, self.xM_size, axis),
             facet_off_elem * self.xM_size // self.N,
             axis=axis,
         )
 
-    def finish_subgrid(self, approx, subgrid_A_elem, axis):
+    def finish_subgrid(self, approx, subgrid_A1, subgrid_A2):
         """
-        TODO: is this correct? per axis version, since the facet one also does it this way
+        TODO: fix arg names, update docstring; this is 2D (easier this way)
         """
-        return extract_mid(ifft(approx, axis), self.xA_size, axis) * subgrid_A_elem
+        tmp = extract_mid(
+            extract_mid(ifft(ifft(approx, axis=0), axis=1), self.xA_size, axis=0),
+            self.xA_size,
+            axis=1,
+        )
+        approx_subgrid = tmp * numpy.outer(subgrid_A1, subgrid_A2)
+        return approx_subgrid
 
     # subgrid to facet algorithm
     @dask_wrapper

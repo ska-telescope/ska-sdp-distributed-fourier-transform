@@ -9,6 +9,7 @@ the 2D case, I commented the 1D parts out. This is to make sure results don't ch
 due to numpy.random being called different number of times between reference code and
 tested code.
 """
+import itertools
 import logging
 from unittest.mock import call, patch
 
@@ -16,8 +17,10 @@ import numpy
 import pytest
 from numpy.testing import assert_array_almost_equal
 
+from src.fourier_transform.algorithm_parameters import DistributedFFT
 from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
-from src.fourier_transform_2d_dask import main as main_2d
+from src.fourier_transform.fourier_algorithm import fft, ifft, make_subgrid_and_facet
+from src.fourier_transform_2d_dask import main as main_2d, facet_to_subgrid_2d_method_1
 
 from tests.test_reference_data.ref_data_2d import (
     EXPECTED_NONZERO_SUBGRID_2D,
@@ -39,6 +42,40 @@ TARGET_PARS = {
     "xA_size": 188,
     "xM_size": 256,
 }
+
+
+def _check_difference(calculated, original, size):
+    err_mean = 0
+    err_mean_img = 0
+    for i0, i1 in itertools.product(range(size), range(size)):
+        err_mean += numpy.abs(calculated[i0, i1] - original[i0, i1]) ** 2 / size**2
+        err_mean_img += (
+            numpy.abs(fft(fft(calculated[i0, i1] - original[i0, i1], axis=0), axis=1))
+            ** 2
+            / size**2
+        )
+    return err_mean, err_mean_img
+
+
+@pytest.fixture(scope="session")
+def target_distr_fft():
+    return DistributedFFT(**TARGET_PARS)
+
+
+@pytest.fixture(scope="session")
+def subgrid_and_facet(target_distr_fft):
+    fg = numpy.zeros((target_distr_fft.N, target_distr_fft.N))
+    fg[252, 252] = 1
+    g = ifft(ifft(fg, axis=0), axis=1)
+
+    subgrid, facet = make_subgrid_and_facet(
+        g,
+        fg,
+        target_distr_fft,
+        dims=2,
+        use_dask=False,
+    )
+    return subgrid, facet
 
 
 @pytest.mark.parametrize("use_dask", [False, True])
@@ -146,3 +183,24 @@ def test_end_to_end_2d_dask_logging(use_dask):
 
     if use_dask:
         tear_down_dask(client)
+
+
+@pytest.mark.parametrize("use_dask", [False])
+def test_facet_to_subgrid_2d_method_1(use_dask, target_distr_fft, subgrid_and_facet):
+    subgrid, facet = subgrid_and_facet[0], subgrid_and_facet[1]
+
+    result = facet_to_subgrid_2d_method_1(facet, target_distr_fft, use_dask=use_dask)
+
+    assert result.shape == subgrid.shape
+
+    non_zero_result = numpy.where(result != 0.0)
+    non_zero_subgrid = numpy.where(subgrid != 0.0)
+    assert len(non_zero_result) == len(non_zero_subgrid)
+    for i in range(len(non_zero_subgrid)):
+        assert (non_zero_result[i] == non_zero_subgrid[i]).all()
+
+    error_mean, error_mean_img = _check_difference(
+        result, subgrid, target_distr_fft.nsubgrid
+    )
+    assert (error_mean < 10e-30).all()
+    assert (error_mean_img < 10e-25).all()
