@@ -37,12 +37,20 @@ log.addHandler(logging.StreamHandler(sys.stdout))
 pylab.rcParams["figure.figsize"] = 16, 4
 pylab.rcParams["image.cmap"] = "viridis"
 
-TARGET_ERR = 1e-5
 ALPHA = 0
 
 
-def _generate_naf_naf(subgrid_2, distr_fft_class, use_dask):
-    naf_naf = numpy.empty(
+def _generate_subgrid_contributions(subgrid_2, distr_fft_class, use_dask):
+    """
+    Generate the array of individual subgrid contributions to each facet.
+
+    :param subgrid_2: 2D numpy array of subgrids
+    :param distr_fft_class: DistributedFFT class
+    :param use_dask: use dask.delayed or not
+
+    :return: subgrid contributions
+    """
+    subgrid_contrib = numpy.empty(
         (
             distr_fft_class.nsubgrid,
             distr_fft_class.nsubgrid,
@@ -54,7 +62,7 @@ def _generate_naf_naf(subgrid_2, distr_fft_class, use_dask):
         dtype=complex,
     )
     if use_dask:
-        naf_naf = naf_naf.tolist()
+        subgrid_contrib = subgrid_contrib.tolist()
     for i0, i1 in itertools.product(
         range(distr_fft_class.nsubgrid), range(distr_fft_class.nsubgrid)
     ):
@@ -72,7 +80,7 @@ def _generate_naf_naf(subgrid_2, distr_fft_class, use_dask):
                 nout=1,
             )
             for j1 in range(distr_fft_class.nfacet):
-                naf_naf[i0][i1][j0][
+                subgrid_contrib[i0][i1][j0][
                     j1
                 ] = distr_fft_class.extract_subgrid_contrib_to_facet(
                     NAF_AF,
@@ -81,7 +89,7 @@ def _generate_naf_naf(subgrid_2, distr_fft_class, use_dask):
                     use_dask=use_dask,
                     nout=1,
                 )
-    return naf_naf
+    return subgrid_contrib
 
 
 def subgrid_to_facet_algorithm(
@@ -89,13 +97,22 @@ def subgrid_to_facet_algorithm(
     distr_fft_class,
     use_dask=False,
 ):
-    naf_naf = _generate_naf_naf(
+    """
+    Generate facets from subgrids.
+
+    :param subgrid_2: 2D numpy array of subgrids
+    :param distr_fft_class: DistributedFFT class object
+    :param use_dask: use dask.delayed or not
+
+    :return: numpy array of approximate facets
+    """
+    naf_naf = _generate_subgrid_contributions(
         subgrid_2,
         distr_fft_class,
         use_dask,
     )
 
-    BMNAF_BMNAF = numpy.empty(
+    approx_facet = numpy.empty(
         (
             distr_fft_class.nfacet,
             distr_fft_class.nfacet,
@@ -105,7 +122,7 @@ def subgrid_to_facet_algorithm(
         dtype=complex,
     )
     if use_dask:
-        BMNAF_BMNAF = BMNAF_BMNAF.tolist()
+        approx_facet = approx_facet.tolist()
 
     for j0, j1 in itertools.product(
         range(distr_fft_class.nfacet), range(distr_fft_class.nfacet)
@@ -167,7 +184,7 @@ def subgrid_to_facet_algorithm(
                     use_dask=use_dask,
                     nout=1,
                 )
-        BMNAF_BMNAF[j0][j1] = distr_fft_class.finish_facet(
+        approx_facet[j0][j1] = distr_fft_class.finish_facet(
             MNAF_BMNAF,
             distr_fft_class.facet_B[j0],
             0,
@@ -175,7 +192,7 @@ def subgrid_to_facet_algorithm(
             nout=1,
         )
 
-    return BMNAF_BMNAF
+    return approx_facet
 
 
 def facet_to_subgrid_2d_method_1(
@@ -198,7 +215,7 @@ def facet_to_subgrid_2d_method_1(
     :param distr_fft_class: DistributedFFT class object
     :param use_dask: use dask.delayed or not
 
-    :return: TODO ???
+    :return: approximate subgrid array (subgrids derived from facets)
     """
 
     NMBF_NMBF = numpy.empty(
@@ -249,7 +266,9 @@ def facet_to_subgrid_2d_method_1(
                     nout=1,
                 )
 
-    approx_subgrid = generate_approx_subgrid(NMBF_NMBF, distr_fft_class)
+    approx_subgrid = generate_approx_subgrid(
+        NMBF_NMBF, distr_fft_class, use_dask=use_dask
+    )
 
     return approx_subgrid
 
@@ -274,6 +293,8 @@ def facet_to_subgrid_2d_method_2(
     :param facet: 2D numpy array of facets
     :param distr_fft_class: DistributedFFT class object
     :param use_dask: use dask.delayed or not
+
+    :return: approximate subgrid array (subgrids derived from facets)
     """
     NMBF_NMBF = numpy.empty(
         (
@@ -323,7 +344,9 @@ def facet_to_subgrid_2d_method_2(
                     nout=1,
                 )
 
-    approx_subgrid = generate_approx_subgrid(NMBF_NMBF, distr_fft_class)
+    approx_subgrid = generate_approx_subgrid(
+        NMBF_NMBF, distr_fft_class, use_dask=use_dask
+    )
 
     return approx_subgrid
 
@@ -342,6 +365,8 @@ def facet_to_subgrid_2d_method_3(
     :param facet: 2D numpy array of facets
     :param distr_fft_class: DistributedFFT class object
     :param use_dask: use dask.delayed or not
+
+    :return: approximate subgrid array (subgrids derived from facets)
     """
     NMBF_NMBF = numpy.empty(
         (
@@ -391,14 +416,20 @@ def facet_to_subgrid_2d_method_3(
                     nout=1,
                 )
 
-    approx_subgrid = generate_approx_subgrid(NMBF_NMBF, distr_fft_class)
+    approx_subgrid = generate_approx_subgrid(
+        NMBF_NMBF, distr_fft_class, use_dask=use_dask
+    )
 
     return approx_subgrid
 
 
-def generate_approx_subgrid(NMBF_NMBF, distr_fft_class):
+def generate_approx_subgrid(NMBF_NMBF, distr_fft_class, use_dask=False):
     """
-    Finish generating subgrids from facet.
+    Finish generating subgrids from facets.
+
+    :param NMBF_NMBF: array of individual facet contributions
+    :param distr_fft_class: DistributedFFT class object
+    :param use_dask: use dask.delayed or not
     """
     approx_subgrid = numpy.empty(
         (
@@ -409,6 +440,8 @@ def generate_approx_subgrid(NMBF_NMBF, distr_fft_class):
         ),
         dtype=complex,
     )
+    if use_dask:
+        approx_subgrid = approx_subgrid.tolist()
 
     for i0, i1 in itertools.product(
         range(distr_fft_class.nsubgrid), range(distr_fft_class.nsubgrid)
@@ -416,20 +449,32 @@ def generate_approx_subgrid(NMBF_NMBF, distr_fft_class):
         summed_facet = numpy.zeros(
             (distr_fft_class.xM_size, distr_fft_class.xM_size), dtype=complex
         )
+        if use_dask:
+            summed_facet = summed_facet.tolist()
 
         for j0, j1 in itertools.product(
             range(distr_fft_class.nfacet), range(distr_fft_class.nfacet)
         ):
             summed_facet = summed_facet + distr_fft_class.add_facet_contribution(
                 distr_fft_class.add_facet_contribution(
-                    NMBF_NMBF[i0, i1, j0, j1], distr_fft_class.facet_off[j0], axis=0
+                    NMBF_NMBF[i0][i1][j0][j1],
+                    distr_fft_class.facet_off[j0],
+                    axis=0,
+                    use_dask=use_dask,
+                    nout=1,
                 ),
                 distr_fft_class.facet_off[j1],
                 axis=1,
+                use_dask=use_dask,
+                nout=1,
             )
 
-        approx_subgrid[i0, i1] = distr_fft_class.finish_subgrid(
-            summed_facet, distr_fft_class.subgrid_A[i0], distr_fft_class.subgrid_A[i1]
+        approx_subgrid[i0][i1] = distr_fft_class.finish_subgrid(
+            summed_facet,
+            distr_fft_class.subgrid_A[i0],
+            distr_fft_class.subgrid_A[i1],
+            use_dask=use_dask,
+            nout=1,
         )
 
     return approx_subgrid
@@ -440,6 +485,7 @@ def _run_algorithm(
     FG_2,
     distr_fft_class,
     use_dask,
+    version_to_run=3,
 ):
     """
     Run facet-to-subgrid and subgrid-to-facet algorithm.
@@ -453,6 +499,13 @@ def _run_algorithm(
         and hence, puts a large amount of data into the following loops
 
     Subgrid-to-facet only has a single version.
+
+    :param G_2: 2D "ground truth" array; to be split into subgrids
+    :param FG_2: FFT of G_2; to be split into facets
+    :param distr_fft_class: DistributedFFT class object
+    :param use_dask: use dask.delayed or not
+    :param version_to_run: which facet-to-subgrid version (method) to run: 1, 2, or 3
+                           (if not 1, or 2, it runs 3)
     """
     subgrid_2, facet_2 = make_subgrid_and_facet(
         G_2,
@@ -471,34 +524,36 @@ def _run_algorithm(
 
     # ==== Facet to Subgrid ====
     log.info("Executing 2D facet-to-subgrid algorithm")
-    # TODO: facet to subgrid algorithm isn't finished: missing add_facet_contribution and finish_subgrid methods
 
-    # Version #1
-    t = time.time()
-    approx_subgrid = facet_to_subgrid_2d_method_1(
-        facet_2,
-        distr_fft_class,
-        use_dask=use_dask,
-    )
-    log.info("%s s", time.time() - t)
+    if version_to_run == 1:
+        # Version #1
+        t = time.time()
+        approx_subgrid = facet_to_subgrid_2d_method_1(
+            facet_2,
+            distr_fft_class,
+            use_dask=use_dask,
+        )
+        log.info("%s s", time.time() - t)
 
-    # Version #2
-    t = time.time()
-    facet_to_subgrid_2d_method_2(
-        facet_2,
-        distr_fft_class,
-        use_dask=use_dask,
-    )
-    log.info("%s s", time.time() - t)
+    elif version_to_run == 2:
+        # Version #2
+        t = time.time()
+        approx_subgrid = facet_to_subgrid_2d_method_2(
+            facet_2,
+            distr_fft_class,
+            use_dask=use_dask,
+        )
+        log.info("%s s", time.time() - t)
 
-    # Version #3
-    t = time.time()
-    facet_to_subgrid_2d_method_3(
-        facet_2,
-        distr_fft_class,
-        use_dask=use_dask,
-    )
-    log.info("%s s", time.time() - t)
+    else:
+        # Version #3
+        t = time.time()
+        approx_subgrid = facet_to_subgrid_2d_method_3(
+            facet_2,
+            distr_fft_class,
+            use_dask=use_dask,
+        )
+        log.info("%s s", time.time() - t)
 
     # ==== Subgrid to Facet ====
     log.info("Executing 2D subgrid-to-facet algorithm")
@@ -583,24 +638,24 @@ def main(fundamental_params, to_plot=True, fig_name=None, use_dask=False):
     log.info("Mean grid absolute: %s", numpy.mean(numpy.abs(G_2)))
 
     if use_dask:
-        subgrid_2, facet_2, NMBF_NMBF, BMNAF_BMNAF = _run_algorithm(
+        subgrid_2, facet_2, approx_subgrid, approx_facet = _run_algorithm(
             G_2,
             FG_2,
             distr_fft_class,
             use_dask=True,
         )
 
-        subgrid_2, facet_2, NMBF_NMBF, BMNAF_BMNAF = dask.compute(
-            subgrid_2, facet_2, NMBF_NMBF, BMNAF_BMNAF, sync=True
+        subgrid_2, facet_2, approx_subgrid, approx_facet = dask.compute(
+            subgrid_2, facet_2, approx_subgrid, approx_facet, sync=True
         )
 
         subgrid_2 = numpy.array(subgrid_2)
         facet_2 = numpy.array(facet_2)
-        NMBF_NMBF = numpy.array(NMBF_NMBF)
-        BMNAF_BMNAF = numpy.array(BMNAF_BMNAF)
+        approx_subgrid = numpy.array(approx_subgrid)
+        approx_facet = numpy.array(approx_facet)
 
     else:
-        subgrid_2, facet_2, NMBF_NMBF, BMNAF_BMNAF = _run_algorithm(
+        subgrid_2, facet_2, approx_subgrid, approx_facet = _run_algorithm(
             G_2,
             FG_2,
             distr_fft_class,
@@ -608,7 +663,7 @@ def main(fundamental_params, to_plot=True, fig_name=None, use_dask=False):
         )
 
     errors_facet_to_subgrid_2d(
-        NMBF_NMBF,
+        approx_subgrid,
         distr_fft_class,
         subgrid_2,
         to_plot=to_plot,
@@ -624,7 +679,7 @@ def main(fundamental_params, to_plot=True, fig_name=None, use_dask=False):
     )
 
     errors_subgrid_to_facet_2d(
-        BMNAF_BMNAF,
+        approx_facet,
         facet_2,
         distr_fft_class.nfacet,
         distr_fft_class.yB_size,
@@ -640,7 +695,7 @@ def main(fundamental_params, to_plot=True, fig_name=None, use_dask=False):
         fig_name=fig_name,
     )
 
-    return subgrid_2, facet_2, NMBF_NMBF, BMNAF_BMNAF
+    return subgrid_2, facet_2, approx_subgrid, approx_facet
 
 
 if __name__ == "__main__":

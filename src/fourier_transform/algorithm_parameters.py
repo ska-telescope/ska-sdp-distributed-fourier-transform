@@ -359,7 +359,8 @@ class DistributedFFT(ConstantArrays):
             fft(MBF_sum, axis), self.xM_yN_size, axis
         )
 
-    def add_facet_contribution(self, nmbf_elem, facet_off_elem, axis):
+    @dask_wrapper
+    def add_facet_contribution(self, nmbf_elem, facet_off_elem, axis, **kwargs):
         """
         TODO: update docstring, fix arg names; this is per axis
         """
@@ -369,7 +370,8 @@ class DistributedFFT(ConstantArrays):
             axis=axis,
         )
 
-    def finish_subgrid(self, approx, subgrid_A1, subgrid_A2):
+    @dask_wrapper
+    def finish_subgrid(self, approx, subgrid_A1, subgrid_A2, **kwargs):
         """
         TODO: fix arg names, update docstring; this is 2D (easier this way)
         """

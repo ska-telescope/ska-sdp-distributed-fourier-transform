@@ -13,6 +13,7 @@ import itertools
 import logging
 from unittest.mock import call, patch
 
+import dask
 import numpy
 import pytest
 from numpy.testing import assert_array_almost_equal
@@ -20,7 +21,13 @@ from numpy.testing import assert_array_almost_equal
 from src.fourier_transform.algorithm_parameters import DistributedFFT
 from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
 from src.fourier_transform.fourier_algorithm import fft, ifft, make_subgrid_and_facet
-from src.fourier_transform_2d_dask import main as main_2d, facet_to_subgrid_2d_method_1
+from src.fourier_transform_2d_dask import (
+    main,
+    facet_to_subgrid_2d_method_1,
+    facet_to_subgrid_2d_method_3,
+    facet_to_subgrid_2d_method_2,
+    subgrid_to_facet_algorithm,
+)
 
 from tests.test_reference_data.ref_data_2d import (
     EXPECTED_NONZERO_SUBGRID_2D,
@@ -94,7 +101,7 @@ def test_end_to_end_2d_dask(use_dask):
         result_facet,
         result_approx_subgrid,
         result_approx_facet,
-    ) = main_2d(TARGET_PARS, to_plot=False, use_dask=use_dask)
+    ) = main(TARGET_PARS, to_plot=False, use_dask=use_dask)
 
     # check array shapes
     assert result_subgrid.shape == (6, 6, 188, 188)
@@ -177,7 +184,7 @@ def test_end_to_end_2d_dask_logging(use_dask):
     ]
 
     with patch("logging.Logger.info") as mock_log:
-        main_2d(TARGET_PARS, to_plot=False, use_dask=use_dask)
+        main(TARGET_PARS, to_plot=False, use_dask=use_dask)
         for log_call in expected_log_calls:
             assert log_call in mock_log.call_args_list
 
@@ -185,11 +192,40 @@ def test_end_to_end_2d_dask_logging(use_dask):
         tear_down_dask(client)
 
 
-@pytest.mark.parametrize("use_dask", [False])
-def test_facet_to_subgrid_2d_method_1(use_dask, target_distr_fft, subgrid_and_facet):
+@pytest.mark.parametrize(
+    "use_dask, tested_function",
+    [
+        (False, facet_to_subgrid_2d_method_1),
+        (False, facet_to_subgrid_2d_method_2),
+        (False, facet_to_subgrid_2d_method_3),
+        (True, facet_to_subgrid_2d_method_1),
+        (True, facet_to_subgrid_2d_method_2),
+        (True, facet_to_subgrid_2d_method_3),
+    ],
+)
+def test_facet_to_subgrid_methods(
+    use_dask, tested_function, target_distr_fft, subgrid_and_facet
+):
+    """
+    Integration test for facet->subgrid algorithm.
+    Three versions are provided (see their docstrings), but they
+    all do the same, just iterate in a different order.
+
+    Here, we test all, both with and without Dask.
+    The input facet array is always the same.
+
+    We check that the difference between the original subgrid array
+    and the output approximate subgrid array (result) is negligible.
+    """
+    if use_dask:
+        client = set_up_dask()
+
     subgrid, facet = subgrid_and_facet[0], subgrid_and_facet[1]
 
-    result = facet_to_subgrid_2d_method_1(facet, target_distr_fft, use_dask=use_dask)
+    result = tested_function(facet, target_distr_fft, use_dask=use_dask)
+    if use_dask:
+        result = dask.compute(result, sync=True)[0]
+        result = numpy.array(result)
 
     assert result.shape == subgrid.shape
 
@@ -204,3 +240,45 @@ def test_facet_to_subgrid_2d_method_1(use_dask, target_distr_fft, subgrid_and_fa
     )
     assert (error_mean < 10e-30).all()
     assert (error_mean_img < 10e-25).all()
+
+    if use_dask:
+        tear_down_dask(client)
+
+
+@pytest.mark.skip("The result is different. Needs investigation.")
+@pytest.mark.parametrize("use_dask", [False, True])
+def test_subgrid_to_facet(use_dask, target_distr_fft, subgrid_and_facet):
+    """
+    Integration test for subgrid->facet algorithm.
+
+    We check that the difference between the original facet array
+    and the output approximate facet array (result) is negligible.
+
+    TODO: they are very different for some reason...
+    """
+    if use_dask:
+        client = set_up_dask()
+
+    subgrid, facet = subgrid_and_facet[0], subgrid_and_facet[1]
+
+    result = subgrid_to_facet_algorithm(subgrid, target_distr_fft, use_dask=use_dask)
+    if use_dask:
+        result = dask.compute(result, sync=True)[0]
+        result = numpy.array(result)
+
+    assert result.shape == facet.shape
+
+    non_zero_result = numpy.where(result != 0.0)
+    non_zero_facet = numpy.where(facet != 0.0)
+    assert len(non_zero_result) == len(non_zero_facet)
+    for i in range(len(non_zero_facet)):
+        assert (non_zero_result[i] == non_zero_facet[i]).all()
+
+    error_mean, error_mean_img = _check_difference(
+        result, facet, target_distr_fft.nfacet
+    )
+    assert (error_mean < 10e-30).all()
+    assert (error_mean_img < 10e-25).all()
+
+    if use_dask:
+        tear_down_dask(client)
