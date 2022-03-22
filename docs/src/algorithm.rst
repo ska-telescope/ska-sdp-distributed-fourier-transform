@@ -24,7 +24,7 @@ We have implemented the algorithm in 2D. It starts with generating some random d
 These arrays will form the input to the algorithm but also act as comparison to the output of the algorithm.
 The code performs calculations in two directions:
 
-1) take the array of facets as input and obtain an array of approximat sub-grids
+1) take the array of facets as input and obtain an array of approximate sub-grids
 
 2) take the array of sub-grids as input and obtain an array of approximate facets
 

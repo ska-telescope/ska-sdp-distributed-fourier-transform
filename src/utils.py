@@ -1,7 +1,7 @@
 """
 Utility Functions
 
-In utils.py, we provide functions that help plotting and basic validation of the algorithm.
+We provide functions that help plotting and basic validation of the algorithm.
 """
 
 import itertools
