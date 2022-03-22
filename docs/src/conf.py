@@ -49,25 +49,19 @@ extensions = [
     "sphinx.ext.todo",
     "sphinx.ext.coverage",
     "sphinx.ext.mathjax",
-    "sphinx.ext.ifconfig",
     "sphinx.ext.viewcode",
-    "sphinx.ext.githubpages",
-    "sphinxarg.ext",
     "sphinx_automodapi.automodapi",
     "sphinx_automodapi.smart_resolver",
 ]
 
 autodoc_mock_imports = [
-    "oskar",
     "matplotlib",
-    "pycairo",
-    "pandas",
-    "pycraf",
     "astropy",
     "pytest",
-    "xlrd",
     "numpy",
-    "rascil",
+    "scipy",
+    "dask",
+    "distributed"
 ]
 
 # Add any paths that contain templates here, relative to this directory.

@@ -15,10 +15,9 @@ at: https://gitlab.com/ska-telescope/sdi/ska-cicd-makefile#keeping-up-to-date
 
 ## Contributing to this repository
 
-[Black](https://github.com/psf/black), [isort](https://pycqa.github.io/isort/),
-and various linting tools are used to keep the Python code in good shape.
+[Black](https://github.com/psf/black) is used to keep the Python code in good shape.
 Please check that your code follows the formatting rules before committing it
-to the repository. You can apply Black and isort to the code with:
+to the repository. You can apply Black to the code with:
 
 ```bash
 make python-format
@@ -33,19 +32,3 @@ make python-lint
 The linting job in the CI pipeline does the same checks, and it will fail if
 the code does not pass all of them.
 
-## Creating a new release
-
-When you are ready to make a new release:
-
-  - Check out the master branch
-  - Create an issue in the [Release Management](https://jira.skatelescope.org/projects/REL/summary) project
-  - Update the version number in `.release` with
-    - `bump-patch-release`,
-    - `bump-minor-release`, or
-    - `bump-major-release`
-  - Set the Python package version number with `make python-set-release`
-  - Manually update the version numbers in
-    - `src/ska_sdp_config/version.py` and
-    - `docs/src/conf.py`
-  - Create the git tag with `make git-create-tag`
-  - Push the changes with `make git-push-tag`

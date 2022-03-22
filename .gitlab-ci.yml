@@ -5,8 +5,8 @@ variables:
 
 stages:
   - lint
-  - test
   - build
+  - test
   - pages
 
 include:

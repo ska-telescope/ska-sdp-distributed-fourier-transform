@@ -1,6 +1,6 @@
 """
 Main algorithm routine
-The functions that conduct the main dask implemented algorithm include the subgrid to facet, and facet to subgrid transformations.
+The functions that conduct the main Dask-implemented algorithm include the subgrid to facet, and facet to subgrid transformations.
 The main function calls all the functions.
 
 """

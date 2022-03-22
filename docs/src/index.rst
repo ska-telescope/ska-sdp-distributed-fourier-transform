@@ -2,11 +2,11 @@
 
 .. toctree::
 
-ska-sdp-distributed-fourier-transform
+SKA SDP Distributed Fourier Transform
 ###########################################################
 
 This is a repository for the Dask-implemented distributed Fourier transform algorithm used for radio interferometry processing.
-It generates arbitrary grid chunks with full non-coplanarity corrections while minimising memory residency, data transfer and compute work.
+It generates arbitrary grid chunks while minimising memory residency, data transfer and compute work.
 
 The code is written in Python. For details of the algorithm, please refer to the "Description of the Algorithm" page.
 
