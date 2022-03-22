@@ -85,7 +85,7 @@ def display_plots(x, legend=None, grid=False, xlim=None, fig_name=None):
 def plot_1(pswf, constants_class, fig_name=None):
     """
     :param pswf: prolate-spheroidal wave function
-    :param constants_class: ConstantArrays or DistributedFFT class object containing
+    :param constants_class: BaseArrays or DistributedFFT class object containing
                             fundamental and derived parameters
     :param fig_name: partial name or prefix (can include path) if figure is saved
                      if None, pylab.show() is called instead
@@ -132,7 +132,7 @@ def plot_1(pswf, constants_class, fig_name=None):
 # TODO: needs better name; used both for 1D and 2D
 def plot_2(constants_class, fig_name=None):
     """
-    :param constants_class: ConstantArrays or DistributedFFT class object containing
+    :param constants_class: BaseArrays or DistributedFFT class object containing
                             fundamental and derived parameters
     :param fig_name: partial name or prefix (can include path) if figure is saved
                      if None, pylab.show() is called instead
@@ -416,11 +416,11 @@ def test_accuracy_facet_to_subgrid(
             sparse_ft_class.subgrid_A[i0], sparse_ft_class.subgrid_A[i1]
         )
         err_mean += (
-                numpy.abs(approx - subgrid_2[i0, i1]) ** 2 / sparse_ft_class.nsubgrid ** 2
+            numpy.abs(approx - subgrid_2[i0, i1]) ** 2 / sparse_ft_class.nsubgrid**2
         )
         err_mean_img += (
-                numpy.abs(fft(fft(approx - subgrid_2[i0, i1], axis=0), axis=1)) ** 2
-                / sparse_ft_class.nsubgrid ** 2
+            numpy.abs(fft(fft(approx - subgrid_2[i0, i1], axis=0), axis=1)) ** 2
+            / sparse_ft_class.nsubgrid**2
         )
     x = numpy.log(numpy.sqrt(err_mean_img)) / numpy.log(10)
 
@@ -598,11 +598,11 @@ def test_accuracy_subgrid_to_facet(
         )
         approx += BMNAF_BMNAF[j0, j1]
         err_mean += (
-                numpy.abs(ifft(ifft(approx - facet_2[j0, j1], axis=0), axis=1)) ** 2
-                / sparse_ft_class.nfacet ** 2
+            numpy.abs(ifft(ifft(approx - facet_2[j0, j1], axis=0), axis=1)) ** 2
+            / sparse_ft_class.nfacet**2
         )
         err_mean_img += (
-                numpy.abs(approx - facet_2[j0, j1]) ** 2 / sparse_ft_class.nfacet ** 2
+            numpy.abs(approx - facet_2[j0, j1]) ** 2 / sparse_ft_class.nfacet**2
         )
 
     x = numpy.log(numpy.sqrt(err_mean_img)) / numpy.log(10)

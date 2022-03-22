@@ -33,7 +33,7 @@ from src.fourier_transform.fourier_algorithm import (
 )
 
 
-class ConstantParams:
+class BaseParameters:
     """
     **fundamental_constants contains the following keys:
 
@@ -122,12 +122,12 @@ class ConstantParams:
         return class_string
 
 
-class ConstantArrays(ConstantParams):
+class BaseArrays(BaseParameters):
     """
-    Class that calculates and holds constant arrays.
+    Class that calculates and holds fundamental constant arrays.
     See the parent class docstring for description of input parameters.
 
-    It contains the following arrays (in addition to ConstantParams):
+    It contains the following arrays (in addition to BaseParameters):
 
         facet_off: facet offset
         subgrid_off: subgrid offset
@@ -277,14 +277,14 @@ class ConstantArrays(ConstantParams):
         return self._pswf
 
 
-class SparseFourierTransform(ConstantArrays):
+class SparseFourierTransform(BaseArrays):
     """
     Sparse Fourier Transform class
 
     "Sparse" because instead of individual points in frequency
     space we handle entire sub-grids, when running FT.
 
-    It takes the fundamental_constants dict as input (see ConstantParams class).
+    It takes the fundamental_constants dict as input (see BaseParameters class).
     It encompasses all building blocks of the algorithm for
     both subgrid -> facet and facet -> subgrid directions.
 
