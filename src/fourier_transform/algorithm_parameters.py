@@ -174,30 +174,27 @@ class ConstantArrays(ConstantParams):
 
         return self._subgrid_off
 
-    def _generate_mask(self, ndata_point, true_usable_size, offset):
+    def _generate_mask(self, mask_size, offsets):
         """
-        Determine the appropriate A/B masks for cutting the subgrid/facet out.
-        We are aiming for full coverage here: Every pixel is part of exactly one subgrid / facet.
+        Determine the appropriate masks for cutting out subgrids/facets.
+        For each offset in offsets, a mask is generated of size mask_size.
+        The mask is centred around the specific offset.
 
-        :param ndata_point: number of data points (nsubgrid or nfacet)
-        :param true_usable_size: true usable size (xA_size or yB_size)
-        :param offset: subgrid or facet offset (subgrid_off or facet_off)
+        :param mask_size: size of the required mask (xA_size or yB_size)
+        :param offsets: array of subgrid or facet offsets (subgrid_off or facet_off)
 
-        :return: mask: subgrid_A or facet_B
+        :return: mask (subgrid_A or facet_B)
         """
-        mask = numpy.zeros((ndata_point, true_usable_size), dtype=int)
-        border = (offset + numpy.hstack([offset[1:], [self.N + offset[0]]])) // 2
-        for i in range(ndata_point):
-            try:
-                left = (border[i - 1] - offset[i] + true_usable_size // 2) % self.N
-            except IndexError:
-                raise IndexError(
-                    "Length of offsets has to be at least " "the same as ndata_point."
+        mask = numpy.zeros((len(offsets), mask_size), dtype=int)
+        border = (offsets + numpy.hstack([offsets[1:], [self.N + offsets[0]]])) // 2
+        for i in range(len(offsets)):
+            left = (border[i - 1] - offsets[i] + mask_size // 2) % self.N
+            right = border[i] - offsets[i] + mask_size // 2
+
+            if not left >= 0 and right <= mask_size:
+                raise ValueError(
+                    "Mask size not large enough to cover subgrids / facets!"
                 )
-            right = border[i] - offset[i] + true_usable_size // 2
-
-            if not left >= 0 and right <= true_usable_size:
-                raise ValueError("xA / yB not large enough to cover subgrids / facets!")
 
             mask[i, left:right] = 1
 
@@ -206,18 +203,14 @@ class ConstantArrays(ConstantParams):
     @property
     def facet_B(self):
         if self._facet_B is None:
-            self._facet_B = self._generate_mask(
-                self.nfacet, self.yB_size, self.facet_off
-            )
+            self._facet_B = self._generate_mask(self.yB_size, self.facet_off)
 
         return self._facet_B
 
     @property
     def subgrid_A(self):
         if self._subgrid_A is None:
-            self._subgrid_A = self._generate_mask(
-                self.nsubgrid, self.xA_size, self.subgrid_off
-            )
+            self._subgrid_A = self._generate_mask(self.xA_size, self.subgrid_off)
 
         return self._subgrid_A
 

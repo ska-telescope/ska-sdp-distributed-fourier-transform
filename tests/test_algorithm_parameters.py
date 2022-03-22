@@ -87,32 +87,16 @@ def test_constant_arrays_generate_mask():
     """
     array_class = ConstantArrays(**TEST_PARAMS)
 
-    mask_dim1 = 6
-    mask_dim2 = 188
+    mask_size = 188
     offsets = [4, 192, 380, 568, 756, 944]
 
-    mask = array_class._generate_mask(mask_dim1, mask_dim2, offsets)
-    assert mask.shape == (mask_dim1, mask_dim2)
+    mask = array_class._generate_mask(mask_size, offsets)
+    assert mask.shape == (len(offsets), mask_size)
     assert (mask[0, :52] == 0.0).all()
     assert (mask[5, -52:] == 0.0).all()
     assert (mask[1:5, :] == 1.0).all()
     assert (mask[0, 53:] == 1.0).all()
     assert (mask[5, :-52] == 1.0).all()
-
-
-def test_constant_arrays_generate_mask_index_error():
-    """
-    IndexError is raised if the length of offsets
-    is smaller than mask_dim1.
-    """
-    array_class = ConstantArrays(**TEST_PARAMS)
-
-    mask_dim1 = 6
-    mask_dim2 = 188
-    offsets = [4, 192, 380, 568, 756]
-
-    with pytest.raises(IndexError):
-        array_class._generate_mask(mask_dim1, mask_dim2, offsets)
 
 
 def test_constant_arrays_pure_arrays():
