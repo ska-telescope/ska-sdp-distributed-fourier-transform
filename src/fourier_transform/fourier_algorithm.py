@@ -178,7 +178,7 @@ def make_subgrid_and_facet(
 
     :param G: "ground truth", the actual input data
     :param FG: FFT of input data
-    :param constants_class: ConstantArrays or DistributedFFT class object containing
+    :param constants_class: ConstantArrays or SparseFourierTransform class object containing
                             fundamental and derived parameters
     :param dims: Dimensions; integer 1 or 2 for 1D or 2D
     :param use_dask: run function with dask.delayed or not?

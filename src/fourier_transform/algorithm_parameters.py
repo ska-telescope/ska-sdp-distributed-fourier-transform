@@ -277,9 +277,12 @@ class ConstantArrays(ConstantParams):
         return self._pswf
 
 
-class DistributedFFT(ConstantArrays):
+class SparseFourierTransform(ConstantArrays):
     """
-    Distributed FFT class
+    Sparse Fourier Transform class
+
+    "Sparse" because instead of individual points in frequency
+    space we handle entire sub-grids, when running FT.
 
     It takes the fundamental_constants dict as input (see ConstantParams class).
     It encompasses all building blocks of the algorithm for

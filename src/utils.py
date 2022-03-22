@@ -267,14 +267,14 @@ def errors_subgrid_to_facet_2d(
 
 # TODO: refactor this; it repeats a lot of code from the 2D case - what's the difference?
 def test_accuracy_facet_to_subgrid(
-    distr_fft_class,
+    sparse_ft_class,
     xs=252,
     ys=252,
     to_plot=True,
     fig_name=None,
 ):
     """
-    :param distr_fft_class: DistributedFFT class object
+    :param sparse_ft_class: SparseFourierTransform class object
     :param xs:
     :param ys:
     :param to_plot: run plotting?
@@ -283,144 +283,144 @@ def test_accuracy_facet_to_subgrid(
     """
     subgrid_2 = numpy.empty(
         (
-            distr_fft_class.nsubgrid,
-            distr_fft_class.nsubgrid,
-            distr_fft_class.xA_size,
-            distr_fft_class.xA_size,
+            sparse_ft_class.nsubgrid,
+            sparse_ft_class.nsubgrid,
+            sparse_ft_class.xA_size,
+            sparse_ft_class.xA_size,
         ),
         dtype=complex,
     )
     facet_2 = numpy.empty(
         (
-            distr_fft_class.nfacet,
-            distr_fft_class.nfacet,
-            distr_fft_class.yB_size,
-            distr_fft_class.yB_size,
+            sparse_ft_class.nfacet,
+            sparse_ft_class.nfacet,
+            sparse_ft_class.yB_size,
+            sparse_ft_class.yB_size,
         ),
         dtype=complex,
     )
 
-    FG_2 = numpy.zeros((distr_fft_class.N, distr_fft_class.N))
+    FG_2 = numpy.zeros((sparse_ft_class.N, sparse_ft_class.N))
     FG_2[ys, xs] = 1
     G_2 = ifft(ifft(FG_2, axis=0), axis=1)
 
     for i0, i1 in itertools.product(
-        range(distr_fft_class.nsubgrid), range(distr_fft_class.nsubgrid)
+        range(sparse_ft_class.nsubgrid), range(sparse_ft_class.nsubgrid)
     ):
         subgrid_2[i0, i1] = extract_mid(
             extract_mid(
                 numpy.roll(
                     G_2,
                     (
-                        -distr_fft_class.subgrid_off[i0],
-                        -distr_fft_class.subgrid_off[i1],
+                        -sparse_ft_class.subgrid_off[i0],
+                        -sparse_ft_class.subgrid_off[i1],
                     ),
                     (0, 1),
                 ),
-                distr_fft_class.xA_size,
+                sparse_ft_class.xA_size,
                 axis=0,
             ),
-            distr_fft_class.xA_size,
+            sparse_ft_class.xA_size,
             axis=1,
         )
         subgrid_2[i0, i1] *= numpy.outer(
-            distr_fft_class.subgrid_A[i0], distr_fft_class.subgrid_A[i1]
+            sparse_ft_class.subgrid_A[i0], sparse_ft_class.subgrid_A[i1]
         )
     for j0, j1 in itertools.product(
-        range(distr_fft_class.nfacet), range(distr_fft_class.nfacet)
+        range(sparse_ft_class.nfacet), range(sparse_ft_class.nfacet)
     ):
         facet_2[j0, j1] = extract_mid(
             extract_mid(
                 numpy.roll(
                     FG_2,
-                    (-distr_fft_class.facet_off[j0], -distr_fft_class.facet_off[j1]),
+                    (-sparse_ft_class.facet_off[j0], -sparse_ft_class.facet_off[j1]),
                     (0, 1),
                 ),
-                distr_fft_class.yB_size,
+                sparse_ft_class.yB_size,
                 axis=0,
             ),
-            distr_fft_class.yB_size,
+            sparse_ft_class.yB_size,
             axis=1,
         )
         facet_2[j0, j1] *= numpy.outer(
-            distr_fft_class.facet_B[j0], distr_fft_class.facet_B[j1]
+            sparse_ft_class.facet_B[j0], sparse_ft_class.facet_B[j1]
         )
 
     NMBF_NMBF = numpy.empty(
         (
-            distr_fft_class.nsubgrid,
-            distr_fft_class.nsubgrid,
-            distr_fft_class.nfacet,
-            distr_fft_class.nfacet,
-            distr_fft_class.xM_yN_size,
-            distr_fft_class.xM_yN_size,
+            sparse_ft_class.nsubgrid,
+            sparse_ft_class.nsubgrid,
+            sparse_ft_class.nfacet,
+            sparse_ft_class.nfacet,
+            sparse_ft_class.xM_yN_size,
+            sparse_ft_class.xM_yN_size,
         ),
         dtype=complex,
     )
     for j0, j1 in itertools.product(
-        range(distr_fft_class.nfacet), range(distr_fft_class.nfacet)
+        range(sparse_ft_class.nfacet), range(sparse_ft_class.nfacet)
     ):
-        BF_F = distr_fft_class.prepare_facet(facet_2[j0, j1], 0)
-        BF_BF = distr_fft_class.prepare_facet(BF_F, 1)
-        for i0 in range(distr_fft_class.nsubgrid):
-            NMBF_BF = distr_fft_class.extract_facet_contrib_to_subgrid(
+        BF_F = sparse_ft_class.prepare_facet(facet_2[j0, j1], 0)
+        BF_BF = sparse_ft_class.prepare_facet(BF_F, 1)
+        for i0 in range(sparse_ft_class.nsubgrid):
+            NMBF_BF = sparse_ft_class.extract_facet_contrib_to_subgrid(
                 BF_BF,
                 0,
-                distr_fft_class.subgrid_off[i0],
+                sparse_ft_class.subgrid_off[i0],
             )
-            for i1 in range(distr_fft_class.nsubgrid):
+            for i1 in range(sparse_ft_class.nsubgrid):
                 NMBF_NMBF[
                     i0, i1, j0, j1
-                ] = distr_fft_class.extract_facet_contrib_to_subgrid(
+                ] = sparse_ft_class.extract_facet_contrib_to_subgrid(
                     NMBF_BF,
                     1,
-                    distr_fft_class.subgrid_off[i1],
+                    sparse_ft_class.subgrid_off[i1],
                 )
 
     err_mean = err_mean_img = 0
     for i0, i1 in itertools.product(
-        range(distr_fft_class.nsubgrid), range(distr_fft_class.nsubgrid)
+        range(sparse_ft_class.nsubgrid), range(sparse_ft_class.nsubgrid)
     ):
         approx = numpy.zeros(
-            (distr_fft_class.xM_size, distr_fft_class.xM_size), dtype=complex
+            (sparse_ft_class.xM_size, sparse_ft_class.xM_size), dtype=complex
         )
         for j0, j1 in itertools.product(
-            range(distr_fft_class.nfacet), range(distr_fft_class.nfacet)
+            range(sparse_ft_class.nfacet), range(sparse_ft_class.nfacet)
         ):
             approx += numpy.roll(
                 pad_mid(
-                    pad_mid(NMBF_NMBF[i0, i1, j0, j1], distr_fft_class.xM_size, axis=0),
-                    distr_fft_class.xM_size,
+                    pad_mid(NMBF_NMBF[i0, i1, j0, j1], sparse_ft_class.xM_size, axis=0),
+                    sparse_ft_class.xM_size,
                     axis=1,
                 ),
                 (
-                    distr_fft_class.facet_off[j0]
-                    * distr_fft_class.xM_size
-                    // distr_fft_class.N,
-                    distr_fft_class.facet_off[j1]
-                    * distr_fft_class.xM_size
-                    // distr_fft_class.N,
+                    sparse_ft_class.facet_off[j0]
+                    * sparse_ft_class.xM_size
+                    // sparse_ft_class.N,
+                    sparse_ft_class.facet_off[j1]
+                    * sparse_ft_class.xM_size
+                    // sparse_ft_class.N,
                 ),
                 (0, 1),
             )
         approx = extract_mid(
             extract_mid(
                 ifft(ifft(approx, axis=0), axis=1),
-                distr_fft_class.xA_size,
+                sparse_ft_class.xA_size,
                 axis=0,
             ),
-            distr_fft_class.xA_size,
+            sparse_ft_class.xA_size,
             axis=1,
         )
         approx *= numpy.outer(
-            distr_fft_class.subgrid_A[i0], distr_fft_class.subgrid_A[i1]
+            sparse_ft_class.subgrid_A[i0], sparse_ft_class.subgrid_A[i1]
         )
         err_mean += (
-            numpy.abs(approx - subgrid_2[i0, i1]) ** 2 / distr_fft_class.nsubgrid**2
+                numpy.abs(approx - subgrid_2[i0, i1]) ** 2 / sparse_ft_class.nsubgrid ** 2
         )
         err_mean_img += (
-            numpy.abs(fft(fft(approx - subgrid_2[i0, i1], axis=0), axis=1)) ** 2
-            / distr_fft_class.nsubgrid**2
+                numpy.abs(fft(fft(approx - subgrid_2[i0, i1], axis=0), axis=1)) ** 2
+                / sparse_ft_class.nsubgrid ** 2
         )
     x = numpy.log(numpy.sqrt(err_mean_img)) / numpy.log(10)
 
@@ -439,14 +439,14 @@ def test_accuracy_facet_to_subgrid(
 
 
 def test_accuracy_subgrid_to_facet(
-    distr_fft_class,
+    sparse_ft_class,
     xs=252,
     ys=252,
     to_plot=True,
     fig_name=None,
 ):
     """
-    :param distr_fft_class: DistributedFFT class object
+    :param sparse_ft_class: SparseFourierTransform class object
     :param xs:
     :param ys:
     :param to_plot: run plotting?
@@ -455,135 +455,135 @@ def test_accuracy_subgrid_to_facet(
     """
     subgrid_2 = numpy.empty(
         (
-            distr_fft_class.nsubgrid,
-            distr_fft_class.nsubgrid,
-            distr_fft_class.xA_size,
-            distr_fft_class.xA_size,
+            sparse_ft_class.nsubgrid,
+            sparse_ft_class.nsubgrid,
+            sparse_ft_class.xA_size,
+            sparse_ft_class.xA_size,
         ),
         dtype=complex,
     )
     facet_2 = numpy.empty(
         (
-            distr_fft_class.nfacet,
-            distr_fft_class.nfacet,
-            distr_fft_class.yB_size,
-            distr_fft_class.yB_size,
+            sparse_ft_class.nfacet,
+            sparse_ft_class.nfacet,
+            sparse_ft_class.yB_size,
+            sparse_ft_class.yB_size,
         ),
         dtype=complex,
     )
 
-    FG_2 = numpy.zeros((distr_fft_class.N, distr_fft_class.N))
+    FG_2 = numpy.zeros((sparse_ft_class.N, sparse_ft_class.N))
     FG_2[ys, xs] = 1
     G_2 = ifft(ifft(FG_2, axis=0), axis=1)
 
     for i0, i1 in itertools.product(
-        range(distr_fft_class.nsubgrid), range(distr_fft_class.nsubgrid)
+        range(sparse_ft_class.nsubgrid), range(sparse_ft_class.nsubgrid)
     ):
         subgrid_2[i0, i1] = extract_mid(
             extract_mid(
                 numpy.roll(
                     G_2,
                     (
-                        -distr_fft_class.subgrid_off[i0],
-                        -distr_fft_class.subgrid_off[i1],
+                        -sparse_ft_class.subgrid_off[i0],
+                        -sparse_ft_class.subgrid_off[i1],
                     ),
                     (0, 1),
                 ),
-                distr_fft_class.xA_size,
+                sparse_ft_class.xA_size,
                 axis=0,
             ),
-            distr_fft_class.xA_size,
+            sparse_ft_class.xA_size,
             axis=1,
         )
         subgrid_2[i0, i1] *= numpy.outer(
-            distr_fft_class.subgrid_A[i0], distr_fft_class.subgrid_A[i1]
+            sparse_ft_class.subgrid_A[i0], sparse_ft_class.subgrid_A[i1]
         )
     for j0, j1 in itertools.product(
-        range(distr_fft_class.nfacet), range(distr_fft_class.nfacet)
+        range(sparse_ft_class.nfacet), range(sparse_ft_class.nfacet)
     ):
         facet_2[j0, j1] = extract_mid(
             extract_mid(
                 numpy.roll(
                     FG_2,
-                    (-distr_fft_class.facet_off[j0], -distr_fft_class.facet_off[j1]),
+                    (-sparse_ft_class.facet_off[j0], -sparse_ft_class.facet_off[j1]),
                     (0, 1),
                 ),
-                distr_fft_class.yB_size,
+                sparse_ft_class.yB_size,
                 axis=0,
             ),
-            distr_fft_class.yB_size,
+            sparse_ft_class.yB_size,
             axis=1,
         )
         facet_2[j0, j1] *= numpy.outer(
-            distr_fft_class.facet_B[j0], distr_fft_class.facet_B[j1]
+            sparse_ft_class.facet_B[j0], sparse_ft_class.facet_B[j1]
         )
 
     NAF_NAF = numpy.empty(
         (
-            distr_fft_class.nsubgrid,
-            distr_fft_class.nsubgrid,
-            distr_fft_class.nfacet,
-            distr_fft_class.nfacet,
-            distr_fft_class.xM_yN_size,
-            distr_fft_class.xM_yN_size,
+            sparse_ft_class.nsubgrid,
+            sparse_ft_class.nsubgrid,
+            sparse_ft_class.nfacet,
+            sparse_ft_class.nfacet,
+            sparse_ft_class.xM_yN_size,
+            sparse_ft_class.xM_yN_size,
         ),
         dtype=complex,
     )
     for i0, i1 in itertools.product(
-        range(distr_fft_class.nsubgrid), range(distr_fft_class.nsubgrid)
+        range(sparse_ft_class.nsubgrid), range(sparse_ft_class.nsubgrid)
     ):
-        AF_AF = distr_fft_class.prepare_subgrid(subgrid_2[i0, i1])
-        for j0 in range(distr_fft_class.nfacet):
-            NAF_AF = distr_fft_class.extract_subgrid_contrib_to_facet(
-                AF_AF, distr_fft_class.facet_off[j0], 0
+        AF_AF = sparse_ft_class.prepare_subgrid(subgrid_2[i0, i1])
+        for j0 in range(sparse_ft_class.nfacet):
+            NAF_AF = sparse_ft_class.extract_subgrid_contrib_to_facet(
+                AF_AF, sparse_ft_class.facet_off[j0], 0
             )
-            for j1 in range(distr_fft_class.nfacet):
+            for j1 in range(sparse_ft_class.nfacet):
                 NAF_NAF[
                     i0, i1, j0, j1
-                ] = distr_fft_class.extract_subgrid_contrib_to_facet(
-                    NAF_AF, distr_fft_class.facet_off[j1], 1
+                ] = sparse_ft_class.extract_subgrid_contrib_to_facet(
+                    NAF_AF, sparse_ft_class.facet_off[j1], 1
                 )
 
     BMNAF_BMNAF = numpy.empty(
         (
-            distr_fft_class.nfacet,
-            distr_fft_class.nfacet,
-            distr_fft_class.yB_size,
-            distr_fft_class.yB_size,
+            sparse_ft_class.nfacet,
+            sparse_ft_class.nfacet,
+            sparse_ft_class.yB_size,
+            sparse_ft_class.yB_size,
         ),
         dtype=complex,
     )
     for j0, j1 in itertools.product(
-        range(distr_fft_class.nfacet), range(distr_fft_class.nfacet)
+        range(sparse_ft_class.nfacet), range(sparse_ft_class.nfacet)
     ):
         MNAF_BMNAF = numpy.zeros(
-            (distr_fft_class.yP_size, distr_fft_class.yB_size), dtype=complex
+            (sparse_ft_class.yP_size, sparse_ft_class.yB_size), dtype=complex
         )
-        for i0 in range(distr_fft_class.nsubgrid):
+        for i0 in range(sparse_ft_class.nsubgrid):
             NAF_MNAF = numpy.zeros(
-                (distr_fft_class.xM_yN_size, distr_fft_class.yP_size), dtype=complex
+                (sparse_ft_class.xM_yN_size, sparse_ft_class.yP_size), dtype=complex
             )
-            for i1 in range(distr_fft_class.nsubgrid):
-                NAF_MNAF = NAF_MNAF + distr_fft_class.add_subgrid_contribution(
+            for i1 in range(sparse_ft_class.nsubgrid):
+                NAF_MNAF = NAF_MNAF + sparse_ft_class.add_subgrid_contribution(
                     len(NAF_MNAF.shape),
                     NAF_NAF[i0, i1, j0, j1],
-                    distr_fft_class.subgrid_off[i1],
+                    sparse_ft_class.subgrid_off[i1],
                     1,
                 )
-            NAF_BMNAF = distr_fft_class.finish_facet(
+            NAF_BMNAF = sparse_ft_class.finish_facet(
                 NAF_MNAF,
-                distr_fft_class.facet_B[j1],
+                sparse_ft_class.facet_B[j1],
                 1,
             )
-            MNAF_BMNAF = MNAF_BMNAF + distr_fft_class.add_subgrid_contribution(
+            MNAF_BMNAF = MNAF_BMNAF + sparse_ft_class.add_subgrid_contribution(
                 len(MNAF_BMNAF.shape),
                 NAF_BMNAF,
-                distr_fft_class.subgrid_off[i0],
+                sparse_ft_class.subgrid_off[i0],
                 0,
             )
-        BMNAF_BMNAF[j0, j1] = distr_fft_class.finish_facet(
+        BMNAF_BMNAF[j0, j1] = sparse_ft_class.finish_facet(
             MNAF_BMNAF,
-            distr_fft_class.facet_B[j0],
+            sparse_ft_class.facet_B[j0],
             0,
         )
 
@@ -591,18 +591,18 @@ def test_accuracy_subgrid_to_facet(
     err_mean = err_mean_img = 0
 
     for j0, j1 in itertools.product(
-        range(distr_fft_class.nfacet), range(distr_fft_class.nfacet)
+        range(sparse_ft_class.nfacet), range(sparse_ft_class.nfacet)
     ):
         approx = numpy.zeros(
-            (distr_fft_class.yB_size, distr_fft_class.yB_size), dtype=complex
+            (sparse_ft_class.yB_size, sparse_ft_class.yB_size), dtype=complex
         )
         approx += BMNAF_BMNAF[j0, j1]
         err_mean += (
-            numpy.abs(ifft(ifft(approx - facet_2[j0, j1], axis=0), axis=1)) ** 2
-            / distr_fft_class.nfacet**2
+                numpy.abs(ifft(ifft(approx - facet_2[j0, j1], axis=0), axis=1)) ** 2
+                / sparse_ft_class.nfacet ** 2
         )
         err_mean_img += (
-            numpy.abs(approx - facet_2[j0, j1]) ** 2 / distr_fft_class.nfacet**2
+                numpy.abs(approx - facet_2[j0, j1]) ** 2 / sparse_ft_class.nfacet ** 2
         )
 
     x = numpy.log(numpy.sqrt(err_mean_img)) / numpy.log(10)
