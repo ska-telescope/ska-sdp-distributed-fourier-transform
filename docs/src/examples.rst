@@ -3,9 +3,9 @@ Usage Examples
 ============
 
 To test an image configuration, you need to specify the parameters as a Python dictionary with variables that are defined in the DistributedFFT class.
-The following parameters need to be included in the dictionary (see parameters in the ConstantParams class) :
+The following parameters need to be included in the dictionary (see parameters in the BaseParameters class) :
 
- :py:class:`src.fourier_transform.algorithm_parameters.ConstantParams`
+ :py:class:`src.fourier_transform.algorithm_parameters.BaseParameters`
 
 The parameters need to be consistent for the code to run. For details of the "parameter search", you can refer to the first half of the Python notebook:
 `facet-subgrid-impl.ipynb <https://gitlab.com/ska-telescope/sdp/ska-sdp-distributed-fourier-transform/-/blob/main/notebook/facet-subgrid-impl.ipynb>`_
@@ -22,3 +22,5 @@ There are also the options to specify whether to use Dask or not in the code, an
   main(to_plot=True, use_dask=True)
 
 If you would like to do a plotting test/use Dask.
+
+In swift_configs.py we have provided a list of configurations to test the code on.
