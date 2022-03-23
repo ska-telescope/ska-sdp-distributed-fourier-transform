@@ -1,4 +1,7 @@
-"""Distributed Fourier Transform Module."""
+"""Distributed Fourier Transform Module.
+Included are a list of base functions that are used across the code.
+
+"""
 import itertools
 import numpy
 
@@ -161,11 +164,11 @@ def _ith_subgrid_facet_element(
     return result
 
 
-# I (GH) tried adding this function as method to the class
-# separate for subgrid and facet, but when calling dask on it
-# the computation becomes extremely slow and my laptop cannot handle it.
-# This suggests that something wasn't right and the dask setup wasn't ideal
-# hence I left these here as a separate function, and not part of the class.
+# TODO: I (GH) tried adding this function as method to the class
+#   separate for subgrid and facet, but when calling dask on it
+#   the computation becomes extremely slow and my laptop cannot handle it.
+#   This suggests that something wasn't right and the dask setup wasn't ideal
+#   hence I left these here as a separate function, and not part of the class.
 def make_subgrid_and_facet(
     G,
     FG,
@@ -178,7 +181,7 @@ def make_subgrid_and_facet(
 
     :param G: "ground truth", the actual input data
     :param FG: FFT of input data
-    :param constants_class: ConstantArrays or DistributedFFT class object containing
+    :param constants_class: BaseArrays or SparseFourierTransform class object containing
                             fundamental and derived parameters
     :param dims: Dimensions; integer 1 or 2 for 1D or 2D
     :param use_dask: run function with dask.delayed or not?
