@@ -1,3 +1,11 @@
+"""
+The dask wrapper.
+
+We wrap the Dask delayed implementation in a dask wrapper where if use_dask is set to True,
+the dask wrapper function will call the dask.delayed option for the computation.
+
+"""
+
 import functools
 import logging
 

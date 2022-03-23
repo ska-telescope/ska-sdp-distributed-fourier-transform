@@ -1,0 +1,9 @@
+numpy
+scipy
+dask
+distributed
+matplotlib
+sphinx
+sphinx-argparse
+sphinx-rtd-theme
+sphinx_automodapi
