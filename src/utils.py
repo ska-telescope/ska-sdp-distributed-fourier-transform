@@ -1,3 +1,9 @@
+"""
+Utility Functions
+
+We provide functions that help plotting and basic validation of the algorithm.
+"""
+
 import itertools
 import logging
 import numpy

@@ -1,4 +1,7 @@
-"""Distributed Fourier Transform Module."""
+"""Distributed Fourier Transform Module.
+Included are a list of base functions that are used across the code.
+
+"""
 import itertools
 import numpy
 

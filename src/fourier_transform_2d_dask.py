@@ -1,3 +1,10 @@
+"""
+Main algorithm routine
+The functions that conduct the main Dask-implemented algorithm include the subgrid to facet, and facet to subgrid transformations.
+The main function calls all the functions.
+
+"""
+
 #!/usr/bin/env python
 # coding: utf-8
 import itertools
