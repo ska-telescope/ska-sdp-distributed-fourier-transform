@@ -3,9 +3,6 @@ Included are a list of base functions that are used across the code.
 
 """
 import itertools
-
-import scipy.special
-import scipy.signal
 import numpy
 
 from src.fourier_transform.dask_wrapper import dask_wrapper
@@ -13,29 +10,37 @@ from src.fourier_transform.dask_wrapper import dask_wrapper
 
 def create_slice(fill_val, axis_val, dims, axis):
     """
-    TODO: docstring + tests
-    Slice A
+    Create a tuple of length = dims.
+    Elements of the tuple:
+        fill_val if axis != dim_index
+        axis_val if axis == dim_index,
+        where dim_index is each value in range(dims)
+    See test for examples.
 
-    param fill_val: Fill value
-    param axis_val: Axis value
-    param dims: Dimensions
-    param axis: Axis
+    param fill_val: value to use for dimensions where dim != axis
+    param axis_val: value to use for dimensions where dim == axis
+    param dims: length of tuple to be produced (i.e. number of dimensions); int
+    param axis: axis (index) along which axis_val to be used; int
 
-    return:
+    return: tuple of length dims
     """
+    if not isinstance(axis, int) or not isinstance(dims, int):
+        raise ValueError("create_slice: axis and dims values have to be integers.")
+
     return tuple([axis_val if i == axis else fill_val for i in range(dims)])
 
 
 def broadcast(a, dims, axis):
     """
-    TODO: docstring + tests
-    Broadcast A
+    Stretch input array to shape determined by the dims and axis values.
+    See tests for examples of how the shape of the input array will change
+    depending on what dims-axis combination is given
 
-    param a: A
-    param dims: Dimensions
-    param axis: Axis
+    :param a: input numpy ndarray
+    :param dims: dimensions to broadcast ("stretch") input array to; int
+    :param axis: axis along which the new dimension(s) should be added; int
 
-    return:
+    return: array with new shape
     """
     return a[create_slice(numpy.newaxis, slice(None), dims, axis)]
 
@@ -111,8 +116,13 @@ def ifft(a, axis):
 
 def coordinates(n):
     """
-    TODO: docstring + tests
-    1D array which spans [-.5,.5[ with 0 at position N/2"""
+    Generate a 1D array with length n,
+    which spans [-0.5,0.5] with 0 at position n/2.
+    See also docs for numpy.mgrid.
+
+    :param n: length of array to be generated
+    :return: 1D numpy array
+    """
     n2 = n // 2
     if n % 2 == 0:
         return numpy.mgrid[-n2:n2] / n
@@ -120,40 +130,18 @@ def coordinates(n):
         return numpy.mgrid[-n2 : n2 + 1] / n
 
 
-def anti_aliasing_function(shape, m, c):
-    """
-    TODO: tests
-    Compute the prolate spheroidal anti-aliasing function
-
-    See VLA Scientific Memoranda 129, 131, 132
-    :param shape: (height, width) pair or just width
-    :param m: mode parameter
-    :param c: spheroidal parameter
-    """
-
-    # One dimensional?
-    if len(numpy.array(shape).shape) == 0:
-
-        pswf = scipy.special.pro_ang1(m, m, c, 2 * coordinates(shape))[0]
-        pswf[0] = 0  # zap NaN
-        return pswf
-
-    # 2D Prolate spheroidal angular function is separable
-    return numpy.outer(
-        anti_aliasing_function(shape[0], m, c), anti_aliasing_function(shape[1], m, c)
-    )
-
-
 @dask_wrapper
 def _ith_subgrid_facet_element(
-    true_image, offset_i, true_usable_size, mask_element, axis=None, **kwargs
+    true_image, offset_i, true_usable_size, mask_element, axis=(0, 1), **kwargs
 ):
     """
+    Calculate a single facet or subgrid element.
+
     :param true_image: true image, G (1D or 2D)
     :param offset_i: ith offset (subgrid or facet)
     :param true_usable_size: xA_size for subgrid, and yB_size for facet
     :param mask_element: an element of subgrid_A or facet_B (masks)
-    :param axis: axis (0 or 1)
+    :param axis: axis (0, 1, or a tuple of both)
     :param kwargs: needs to contain the following if dask is used:
             use_dask: True
             nout: <number of function outputs> --> 1
@@ -176,6 +164,11 @@ def _ith_subgrid_facet_element(
     return result
 
 
+# TODO: I (GH) tried adding this function as method to the class
+#   separate for subgrid and facet, but when calling dask on it
+#   the computation becomes extremely slow and my laptop cannot handle it.
+#   This suggests that something wasn't right and the dask setup wasn't ideal
+#   hence I left these here as a separate function, and not part of the class.
 def make_subgrid_and_facet(
     G,
     FG,
@@ -188,7 +181,7 @@ def make_subgrid_and_facet(
 
     :param G: "ground truth", the actual input data
     :param FG: FFT of input data
-    :param constants_class: ConstantArrays or DistributedFFT class object containing
+    :param constants_class: BaseArrays or SparseFourierTransform class object containing
                             fundamental and derived parameters
     :param dims: Dimensions; integer 1 or 2 for 1D or 2D
     :param use_dask: run function with dask.delayed or not?
@@ -283,178 +276,3 @@ def make_subgrid_and_facet(
         raise ValueError("Wrong dimensions. Only 1D and 2D are supported.")
 
     return subgrid, facet
-
-
-# 2D FOURIER ALGORITHM FUNCTIONS (facet to subgrid)
-@dask_wrapper
-def prepare_facet(facet, axis, Fb, yP_size, **kwargs):
-    """
-
-    :param facet: Facet
-    :param axis: Axis
-    :param Fb:
-    :param yP_size: Facet size, padded for m convolution (internal)
-    :param kwargs: needs to contain the following if dask is used:
-            use_dask: True
-            nout: <number of function outputs> --> 1
-
-    :return: BF
-    """
-    BF = pad_mid(facet * broadcast(Fb, len(facet.shape), axis), yP_size, axis)
-    BF = ifft(BF, axis)
-    return BF
-
-
-@dask_wrapper
-def extract_subgrid(
-    BF,
-    axis,
-    subgrid_off_i,
-    constants_class,
-    **kwargs,
-):
-    """
-    Extract the facet contribution of a subgrid.
-    TODO: maybe rename function to reflect this definition
-        See discussion at https://gitlab.com/ska-telescope/sdp/ska-sdp-distributed-fourier-transform/-/merge_requests/4#note_825003275
-
-    :param BF:
-    :param axis: Axis
-    :param subgrid_off_i:
-    :param constants_class: ConstantArrays or DistributedFFT class object containing
-                            fundamental and derived parameters
-    :param kwargs: needs to contain the following if dask is used:
-            use_dask: True
-            nout: <number of function outputs> --> 1
-
-    :return:
-    """
-    dims = len(BF.shape)
-    BF_mid = extract_mid(
-        numpy.roll(
-            BF, -subgrid_off_i * constants_class.yP_size // constants_class.N, axis
-        ),
-        constants_class.xMxN_yP_size,
-        axis,
-    )
-    MBF = broadcast(constants_class.facet_m0_trunc, dims, axis) * BF_mid
-    MBF_sum = numpy.array(extract_mid(MBF, constants_class.xM_yP_size, axis))
-    xN_yP_size = constants_class.xMxN_yP_size - constants_class.xM_yP_size
-    # [:xN_yP_size//2] / [-xN_yP_size//2:] for axis, [:] otherwise
-    slc1 = create_slice(slice(None), slice(xN_yP_size // 2), dims, axis)
-    slc2 = create_slice(slice(None), slice(-xN_yP_size // 2, None), dims, axis)
-    MBF_sum[slc1] += MBF[slc2]
-    MBF_sum[slc2] += MBF[slc1]
-
-    return broadcast(constants_class.Fn, len(BF.shape), axis) * extract_mid(
-        fft(MBF_sum, axis), constants_class.xM_yN_size, axis
-    )
-
-
-# 2D FOURIER ALGORITHM FUNCTIONS (subgrid to facet)
-@dask_wrapper
-def prepare_subgrid(subgrid, xM_size, **kwargs):
-    """
-    Initial shared work per subgrid - no reason to do this per-axis, so always do it for all
-    :param subgrid: Subgrid
-    :param xM_size: Subgrid size, padded for transfer (internal)
-    :param kwargs: needs to contain the following if dask is used:
-            use_dask: True
-            nout: <number of function outputs> --> 1
-
-    :return: the FS term
-    """
-    padded = pad_mid(pad_mid(subgrid, xM_size, axis=0), xM_size, axis=1)
-    ftransformed = fft(fft(padded, axis=0), axis=1)
-
-    return ftransformed
-
-
-@dask_wrapper
-def extract_facet_contribution(FSi, facet_off_j, constants_class, axis, **kwargs):
-    """
-    Extract contribution of subgrid to a facet
-
-    :param Fsi:
-    :param facet_off_j:
-    :param constants_class: ConstantArrays or DistributedFFT class object containing
-                            fundamental and derived parameters
-    :param axis: Axis
-    :param kwargs: needs to contain the following if dask is used:
-            use_dask: True
-            nout: <number of function outputs> --> 1
-
-    :return: Contribution of facet on the subgrid
-
-    """
-    return broadcast(constants_class.Fn, len(FSi.shape), axis) * extract_mid(
-        numpy.roll(
-            FSi, -facet_off_j * constants_class.xM_size // constants_class.N, axis
-        ),
-        constants_class.xM_yN_size,
-        axis,
-    )
-
-
-@dask_wrapper
-def add_subgrid_contribution(
-    dims,
-    NjSi,
-    subgrid_off_i,
-    constants_class,
-    axis,
-    **kwargs,
-):
-    """
-    Add subgrid contribution to a facet
-
-    :param MiNjSi_sum:
-    :param NjSi:
-    :param subgrid_off:
-    :param constants_class: ConstantArrays or DistributedFFT class object containing
-                            fundamental and derived parameters
-    :param axis:
-    :param kwargs: needs to contain the following if dask is used:
-            use_dask: True
-            nout: <number of function outputs> --> 1
-
-    :return MiNjSi_sum:
-
-    """
-    xN_yP_size = constants_class.xMxN_yP_size - constants_class.xM_yP_size
-    NjSi_mid = ifft(pad_mid(NjSi, constants_class.xM_yP_size, axis), axis)
-    NjSi_temp = pad_mid(NjSi_mid, constants_class.xMxN_yP_size, axis)
-    slc1 = create_slice(slice(None), slice(xN_yP_size // 2), dims, axis)
-    slc2 = create_slice(slice(None), slice(-xN_yP_size // 2, None), dims, axis)
-    NjSi_temp[slc1] = NjSi_mid[slc2]
-    NjSi_temp[slc2] = NjSi_mid[slc1]
-    NjSi_temp = NjSi_temp * broadcast(
-        constants_class.facet_m0_trunc, len(NjSi.shape), axis
-    )
-
-    return numpy.roll(
-        pad_mid(NjSi_temp, constants_class.yP_size, axis),
-        subgrid_off_i * constants_class.yP_size // constants_class.N,
-        axis=axis,
-    )
-
-
-@dask_wrapper
-def finish_facet(MiNjSi_sum, Fb, facet_B_j, yB_size, axis, **kwargs):
-    """
-    Obtain finished facet
-
-    :param MiNjSi_sum:
-    :param Fb:
-    :param facet_B_j:
-    :param yB_size: effective facet size
-    :param axis:
-    :param kwargs: needs to contain the following if dask is used:
-            use_dask: True
-            nout: <number of function outputs> --> 1
-
-    :return: The finished facet (in BMNAF term)
-    """
-    return extract_mid(fft(MiNjSi_sum, axis), yB_size, axis) * broadcast(
-        Fb * facet_B_j, len(MiNjSi_sum.shape), axis
-    )
