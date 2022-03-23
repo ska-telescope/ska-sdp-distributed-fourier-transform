@@ -48,14 +48,14 @@ class BaseParameters:
 
     The class, in addition, derives the following, commonly used sizes:
 
-    xM_yP_size: (padded subgrid size * padded facet size) / N
-    xM_yN_size: (padded subgrid size * padding) / N
-    xMxN_yP_size: length of the region to be cut out of the prepared facet data
+    :param xM_yP_size: (padded subgrid size * padded facet size) / N
+    :param xM_yN_size: (padded subgrid size * padding) / N
+    :param xMxN_yP_size: length of the region to be cut out of the prepared facet data
                   (i.e. len(facet_m0_trunc), where facet_m0_trunc is the mask truncated to a facet (image space))
-    xN_yP_size: remainder of the padded facet region after the cut-out region has been subtracted of it
+    :param xN_yP_size: remainder of the padded facet region after the cut-out region has been subtracted of it
                 i.e. xMxN_yP_size - xM_yP_size
-    nsubgrid: number of subgrids
-    nfacet: number of facets
+    :param nsubgrid: number of subgrids
+    :param nfacet: number of facets
     """
 
     def __init__(self, **fundamental_constants):
@@ -92,6 +92,9 @@ class BaseParameters:
         self.nfacet = int(math.ceil(self.N / self.yB_size))
 
     def check_params(self):
+        """
+        Validate some of the parameters.
+        """
         if not (self.xM_size * self.yN_size) % self.N == 0:
             raise ValueError
 
@@ -125,16 +128,17 @@ class BaseArrays(BaseParameters):
 
     It contains the following arrays (in addition to BaseParameters):
 
-        facet_off: facet offset
-        subgrid_off: subgrid offset
-        facet_B: facet mask
-        subgrid_A: subgrid mask
-        Fb: Fourier transform of grid correction function
-        Fn: Fourier transform of gridding function
-        facet_m0_trunc: mask truncated to a facet (image space)
-        pswf: prolate spheroidal wave function
+        :param facet_off: facet offset
+        :param subgrid_off: subgrid offset
+        :param facet_B: facet mask
+        :param subgrid_A: subgrid mask
+        :param Fb: Fourier transform of grid correction function
+        :param Fn: Fourier transform of gridding function
+        :param facet_m0_trunc: mask truncated to a facet (image space)
+        :param pswf: prolate spheroidal wave function
 
     Notes on gridding-related functions (arrays; Fb, Fn, facet_m0_trunc):
+
         Calculate actual work terms to use. We need both $n$ and $b$ in image space
         In case of gridding: "n": gridding function (except that we have it in image space here)
                              "b": grid correction function.
@@ -158,6 +162,9 @@ class BaseArrays(BaseParameters):
 
     @property
     def facet_off(self):
+        """
+        Facet offset array
+        """
         if self._facet_off is None:
             self._facet_off = self.yB_size * numpy.arange(self.nfacet)
 
@@ -165,6 +172,9 @@ class BaseArrays(BaseParameters):
 
     @property
     def subgrid_off(self):
+        """
+        Subgrid offset array
+        """
         if self._subgrid_off is None:
             self._subgrid_off = self.xA_size * numpy.arange(self.nsubgrid) + self.Nx
 
@@ -198,6 +208,9 @@ class BaseArrays(BaseParameters):
 
     @property
     def facet_B(self):
+        """
+        Facet mask
+        """
         if self._facet_B is None:
             self._facet_B = self._generate_mask(self.yB_size, self.facet_off)
 
@@ -205,6 +218,9 @@ class BaseArrays(BaseParameters):
 
     @property
     def subgrid_A(self):
+        """
+        Subgrid mask
+        """
         if self._subgrid_A is None:
             self._subgrid_A = self._generate_mask(self.xA_size, self.subgrid_off)
 
@@ -212,6 +228,9 @@ class BaseArrays(BaseParameters):
 
     @property
     def Fb(self):
+        """
+        Fourier transform of grid correction function
+        """
         if self._Fb is None:
             self._Fb = 1 / extract_mid(self.pswf, self.yB_size, axis=0)
 
@@ -219,6 +238,9 @@ class BaseArrays(BaseParameters):
 
     @property
     def Fn(self):
+        """
+        Fourier transform of gridding function
+        """
         if self._Fn is None:
             self._Fn = self.pswf[
                 (self.yN_size // 2)
@@ -229,6 +251,9 @@ class BaseArrays(BaseParameters):
 
     @property
     def facet_m0_trunc(self):
+        """
+        Mask truncated to a facet (image space)
+        """
         if self._facet_m0_trunc is None:
             temp_facet_m0_trunc = self.pswf * numpy.sinc(
                 coordinates(self.yN_size) * self.xM_size / self.N * self.yN_size
@@ -290,8 +315,6 @@ class SparseFourierTransform(BaseArrays):
     def __init__(self, **fundamental_constants):
         super().__init__(**fundamental_constants)
 
-    # TODO: facet to subgrid algorithm isn't finished:
-    #   missing add_facet_contribution and finish_subgrid methods
     # facet to subgrid algorithm
     @dask_wrapper
     def prepare_facet(self, facet, axis, **kwargs):
@@ -398,7 +421,7 @@ class SparseFourierTransform(BaseArrays):
     @dask_wrapper
     def extract_subgrid_contrib_to_facet(self, FSi, facet_off_elem, axis, **kwargs):
         """
-        Extract contribution of subgrid to a facet
+        Extract contribution of subgrid to a facet.
 
         :param Fsi: TODO???
         :param facet_off_elem: single facet offset element
@@ -426,7 +449,7 @@ class SparseFourierTransform(BaseArrays):
         **kwargs,
     ):
         """
-        Add subgrid contribution to a facet
+        Add subgrid contribution to a facet.
         TODO: does this add the contribution to the facet already?
             or does it collect the individual contributions, but the facet is only created
             in finish_facet?
@@ -460,10 +483,11 @@ class SparseFourierTransform(BaseArrays):
     @dask_wrapper
     def finish_facet(self, MiNjSi_sum, facet_B_elem, axis, **kwargs):
         """
-        Obtain finished facet:
-            It extracts from the padded facet (obtained from subgrid via FFT)
-            the true-sized facet and multiplies with masked Fb.
-            (Fb: Fourier transform of grid correction function)
+        Obtain finished facet.
+
+        It extracts from the padded facet (obtained from subgrid via FFT)
+        the true-sized facet and multiplies with masked Fb.
+        (Fb: Fourier transform of grid correction function)
 
         :param MiNjSi_sum: sum of subgrid contributions to a facet
         :param facet_B_elem: a facet mask element
