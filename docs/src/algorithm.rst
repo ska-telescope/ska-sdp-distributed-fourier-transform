@@ -1,22 +1,28 @@
 
 Description of the Algorithm
-###########################################################
+============================
 
 Introduction
-++++++++++++++++++++
+------------
 
 In Fourier transformation of imaging, every visibility impacts data of
 every image pixel thus making it harder to implement distributed computation directly.
 The distributed Fourier transform is designed in a way that it is a scalable method
 that distributes the data efficiently without holding redundant image data,
 which can be used for the FFT and gridding part of an imaging pipeline.
+
 The key idea is using "facet-based" imaging. Since we are only interested in specific
 sub-regions in grid space, we want to transfer arbitrary portions of frequency space
 data to or from workers that are gridding and degridding visibilities, a.k.a. a
 semi-sparse Fourier transform for chunks of image (time) and grid (frequency) space.
 
+In short, the problem we are trying to solve is how to convert from image (time) space
+to grid (frequency) space and vica versa in a distributed and efficient way which
+does not involve having to keep the full image / grid in one place during the process.
+
+
 Details of the Algorithm
-++++++++++++++++++++
+------------------------
 
 The mathematical derivation can be found in
 `facet-subgrid.ipynb <https://gitlab.com/scpmw/crocodile/-/blob/io_benchmark/examples/notebooks/facet-subgrid.ipynb>`_.
