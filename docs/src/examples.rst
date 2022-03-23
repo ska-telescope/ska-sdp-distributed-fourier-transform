@@ -22,3 +22,5 @@ There are also the options to specify whether to use Dask or not in the code, an
   main(to_plot=True, use_dask=True)
 
 If you would like to do a plotting test/use Dask.
+
+In swift_configs.py we have provided a list of configurations to test the code on.
