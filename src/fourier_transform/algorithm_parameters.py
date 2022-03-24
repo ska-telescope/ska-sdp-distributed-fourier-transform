@@ -354,7 +354,7 @@ class SparseFourierTransform(BaseArrays):
                 use_dask: True
                 nout: <number of function outputs> --> 1
 
-        :return: TODO???
+        :return: contribution of facet to subgrid
         """
         dims = len(BF.shape)
         BF_mid = extract_mid(
@@ -375,27 +375,48 @@ class SparseFourierTransform(BaseArrays):
         )
 
     @dask_wrapper
-    def add_facet_contribution(self, nmbf_elem, facet_off_elem, axis, **kwargs):
+    def add_facet_contribution(self, facet_contrib, facet_off_elem, axis, **kwargs):
         """
-        TODO: update docstring, fix arg names; this is per axis
+        Further transforms facet contributions, which then will be summed up.
+
+        :param facet_contrib: array-chunk of individual facet contributions
+        :param facet_off_elem: facet offset for the facet_contrib array chunk
+        :param axis: axis along which the operations are performed (0 or 1)
+        :param kwargs: needs to contain the following if dask is used:
+                use_dask: True
+                nout: <number of function outputs> --> 1
+
+        :return: TODO??
         """
         return numpy.roll(
-            pad_mid(nmbf_elem, self.xM_size, axis),
+            pad_mid(facet_contrib, self.xM_size, axis),
             facet_off_elem * self.xM_size // self.N,
             axis=axis,
         )
 
     @dask_wrapper
-    def finish_subgrid(self, approx, subgrid_A1, subgrid_A2, **kwargs):
+    def finish_subgrid(self, summed_facets, subgrid_mask1, subgrid_mask2, **kwargs):
         """
-        TODO: fix arg names, update docstring; this is 2D (easier this way)
+        Obtain finished subgrid.
+        Operation performed for both axis (only works on 2D arrays in its current form).
+
+        :param summed_facets: summed facets contributing to thins subgrid
+        :param subgrid_mask1: ith subgrid mask element
+        :param subgrid_mask2: (i+1)th subgrid mask element
+        :param kwargs: needs to contain the following if dask is used:
+                use_dask: True
+                nout: <number of function outputs> --> 1
+
+        :return: approximate subgrid element
         """
         tmp = extract_mid(
-            extract_mid(ifft(ifft(approx, axis=0), axis=1), self.xA_size, axis=0),
+            extract_mid(
+                ifft(ifft(summed_facets, axis=0), axis=1), self.xA_size, axis=0
+            ),
             self.xA_size,
             axis=1,
         )
-        approx_subgrid = tmp * numpy.outer(subgrid_A1, subgrid_A2)
+        approx_subgrid = tmp * numpy.outer(subgrid_mask1, subgrid_mask2)
         return approx_subgrid
 
     # subgrid to facet algorithm
@@ -430,7 +451,7 @@ class SparseFourierTransform(BaseArrays):
                 use_dask: True
                 nout: <number of function outputs> --> 1
 
-        :return: Contribution of facet to the subgrid
+        :return: Contribution of subgrid to facet
 
         """
         return broadcast(self.Fn, len(FSi.shape), axis) * extract_mid(
@@ -449,10 +470,7 @@ class SparseFourierTransform(BaseArrays):
         **kwargs,
     ):
         """
-        Add subgrid contribution to a facet.
-        TODO: does this add the contribution to the facet already?
-            or does it collect the individual contributions, but the facet is only created
-            in finish_facet?
+        Further transform subgrid contributions, which are then summed up.
 
         :param dims: TODO
         :param NjSi: TODO
@@ -462,7 +480,7 @@ class SparseFourierTransform(BaseArrays):
                 use_dask: True
                 nout: <number of function outputs> --> 1
 
-        :return MiNjSi_sum: TODO
+        :return summed subgrid contributions
 
         """
         xN_yP_size = self.xMxN_yP_size - self.xM_yP_size
@@ -496,7 +514,7 @@ class SparseFourierTransform(BaseArrays):
                 use_dask: True
                 nout: <number of function outputs> --> 1
 
-        :return: TODO?? The finished facet (in BMNAF term)
+        :return: finished (approximate) facet element
         """
         return extract_mid(fft(MiNjSi_sum, axis), self.yB_size, axis) * broadcast(
             self.Fb * facet_B_elem, len(MiNjSi_sum.shape), axis
