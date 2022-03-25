@@ -221,7 +221,7 @@ def test_facet_to_subgrid_methods(
 
     assert result.shape == subgrid.shape
 
-    numpy.testing.assert_array_almost_equal(abs(result), abs(subgrid), decimal=20)
+    numpy.testing.assert_array_almost_equal(abs(result), abs(subgrid), decimal=15)
 
     error_mean, error_mean_img = _check_difference(
         result, subgrid, target_distr_fft.nsubgrid
