@@ -192,7 +192,11 @@ def _plot_error(err_mean, err_mean_img, fig_name, direction):
 
 
 def errors_facet_to_subgrid_2d(
-    NMBF_NMBF, constants_class, subgrid_2, to_plot=True, fig_name=None,
+    NMBF_NMBF,
+    constants_class,
+    subgrid_2,
+    to_plot=True,
+    fig_name=None,
 ):
     """
     Calculate the error terms for the 2D facet to subgrid algorithm.
@@ -238,15 +242,15 @@ def errors_subgrid_to_facet_2d(
     BMNAF_BMNAF, facet_2, constants_class, to_plot=True, fig_name=None
 ):
     """
-        Calculate the error terms for the 2D subgrid to facet algorithm.
+    Calculate the error terms for the 2D subgrid to facet algorithm.
 
-        :param BMNAF_BMNAF: array of individual subgrid contributions
-        :param constants_class: BaseArrays or SparseFourierTransform class object containing
-                                fundamental and derived parameters
-        :param facet_2: 2D numpy array of facets
-        :param to_plot: run plotting?
-        :param fig_name: If given, figures will be saved with this prefix into PNG files.
-                         If to_plot is set to False, fig_name doesn't have an effect.
+    :param BMNAF_BMNAF: array of individual subgrid contributions
+    :param constants_class: BaseArrays or SparseFourierTransform class object containing
+                            fundamental and derived parameters
+    :param facet_2: 2D numpy array of facets
+    :param to_plot: run plotting?
+    :param fig_name: If given, figures will be saved with this prefix into PNG files.
+                     If to_plot is set to False, fig_name doesn't have an effect.
     """
     err_mean = 0
     err_mean_img = 0
@@ -276,7 +280,11 @@ def errors_subgrid_to_facet_2d(
 
 # TODO: refactor this; it repeats a lot of code from the 2D case - what's the difference?
 def test_accuracy_facet_to_subgrid(
-    sparse_ft_class, xs=252, ys=252, to_plot=True, fig_name=None,
+    sparse_ft_class,
+    xs=252,
+    ys=252,
+    to_plot=True,
+    fig_name=None,
 ):
     """
     Test the accuracy of the 2D facet to subgrid algorithm.
@@ -371,13 +379,17 @@ def test_accuracy_facet_to_subgrid(
         BF_BF = sparse_ft_class.prepare_facet(BF_F, 1)
         for i0 in range(sparse_ft_class.nsubgrid):
             NMBF_BF = sparse_ft_class.extract_facet_contrib_to_subgrid(
-                BF_BF, 0, sparse_ft_class.subgrid_off[i0],
+                BF_BF,
+                0,
+                sparse_ft_class.subgrid_off[i0],
             )
             for i1 in range(sparse_ft_class.nsubgrid):
                 NMBF_NMBF[
                     i0, i1, j0, j1
                 ] = sparse_ft_class.extract_facet_contrib_to_subgrid(
-                    NMBF_BF, 1, sparse_ft_class.subgrid_off[i1],
+                    NMBF_BF,
+                    1,
+                    sparse_ft_class.subgrid_off[i1],
                 )
 
     err_mean = err_mean_img = 0
@@ -408,7 +420,9 @@ def test_accuracy_facet_to_subgrid(
             )
         approx = extract_mid(
             extract_mid(
-                ifft(ifft(approx, axis=0), axis=1), sparse_ft_class.xA_size, axis=0,
+                ifft(ifft(approx, axis=0), axis=1),
+                sparse_ft_class.xA_size,
+                axis=0,
             ),
             sparse_ft_class.xA_size,
             axis=1,
@@ -440,7 +454,11 @@ def test_accuracy_facet_to_subgrid(
 
 
 def test_accuracy_subgrid_to_facet(
-    sparse_ft_class, xs=252, ys=252, to_plot=True, fig_name=None,
+    sparse_ft_class,
+    xs=252,
+    ys=252,
+    to_plot=True,
+    fig_name=None,
 ):
     """
     Test the accuracy of the 2D subgrid to facet algorithm.
@@ -570,13 +588,20 @@ def test_accuracy_subgrid_to_facet(
                     1,
                 )
             NAF_BMNAF = sparse_ft_class.finish_facet(
-                NAF_MNAF, sparse_ft_class.facet_B[j1], 1,
+                NAF_MNAF,
+                sparse_ft_class.facet_B[j1],
+                1,
             )
             MNAF_BMNAF = MNAF_BMNAF + sparse_ft_class.add_subgrid_contribution(
-                len(MNAF_BMNAF.shape), NAF_BMNAF, sparse_ft_class.subgrid_off[i0], 0,
+                len(MNAF_BMNAF.shape),
+                NAF_BMNAF,
+                sparse_ft_class.subgrid_off[i0],
+                0,
             )
         BMNAF_BMNAF[j0, j1] = sparse_ft_class.finish_facet(
-            MNAF_BMNAF, sparse_ft_class.facet_B[j0], 0,
+            MNAF_BMNAF,
+            sparse_ft_class.facet_B[j0],
+            0,
         )
 
     pylab.rcParams["figure.figsize"] = 16, 8
