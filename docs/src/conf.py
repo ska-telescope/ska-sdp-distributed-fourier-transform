@@ -54,6 +54,9 @@ extensions = [
     "sphinx_automodapi.smart_resolver",
 ]
 
+# Avoid duplicate showing of functions in API doc
+numpydoc_show_class_members = False
+
 autodoc_mock_imports = [
     "matplotlib",
     "astropy",
