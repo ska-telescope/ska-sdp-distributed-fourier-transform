@@ -1,5 +1,7 @@
-APIs
-============
+.. _api:
+
+API
+===
 
 .. automodapi::    src.fourier_transform.algorithm_parameters
    :no-inheritance-diagram:

@@ -1,6 +1,6 @@
 
 Usage Examples
-============
+==============
 
 To test an image configuration, you need to specify the parameters as a Python dictionary with variables that are defined in the DistributedFFT class.
 The following parameters need to be included in the dictionary (see parameters in the BaseParameters class) :
@@ -23,4 +23,5 @@ There are also the options to specify whether to use Dask or not in the code, an
 
 If you would like to do a plotting test/use Dask.
 
-In swift_configs.py we have provided a list of configurations to test the code on.
+In `swift_configs.py <https://gitlab.com/ska-telescope/sdp/ska-sdp-distributed-fourier-transform/-/blob/main/src/swift_configs.py>`_
+we have provided a list of configurations to test the code on.

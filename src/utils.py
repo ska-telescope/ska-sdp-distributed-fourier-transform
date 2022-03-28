@@ -194,40 +194,10 @@ def errors_facet_to_subgrid_2d(
         range(constants_class.nsubgrid), range(constants_class.nsubgrid)
     ):
         approx = numpy.zeros(
-            (constants_class.xM_size, constants_class.xM_size), dtype=complex
+            (constants_class.xA_size, constants_class.xA_size), dtype=complex
         )
-        for j0, j1 in itertools.product(
-            range(constants_class.nfacet), range(constants_class.nfacet)
-        ):
-            padded_nmbf = pad_mid(
-                pad_mid(NMBF_NMBF[i0, i1, j0, j1], constants_class.xM_size, axis=0),
-                constants_class.xM_size,
-                axis=1,
-            )
-            approx += numpy.roll(
-                padded_nmbf,
-                (
-                    constants_class.facet_off[j0]
-                    * constants_class.xM_size
-                    // constants_class.N,
-                    constants_class.facet_off[j1]
-                    * constants_class.xM_size
-                    // constants_class.N,
-                ),
-                (0, 1),
-            )
-        approx = extract_mid(
-            extract_mid(
-                ifft(ifft(approx, axis=0), axis=1),
-                constants_class.xA_size,
-                axis=0,
-            ),
-            constants_class.xA_size,
-            axis=1,
-        )
-        approx *= numpy.outer(
-            constants_class.subgrid_A[i0], constants_class.subgrid_A[i1]
-        )
+        approx += NMBF_NMBF[i0, i1]
+
         err_mean += (
             numpy.abs(approx - subgrid_2[i0, i1]) ** 2 / constants_class.nsubgrid**2
         )

@@ -1,6 +1,6 @@
-"""Distributed Fourier Transform Module.
+"""
+Distributed Fourier Transform Module.
 Included are a list of base functions that are used across the code.
-
 """
 import itertools
 import numpy
@@ -11,18 +11,20 @@ from src.fourier_transform.dask_wrapper import dask_wrapper
 def create_slice(fill_val, axis_val, dims, axis):
     """
     Create a tuple of length = dims.
+
     Elements of the tuple:
-        fill_val if axis != dim_index
+        fill_val if axis != dim_index;
         axis_val if axis == dim_index,
         where dim_index is each value in range(dims)
+
     See test for examples.
 
-    param fill_val: value to use for dimensions where dim != axis
-    param axis_val: value to use for dimensions where dim == axis
-    param dims: length of tuple to be produced (i.e. number of dimensions); int
-    param axis: axis (index) along which axis_val to be used; int
+    :param fill_val: value to use for dimensions where dim != axis
+    :param axis_val: value to use for dimensions where dim == axis
+    :param dims: length of tuple to be produced (i.e. number of dimensions); int
+    :param axis: axis (index) along which axis_val to be used; int
 
-    return: tuple of length dims
+    :return: tuple of length dims
     """
     if not isinstance(axis, int) or not isinstance(dims, int):
         raise ValueError("create_slice: axis and dims values have to be integers.")
@@ -40,7 +42,7 @@ def broadcast(a, dims, axis):
     :param dims: dimensions to broadcast ("stretch") input array to; int
     :param axis: axis along which the new dimension(s) should be added; int
 
-    return: array with new shape
+    :return: array with new shape
     """
     return a[create_slice(numpy.newaxis, slice(None), dims, axis)]
 
@@ -50,11 +52,11 @@ def pad_mid(a, n, axis):
     Pad an array to a desired size with zeros at a given axis.
     (Surround the middle with zeros till it reaches the given size)
 
-    param a: numpy array to be padded
-    param n: size to be padded to (desired size)
-    param axis: axis along which to pad
+    :param a: numpy array to be padded
+    :param n: size to be padded to (desired size)
+    :param axis: axis along which to pad
 
-    return: padded numpy array
+    :return: padded numpy array
     """
     n0 = a.shape[axis]
     if n == n0:
