@@ -65,10 +65,7 @@ def test_base_params_check_params():
 
 @pytest.mark.parametrize(
     "attribute, expected_array",
-    [
-        ("facet_off", [0, 256, 512, 768]),
-        ("subgrid_off", [4, 192, 380, 568, 756, 944]),
-    ],
+    [("facet_off", [0, 256, 512, 768]), ("subgrid_off", [4, 192, 380, 568, 756, 944]),],
 )
 def test_base_arrays_offsets(attribute, expected_array):
     """

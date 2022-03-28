@@ -47,11 +47,11 @@ def _check_difference(calculated, original, size):
     err_mean = 0
     err_mean_img = 0
     for i0, i1 in itertools.product(range(size), range(size)):
-        err_mean += numpy.abs(calculated[i0, i1] - original[i0, i1]) ** 2 / size**2
+        err_mean += numpy.abs(calculated[i0, i1] - original[i0, i1]) ** 2 / size ** 2
         err_mean_img += (
             numpy.abs(fft(fft(calculated[i0, i1] - original[i0, i1], axis=0), axis=1))
             ** 2
-            / size**2
+            / size ** 2
         )
     return err_mean, err_mean_img
 
@@ -68,11 +68,7 @@ def subgrid_and_facet(target_distr_fft):
     g = ifft(ifft(fg, axis=0), axis=1)
 
     subgrid, facet = make_subgrid_and_facet(
-        g,
-        fg,
-        target_distr_fft,
-        dims=2,
-        use_dask=False,
+        g, fg, target_distr_fft, dims=2, use_dask=False,
     )
     return subgrid, facet
 
@@ -88,12 +84,9 @@ def test_end_to_end_2d_dask(use_dask):
     if use_dask:
         client = set_up_dask()
 
-    (
-        result_subgrid,
-        result_facet,
-        result_approx_subgrid,
-        result_approx_facet,
-    ) = main(TARGET_PARS, to_plot=False, use_dask=use_dask)
+    (result_subgrid, result_facet, result_approx_subgrid, result_approx_facet,) = main(
+        TARGET_PARS, to_plot=False, use_dask=use_dask
+    )
 
     # check array shapes
     assert result_subgrid.shape == (6, 6, 188, 188)
@@ -106,9 +99,7 @@ def test_end_to_end_2d_dask(use_dask):
         numpy.where(result_subgrid_sliced != 0)
     ]
     assert_array_almost_equal(
-        result_subgrid_sliced_nonzero,
-        EXPECTED_NONZERO_SUBGRID_2D,
-        decimal=9,
+        result_subgrid_sliced_nonzero, EXPECTED_NONZERO_SUBGRID_2D, decimal=9,
     )
 
     assert_array_almost_equal(
@@ -154,23 +145,11 @@ def test_end_to_end_2d_dask_logging(use_dask):
         call("%s x %s subgrids %s x %s facets", 6, 6, 4, 4),
         call("Mean grid absolute: %s", 0.25238145108445126),
         # facet to subgrid
-        call(
-            "RMSE: %s (image: %s)",
-            3.635118091200949e-08,
-            6.834022011457784e-06,
-        ),
+        call("RMSE: %s (image: %s)", 3.635118091200949e-08, 6.834022011457784e-06,),
         call("RMSE: %s (image: %s)", 1.8993993540584405e-17, 3.5708707856298686e-15),
         # subgrid to facet - not yet added to tested code
-        call(
-            "RMSE: %s (image: %s)",
-            1.906652955419094e-07,
-            4.881031565872881e-05,
-        ),
-        call(
-            "RMSE: %s (image: %s)",
-            3.1048926297115777e-13,
-            7.948525132061639e-11,
-        ),
+        call("RMSE: %s (image: %s)", 1.906652955419094e-07, 4.881031565872881e-05,),
+        call("RMSE: %s (image: %s)", 3.1048926297115777e-13, 7.948525132061639e-11,),
     ]
 
     with patch("logging.Logger.info") as mock_log:

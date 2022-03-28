@@ -263,10 +263,7 @@ class BaseArrays(BaseParameters):
                 * self.yP_size
                 / self.N
                 * extract_mid(
-                    ifft(
-                        pad_mid(temp_facet_m0_trunc, self.yP_size, axis=0),
-                        axis=0,
-                    ),
+                    ifft(pad_mid(temp_facet_m0_trunc, self.yP_size, axis=0), axis=0,),
                     self.xMxN_yP_size,
                     axis=0,
                 ).real
@@ -338,11 +335,7 @@ class SparseFourierTransform(BaseArrays):
 
     @dask_wrapper
     def extract_facet_contrib_to_subgrid(
-        self,
-        BF,
-        axis,
-        subgrid_off_elem,
-        **kwargs,
+        self, BF, axis, subgrid_off_elem, **kwargs,
     ):
         """
         Extract the facet contribution to a subgrid.
@@ -462,12 +455,7 @@ class SparseFourierTransform(BaseArrays):
 
     @dask_wrapper
     def add_subgrid_contribution(
-        self,
-        dims,
-        NjSi,
-        subgrid_off_elem,
-        axis,
-        **kwargs,
+        self, dims, NjSi, subgrid_off_elem, axis, **kwargs,
     ):
         """
         Further transform subgrid contributions, which are then summed up.

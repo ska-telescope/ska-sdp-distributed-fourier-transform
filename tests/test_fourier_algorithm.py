@@ -57,13 +57,7 @@ def test_pad_mid_2d_axis1():
     """
     array = numpy.ones((3, 3))
     desired_size = 5
-    expected_array = numpy.array(
-        [
-            [0, 1, 1, 1, 0],
-            [0, 1, 1, 1, 0],
-            [0, 1, 1, 1, 0],
-        ]
-    )
+    expected_array = numpy.array([[0, 1, 1, 1, 0], [0, 1, 1, 1, 0], [0, 1, 1, 1, 0],])
     result = pad_mid(array, desired_size, axis=1)
 
     assert (result == expected_array).all()
@@ -225,9 +219,7 @@ def test_extract_mid_2d_axis01():
     desired_size_axis1 = 2
     expected_array = numpy.array([[6, 7], [11, 12], [16, 17]])
     result = extract_mid(
-        extract_mid(full_array, desired_size_axis0, axis=0),
-        desired_size_axis1,
-        axis=1,
+        extract_mid(full_array, desired_size_axis0, axis=0), desired_size_axis1, axis=1,
     )
 
     assert (result == expected_array).all()
@@ -308,12 +300,7 @@ def test_ifft_2d_axis0():
     iFFT along axis=0
     """
     array = numpy.array(
-        [
-            [0, 0, 0, 0, 0],
-            [0, 0, 15, 0, 0],
-            [0, 0, 0, 0, 0],
-        ],
-        dtype=complex,
+        [[0, 0, 0, 0, 0], [0, 0, 15, 0, 0], [0, 0, 0, 0, 0],], dtype=complex,
     )
 
     result = ifft(array, axis=0)
@@ -328,12 +315,7 @@ def test_ifft_2d_axis1():
     iFFT along axis=1
     """
     array = numpy.array(
-        [
-            [0, 0, 0, 0, 0],
-            [0, 0, 15, 0, 0],
-            [0, 0, 0, 0, 0],
-        ],
-        dtype=complex,
+        [[0, 0, 0, 0, 0], [0, 0, 15, 0, 0], [0, 0, 0, 0, 0],], dtype=complex,
     )
 
     result = ifft(array, axis=1)
@@ -348,12 +330,7 @@ def test_ifft_2d_axis01():
     iFFT along axis=0 and axis=1
     """
     array = numpy.array(
-        [
-            [0, 0, 0, 0, 0],
-            [0, 0, 15, 0, 0],
-            [0, 0, 0, 0, 0],
-        ],
-        dtype=complex,
+        [[0, 0, 0, 0, 0], [0, 0, 15, 0, 0], [0, 0, 0, 0, 0],], dtype=complex,
     )
     result = ifft(ifft(array, axis=0), axis=1)
 
@@ -424,13 +401,7 @@ def test_broadcast(dims, axis, expected_shape):
 
 @pytest.mark.parametrize(
     "dims, axis",
-    [
-        (1, (0, 1)),
-        (2, (0, 2)),
-        (3, (1, 1)),
-        ((2, 4), 4),
-        ("str", (3, 4)),
-    ],
+    [(1, (0, 1)), (2, (0, 2)), (3, (1, 1)), ((2, 4), 4), ("str", (3, 4)),],
 )
 def test_broadcast_raises_error(dims, axis):
     """

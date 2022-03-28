@@ -172,11 +172,7 @@ def _ith_subgrid_facet_element(
 #   This suggests that something wasn't right and the dask setup wasn't ideal
 #   hence I left these here as a separate function, and not part of the class.
 def make_subgrid_and_facet(
-    G,
-    FG,
-    constants_class,
-    dims,
-    use_dask=False,
+    G, FG, constants_class, dims, use_dask=False,
 ):
     """
     Calculate the actual subgrids and facets. Dask.delayed compatible version
