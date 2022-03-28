@@ -242,16 +242,16 @@ def errors_subgrid_to_facet_2d(
     BMNAF_BMNAF, facet_2, constants_class, to_plot=True, fig_name=None
 ):
     """
-    Calculate the error terms for the 2D subgrid to facet algorithm.
+        Calculate the error terms for the 2D subgrid to facet algorithm.
 
-    :param BMNAF_BMNAF: array of individual subgrid contributions
-    :param constants_class: BaseArrays or SparseFourierTransform class object containing
-                            fundamental and derived parameters
-    :param facet_2: 2D numpy array of facets
-    :param to_plot: run plotting?
-    :param fig_name: If given, figures will be saved with this prefix into PNG files.
-                     If to_plot is set to False, fig_name doesn't have an effect.
-
+        :param BMNAF_BMNAF: array of individual subgrid contributions
+        :param constants_class: BaseArrays or SparseFourierTransform class object containing
+                                fundamental and derived parameters
+        :param facet_2: 2D numpy array of facets
+        :param to_plot: run plotting?
+        :param fig_name: If given, figures will be saved with this prefix into PNG files.
+                         If to_plot is set to False, fig_name doesn't have an effect.
+    l
     """
     err_mean = 0
     err_mean_img = 0
