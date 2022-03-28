@@ -56,7 +56,7 @@ def mark_range(
         lbl_y = (y0 * 7 + y1) / 8
     else:
         # Some type of log scale
-        lbl_y = (y0**7 * y1) ** (1 / 8)
+        lbl_y = (y0 ** 7 * y1) ** (1 / 8)
     ax.annotate(lbl, (x1 + x_offset * wdt, lbl_y))
 
 
@@ -86,6 +86,7 @@ def display_plots(x, legend=None, grid=False, xlim=None, fig_name=None):
         pylab.show()
     else:
         pylab.savefig(f"{fig_name}.png")
+
 
 def plot_pswf(pswf, constants_class, fig_name=None):
     """
@@ -134,6 +135,7 @@ def plot_pswf(pswf, constants_class, fig_name=None):
         pylab.show()
     else:
         pylab.savefig(f"{fig_name}_fn.png")
+
 
 def plot_work_terms(constants_class, fig_name=None):
     """
@@ -219,11 +221,11 @@ def errors_facet_to_subgrid_2d(
         approx += NMBF_NMBF[i0, i1]
 
         err_mean += (
-            numpy.abs(approx - subgrid_2[i0, i1]) ** 2 / constants_class.nsubgrid**2
+            numpy.abs(approx - subgrid_2[i0, i1]) ** 2 / constants_class.nsubgrid ** 2
         )
         err_mean_img += numpy.abs(
             fft(fft(approx - subgrid_2[i0, i1], axis=0), axis=1) ** 2
-            / constants_class.nsubgrid**2
+            / constants_class.nsubgrid ** 2
         )
 
     log.info(
@@ -253,15 +255,19 @@ def errors_subgrid_to_facet_2d(
     """
     err_mean = 0
     err_mean_img = 0
-    for j0, j1 in itertools.product(range(constants_class.nfacet), range(constants_class.nfacet)):
-        approx = numpy.zeros((constants_class.yB_size, constants_class.yB_size), dtype=complex)
+    for j0, j1 in itertools.product(
+        range(constants_class.nfacet), range(constants_class.nfacet)
+    ):
+        approx = numpy.zeros(
+            (constants_class.yB_size, constants_class.yB_size), dtype=complex
+        )
         approx += BMNAF_BMNAF[j0, j1]
 
         err_mean += (
             numpy.abs(ifft(ifft(approx - facet_2[j0, j1], axis=0), axis=1)) ** 2
-            / nfacet**2
+            / nfacet ** 2
         )
-        err_mean_img += numpy.abs(approx - facet_2[j0, j1]) ** 2 / nfacet**2
+        err_mean_img += numpy.abs(approx - facet_2[j0, j1]) ** 2 / nfacet ** 2
 
     log.info(
         "RMSE: %s (image: %s)",
@@ -426,11 +432,11 @@ def test_accuracy_facet_to_subgrid(
             sparse_ft_class.subgrid_A[i0], sparse_ft_class.subgrid_A[i1]
         )
         err_mean += (
-            numpy.abs(approx - subgrid_2[i0, i1]) ** 2 / sparse_ft_class.nsubgrid**2
+            numpy.abs(approx - subgrid_2[i0, i1]) ** 2 / sparse_ft_class.nsubgrid ** 2
         )
         err_mean_img += (
             numpy.abs(fft(fft(approx - subgrid_2[i0, i1], axis=0), axis=1)) ** 2
-            / sparse_ft_class.nsubgrid**2
+            / sparse_ft_class.nsubgrid ** 2
         )
     x = numpy.log(numpy.sqrt(err_mean_img)) / numpy.log(10)
 
@@ -611,10 +617,10 @@ def test_accuracy_subgrid_to_facet(
         approx += BMNAF_BMNAF[j0, j1]
         err_mean += (
             numpy.abs(ifft(ifft(approx - facet_2[j0, j1], axis=0), axis=1)) ** 2
-            / sparse_ft_class.nfacet**2
+            / sparse_ft_class.nfacet ** 2
         )
         err_mean_img += (
-            numpy.abs(approx - facet_2[j0, j1]) ** 2 / sparse_ft_class.nfacet**2
+            numpy.abs(approx - facet_2[j0, j1]) ** 2 / sparse_ft_class.nfacet ** 2
         )
 
     x = numpy.log(numpy.sqrt(err_mean_img)) / numpy.log(10)

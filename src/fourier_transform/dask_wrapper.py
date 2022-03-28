@@ -17,8 +17,9 @@ log = logging.getLogger("fourier-logger")
 
 def dask_wrapper(func):
     """
-    The Dask wrapper function    
+    The Dask wrapper function
     """
+
     @functools.wraps(func)  # preserves information about the original function
     def wrapper(*args, **kwargs):
         try:

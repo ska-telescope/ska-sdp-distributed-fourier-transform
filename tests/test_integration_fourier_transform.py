@@ -98,8 +98,6 @@ def test_end_to_end_2d_dask(use_dask):
     # check array shapes
     assert result_subgrid.shape == (6, 6, 188, 188)
     assert result_facet.shape == (4, 4, 256, 256)
-    # TODO Why is this? --> algorithm is not finished, missing two functions
-    # assert result_approx_subgrid.shape == (6, 6, 4, 4, 80, 80)
     assert result_approx_facet.shape == result_facet.shape
 
     # check array values
