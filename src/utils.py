@@ -264,9 +264,9 @@ def errors_subgrid_to_facet_2d(
 
         err_mean += (
             numpy.abs(ifft(ifft(approx - facet_2[j0, j1], axis=0), axis=1)) ** 2
-            / nfacet**2
+            / constants_class.nfacet**2
         )
-        err_mean_img += numpy.abs(approx - facet_2[j0, j1]) ** 2 / nfacet**2
+        err_mean_img += numpy.abs(approx - facet_2[j0, j1]) ** 2 / constants_class.nfacet**2
 
     log.info(
         "RMSE: %s (image: %s)",
