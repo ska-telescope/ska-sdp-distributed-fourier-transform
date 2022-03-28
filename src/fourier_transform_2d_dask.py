@@ -692,8 +692,7 @@ def main(fundamental_params, to_plot=True, fig_name=None, use_dask=False):
     errors_subgrid_to_facet_2d(
         approx_facet,
         facet_2,
-        sparse_ft_class.nfacet,
-        sparse_ft_class.yB_size,
+        sparse_ft_class,
         to_plot=to_plot,
         fig_name=fig_name,
     )
