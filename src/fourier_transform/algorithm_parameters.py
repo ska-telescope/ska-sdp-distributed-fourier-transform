@@ -128,14 +128,14 @@ class BaseArrays(BaseParameters):
 
     It contains the following arrays (in addition to BaseParameters):
 
-        :param facet_off: facet offset
-        :param subgrid_off: subgrid offset
-        :param facet_B: facet mask
-        :param subgrid_A: subgrid mask
-        :param Fb: Fourier transform of grid correction function
-        :param Fn: Fourier transform of gridding function
-        :param facet_m0_trunc: mask truncated to a facet (image space)
-        :param pswf: prolate spheroidal wave function
+    :param facet_off: facet offset
+    :param subgrid_off: subgrid offset
+    :param facet_B: facet mask
+    :param subgrid_A: subgrid mask
+    :param Fb: Fourier transform of grid correction function
+    :param Fn: Fourier transform of gridding function
+    :param facet_m0_trunc: mask truncated to a facet (image space)
+    :param pswf: prolate spheroidal wave function
 
     Notes on gridding-related functions (arrays; Fb, Fn, facet_m0_trunc):
 
@@ -282,7 +282,7 @@ class BaseArrays(BaseParameters):
 
         See also: VLA Scientific Memoranda 129, 131, 132
 
-        :param alpha: TODO: ???, int
+        :param alpha: mode parameter (integer) for the PSWF eigenfunctions, using zero for zeroth order
         """
         if self._pswf is None:
             pswf = scipy.special.pro_ang1(
@@ -328,7 +328,7 @@ class SparseFourierTransform(BaseArrays):
                 use_dask: True
                 nout: <number of function outputs> --> 1
 
-        :return: TODO: BF?
+        :return: TODO: BF? prepared facet
         """
         BF = pad_mid(
             facet * broadcast(self.Fb, len(facet.shape), axis), self.yP_size, axis
@@ -472,7 +472,7 @@ class SparseFourierTransform(BaseArrays):
         """
         Further transform subgrid contributions, which are then summed up.
 
-        :param dims: TODO
+        :param dims: length of tuple to be produced (i.e. number of dimensions); int
         :param NjSi: TODO
         :param subgrid_off_elem: single subgrid offset element
         :param axis: axis along which operations are performed (0 or 1)

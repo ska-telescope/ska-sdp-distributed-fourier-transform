@@ -27,11 +27,12 @@ def mark_range(
     """
     Helper for marking ranges in a graph.
 
-    :param lbl: label
-    :param x0: X0
-    :param x1: X1
-    :param y1: Y1
-    :param ax: Ax
+    :param lbl: graph label
+    :param x0: X axis lower limit
+    :param x1: X axis upper limit
+    :param y0: Y axis lower limit
+    :param y1: Y axis upper limit
+    :param ax: Axes
     :param x_offset: X offset
     :param linestyle: Linestyle
     """
@@ -65,8 +66,8 @@ def display_plots(x, legend=None, grid=False, xlim=None, fig_name=None):
 
     :param x: X values
     :param legend: Legend
-    :param grid: Grid
-    :param xlim: X axis limitation
+    :param grid: If true, construct Grid
+    :param xlim: X axis limit (a tuple that contains lower and upper limits)
     :param fig_name: partial name or prefix (can include path) if figure is saved
                      if None, pylab.show() is called instead
     """
@@ -86,10 +87,10 @@ def display_plots(x, legend=None, grid=False, xlim=None, fig_name=None):
     else:
         pylab.savefig(f"{fig_name}.png")
 
-
-# TODO: needs better name; used both for 1D and 2D
-def plot_1(pswf, constants_class, fig_name=None):
+def plot_pswf(pswf, constants_class, fig_name=None):
     """
+    Plot to check that PSWF indeed satisfies intended bounds.
+
     :param pswf: prolate-spheroidal wave function
     :param constants_class: BaseArrays or DistributedFFT class object containing
                             fundamental and derived parameters
@@ -134,10 +135,12 @@ def plot_1(pswf, constants_class, fig_name=None):
     else:
         pylab.savefig(f"{fig_name}_fn.png")
 
-
-# TODO: needs better name; used both for 1D and 2D
-def plot_2(constants_class, fig_name=None):
+def plot_work_terms(constants_class, fig_name=None):
     """
+    Calculate actual work terms to use and plot to check them.
+    We need both n and b in image space.
+
+    TODO: What exactly are these work terms??
     :param constants_class: BaseArrays or DistributedFFT class object containing
                             fundamental and derived parameters
     :param fig_name: partial name or prefix (can include path) if figure is saved
@@ -161,6 +164,11 @@ def plot_2(constants_class, fig_name=None):
 
 def _plot_error(err_mean, err_mean_img, fig_name, direction):
     """
+    Plot the error terms.
+
+    :param err_mean: Mean of the errors, real part
+    :param err_mean_img: Mean of the errors, imaginary part
+    :param fig_name: Name of the figure
     :param direction: either "facet_to_subgrid" or "subgrid_to_facet"; used for plot naming
     """
     pylab.clf()
@@ -188,6 +196,18 @@ def errors_facet_to_subgrid_2d(
     to_plot=True,
     fig_name=None,
 ):
+    """
+    Calculate the error terms for the 2D facet to subgrid algorithm.
+
+    :param NMBF_NMBF: array of individual facet contributions
+    :param constants_class: BaseArrays or SparseFourierTransform class object containing
+                            fundamental and derived parameters
+    :param subgrid_2: 2D numpy array of subgrids
+    :param to_plot: run plotting?
+    :param fig_name: If given, figures will be saved with this prefix into PNG files.
+                     If to_plot is set to False, fig_name doesn't have an effect.
+
+    """
     err_mean = 0
     err_mean_img = 0
     for i0, i1 in itertools.product(
@@ -217,12 +237,24 @@ def errors_facet_to_subgrid_2d(
 
 
 def errors_subgrid_to_facet_2d(
-    BMNAF_BMNAF, facet_2, nfacet, yB_size, to_plot=True, fig_name=None
+    BMNAF_BMNAF, facet_2, constants_class, to_plot=True, fig_name=None
 ):
+    """
+    Calculate the error terms for the 2D subgrid to facet algorithm.
+
+    :param BMNAF_BMNAF: array of individual subgrid contributions
+    :param constants_class: BaseArrays or SparseFourierTransform class object containing
+                            fundamental and derived parameters
+    :param facet_2: 2D numpy array of facets
+    :param to_plot: run plotting?
+    :param fig_name: If given, figures will be saved with this prefix into PNG files.
+                     If to_plot is set to False, fig_name doesn't have an effect.
+
+    """
     err_mean = 0
     err_mean_img = 0
-    for j0, j1 in itertools.product(range(nfacet), range(nfacet)):
-        approx = numpy.zeros((yB_size, yB_size), dtype=complex)
+    for j0, j1 in itertools.product(range(constants_class.nfacet), range(constants_class.nfacet)):
+        approx = numpy.zeros((constants_class.yB_size, constants_class.yB_size), dtype=complex)
         approx += BMNAF_BMNAF[j0, j1]
 
         err_mean += (
@@ -250,9 +282,11 @@ def test_accuracy_facet_to_subgrid(
     fig_name=None,
 ):
     """
+    Test the accuracy of the 2D facet to subgrid algorithm.
+
     :param sparse_ft_class: SparseFourierTransform class object
-    :param xs:
-    :param ys:
+    :param xs: size of test image in X
+    :param ys: size of test image in Y
     :param to_plot: run plotting?
     :param fig_name: If given, figures will be saved with this prefix into PNG files.
                      If to_plot is set to False, fig_name doesn't have an effect.
@@ -422,9 +456,11 @@ def test_accuracy_subgrid_to_facet(
     fig_name=None,
 ):
     """
+    Test the accuracy of the 2D subgrid to facet algorithm.
+
     :param sparse_ft_class: SparseFourierTransform class object
-    :param xs:
-    :param ys:
+    :param xs: size of test image in X
+    :param ys: size of test image in X
     :param to_plot: run plotting?
     :param fig_name: If given, figures will be saved with this prefix into PNG files.
                      If to_plot is set to False, fig_name doesn't have an effect.
