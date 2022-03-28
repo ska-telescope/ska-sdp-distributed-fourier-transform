@@ -56,7 +56,7 @@ def mark_range(
         lbl_y = (y0 * 7 + y1) / 8
     else:
         # Some type of log scale
-        lbl_y = (y0 ** 7 * y1) ** (1 / 8)
+        lbl_y = (y0**7 * y1) ** (1 / 8)
     ax.annotate(lbl, (x1 + x_offset * wdt, lbl_y))
 
 
@@ -221,11 +221,11 @@ def errors_facet_to_subgrid_2d(
         approx += NMBF_NMBF[i0, i1]
 
         err_mean += (
-            numpy.abs(approx - subgrid_2[i0, i1]) ** 2 / constants_class.nsubgrid ** 2
+            numpy.abs(approx - subgrid_2[i0, i1]) ** 2 / constants_class.nsubgrid**2
         )
         err_mean_img += numpy.abs(
             fft(fft(approx - subgrid_2[i0, i1], axis=0), axis=1) ** 2
-            / constants_class.nsubgrid ** 2
+            / constants_class.nsubgrid**2
         )
 
     log.info(
@@ -264,9 +264,9 @@ def errors_subgrid_to_facet_2d(
 
         err_mean += (
             numpy.abs(ifft(ifft(approx - facet_2[j0, j1], axis=0), axis=1)) ** 2
-            / nfacet ** 2
+            / nfacet**2
         )
-        err_mean_img += numpy.abs(approx - facet_2[j0, j1]) ** 2 / nfacet ** 2
+        err_mean_img += numpy.abs(approx - facet_2[j0, j1]) ** 2 / nfacet**2
 
     log.info(
         "RMSE: %s (image: %s)",
@@ -431,11 +431,11 @@ def test_accuracy_facet_to_subgrid(
             sparse_ft_class.subgrid_A[i0], sparse_ft_class.subgrid_A[i1]
         )
         err_mean += (
-            numpy.abs(approx - subgrid_2[i0, i1]) ** 2 / sparse_ft_class.nsubgrid ** 2
+            numpy.abs(approx - subgrid_2[i0, i1]) ** 2 / sparse_ft_class.nsubgrid**2
         )
         err_mean_img += (
             numpy.abs(fft(fft(approx - subgrid_2[i0, i1], axis=0), axis=1)) ** 2
-            / sparse_ft_class.nsubgrid ** 2
+            / sparse_ft_class.nsubgrid**2
         )
     x = numpy.log(numpy.sqrt(err_mean_img)) / numpy.log(10)
 
@@ -616,10 +616,10 @@ def test_accuracy_subgrid_to_facet(
         approx += BMNAF_BMNAF[j0, j1]
         err_mean += (
             numpy.abs(ifft(ifft(approx - facet_2[j0, j1], axis=0), axis=1)) ** 2
-            / sparse_ft_class.nfacet ** 2
+            / sparse_ft_class.nfacet**2
         )
         err_mean_img += (
-            numpy.abs(approx - facet_2[j0, j1]) ** 2 / sparse_ft_class.nfacet ** 2
+            numpy.abs(approx - facet_2[j0, j1]) ** 2 / sparse_ft_class.nfacet**2
         )
 
     x = numpy.log(numpy.sqrt(err_mean_img)) / numpy.log(10)
