@@ -28,9 +28,10 @@ he installation is managed through `poetry <https://python-poetry.org/docs/>`_.
 Refer to their page for instructions.
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    algorithm
    examples
    structure
    api
+   dask

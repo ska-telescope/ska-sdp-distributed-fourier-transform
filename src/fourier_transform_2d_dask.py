@@ -681,26 +681,10 @@ def main(fundamental_params, to_plot=True, fig_name=None, use_dask=False):
         fig_name=fig_name,
     )
 
-    test_accuracy_facet_to_subgrid(
-        sparse_ft_class,
-        xs=252,
-        ys=252,
-        to_plot=to_plot,
-        fig_name=fig_name,
-    )
-
     errors_subgrid_to_facet_2d(
         approx_facet,
         facet_2,
         sparse_ft_class,
-        to_plot=to_plot,
-        fig_name=fig_name,
-    )
-
-    test_accuracy_subgrid_to_facet(
-        sparse_ft_class,
-        xs=252,
-        ys=252,
         to_plot=to_plot,
         fig_name=fig_name,
     )

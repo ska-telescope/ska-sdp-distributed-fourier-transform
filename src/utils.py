@@ -280,7 +280,7 @@ def errors_subgrid_to_facet_2d(
         _plot_error(err_mean, err_mean_img, fig_name, "subgrid_to_facet")
 
 
-# TODO: refactor this; it repeats a lot of code from the 2D case - what's the difference?
+# TODO: do we need this test? If not, need to refactor
 def test_accuracy_facet_to_subgrid(
     sparse_ft_class,
     xs=252,
@@ -289,7 +289,8 @@ def test_accuracy_facet_to_subgrid(
     fig_name=None,
 ):
     """
-    Test the accuracy of the 2D facet to subgrid algorithm.
+    Test the accuracy of the 2D facet to subgrid algorithm. This can be a a stand-alone test routine.
+    The test creates an arbitrary FG term and plot the errors.
 
     :param sparse_ft_class: SparseFourierTransform class object
     :param xs: size of test image in X
@@ -463,7 +464,8 @@ def test_accuracy_subgrid_to_facet(
     fig_name=None,
 ):
     """
-    Test the accuracy of the 2D subgrid to facet algorithm.
+    Test the accuracy of the 2D subgrid to facet algorithm. This can be a stand-alone test routine.
+    The test creates an arbitrary FG term and plot the errors.
 
     :param sparse_ft_class: SparseFourierTransform class object
     :param xs: size of test image in X
