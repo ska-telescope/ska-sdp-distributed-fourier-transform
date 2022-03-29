@@ -54,9 +54,6 @@ extensions = [
     "sphinx_automodapi.smart_resolver",
 ]
 
-# Avoid duplicate showing of functions in API doc
-numpydoc_show_class_members = False
-
 autodoc_mock_imports = [
     "matplotlib",
     "astropy",
@@ -66,6 +63,9 @@ autodoc_mock_imports = [
     "dask",
     "distributed",
 ]
+
+# Avoid duplicate showing of functions in API doc
+#numpydoc_show_class_members = False
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
