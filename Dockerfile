@@ -18,4 +18,6 @@ COPY --from=build requirements.txt ./
 RUN pip install --no-cache-dir --no-compile -r requirements.txt
 
 WORKDIR /app
+ENV PYTHONPATH=$PYTHONPATH:/app/src
+
 COPY . ./

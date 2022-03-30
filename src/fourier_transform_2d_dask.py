@@ -698,7 +698,7 @@ if __name__ == "__main__":
     scheduler = os.environ.get("DASK_SCHEDULER", None)
     log.info("Scheduler: %s", scheduler)
 
-    test_conf = SWIFT_CONFIGS["3k[1]-n1536-512"]
+    test_conf = SWIFT_CONFIGS["1k[1]-512-256"]
 
     client = set_up_dask(scheduler_address=scheduler)
     with performance_report(filename="dask-report-2d.html"):
