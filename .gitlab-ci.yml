@@ -7,22 +7,28 @@ stages:
   - lint
   - build
   - test
+  - publish
+  - scan
   - pages
 
 include:
-# Python lint and testing
+  # Python lint and testing
   - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/python-lint.gitlab-ci.yml'
   - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/python-test.gitlab-ci.yml'
 
-# .post step finalisers eg: badges
+  # OCI Images
   - project: 'ska-telescope/templates-repository'
-    file: 'gitlab-ci/includes/finaliser.gitlab-ci.yml'
+    file: 'gitlab-ci/includes/oci-image.gitlab-ci.yml'
 
   # Documentation jobs
   - project: 'ska-telescope/templates-repository'
     file: 'gitlab-ci/includes/docs.gitlab-ci.yml'
+
+  # .post step finalisers eg: badges
+  - project: 'ska-telescope/templates-repository'
+    file: 'gitlab-ci/includes/finaliser.gitlab-ci.yml'
 
 
 python-lint:
