@@ -3,14 +3,14 @@ import numpy
 import pytest
 
 from src.fourier_transform.fourier_algorithm import (
-    pad_mid,
+    _ith_subgrid_facet_element,
+    broadcast,
+    coordinates,
+    create_slice,
     extract_mid,
     fft,
     ifft,
-    coordinates,
-    broadcast,
-    create_slice,
-    _ith_subgrid_facet_element,
+    pad_mid,
 )
 
 
@@ -259,7 +259,8 @@ def test_fft_2d_axis0():
     result = fft(array, axis=0)
     assert result.dtype == complex
     assert (
-        result[numpy.where(result != 0)] == numpy.array([3, 3, 3, 3, 3], dtype=complex)
+        result[numpy.where(result != 0)]
+        == numpy.array([3, 3, 3, 3, 3], dtype=complex)
     ).all()
 
 
@@ -276,7 +277,8 @@ def test_fft_2d_axis1():
     result = fft(array, axis=1)
     assert result.dtype == complex
     assert (
-        result[numpy.where(result != 0)] == numpy.array([[5], [5], [5]], dtype=complex)
+        result[numpy.where(result != 0)]
+        == numpy.array([[5], [5], [5]], dtype=complex)
     ).all()
 
 
@@ -292,7 +294,9 @@ def test_fft_2d_axis01():
     array = numpy.ones((3, 5))
     result = fft(fft(array, axis=0), axis=1)
     assert result.dtype == complex
-    assert (result[numpy.where(result != 0)] == numpy.array([15], dtype=complex)).all()
+    assert (
+        result[numpy.where(result != 0)] == numpy.array([15], dtype=complex)
+    ).all()
 
 
 def test_ifft_1d():
@@ -319,7 +323,8 @@ def test_ifft_2d_axis0():
     result = ifft(array, axis=0)
 
     assert (
-        result == numpy.array([[0, 0, 5, 0, 0], [0, 0, 5, 0, 0], [0, 0, 5, 0, 0]])
+        result
+        == numpy.array([[0, 0, 5, 0, 0], [0, 0, 5, 0, 0], [0, 0, 5, 0, 0]])
     ).all()
 
 
@@ -339,7 +344,8 @@ def test_ifft_2d_axis1():
     result = ifft(array, axis=1)
 
     assert (
-        result == numpy.array([[0, 0, 0, 0, 0], [3, 3, 3, 3, 3], [0, 0, 0, 0, 0]])
+        result
+        == numpy.array([[0, 0, 0, 0, 0], [3, 3, 3, 3, 3], [0, 0, 0, 0, 0]])
     ).all()
 
 
@@ -446,7 +452,11 @@ def test_broadcast_raises_error(dims, axis):
     [
         (0, 0, ()),  # if dims is 0, result is always an empty tuple
         (1, 0, (6,)),  # range(1) --> 0, which equals to axis -> use axis_value
-        (1, 1, (2,)),  # range(1) --> 0, which doesn't equal to axis -> use fill_value
+        (
+            1,
+            1,
+            (2,),
+        ),  # range(1) --> 0, which doesn't equal to axis -> use fill_value
         (3, 2, (2, 2, 6)),  # axis=2 (3rd value in tuple) is axis_val
         (6, 3, (2, 2, 2, 6, 2, 2)),
     ],
@@ -459,7 +469,8 @@ def test_create_slice(dims, axis, expected_tuple):
 
 
 @pytest.mark.parametrize(
-    "dims, axis", [(5, (0, 2)), ((2, 3), 4), ((2, 2), (0, 1)), ("bla", 5), (3, "bla")]
+    "dims, axis",
+    [(5, (0, 2)), ((2, 3), 4), ((2, 2), (0, 1)), ("bla", 5), (3, "bla")],
 )
 def test_create_slice_raises_error(dims, axis):
     """
@@ -499,7 +510,9 @@ def test_ith_subgrid_facet_element_axis_int(use_dask):
 @pytest.mark.parametrize("use_dask", [False, True])
 def test_ith_subgrid_facet_element_axis_tuple(use_dask):
     """
-    Input array is two dimensional, i.e. the axis argument is a tuple of length two.
+    Input array is two dimensional, i.e. the axis argument
+    is a tuple of length two.
+
     Steps the code takes with example data in test:
         * input array:
             [[1, 44, 12, 23, 33],
@@ -517,7 +530,11 @@ def test_ith_subgrid_facet_element_axis_tuple(use_dask):
             [0, 33]] ==> expected result
     """
     image = numpy.array(
-        [[1, 44, 12, 23, 33], [13, 53, 1234, 332, 54], [123, -53, 32, -55, -452]]
+        [
+            [1, 44, 12, 23, 33],
+            [13, 53, 1234, 332, 54],
+            [123, -53, 32, -55, -452],
+        ]
     )
     offset = (1, 3)
     true_size = 2

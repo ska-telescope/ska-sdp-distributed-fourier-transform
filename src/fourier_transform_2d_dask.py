@@ -9,31 +9,30 @@ The main function calls all the functions.
 
 import itertools
 import logging
-import time
 import os
+import sys
+import time
 
 import dask
-import numpy
-import sys
 import dask.array
+import numpy
 from distributed import performance_report
-
 from matplotlib import pylab
 
 from src.fourier_transform.algorithm_parameters import SparseFourierTransform
 from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
 from src.fourier_transform.fourier_algorithm import (
-    ifft,
     fft,
+    ifft,
     make_subgrid_and_facet,
 )
+from src.swift_configs import SWIFT_CONFIGS
 from src.utils import (
-    plot_pswf,
-    plot_work_terms,
     errors_facet_to_subgrid_2d,
     errors_subgrid_to_facet_2d,
+    plot_pswf,
+    plot_work_terms,
 )
-from src.swift_configs import SWIFT_CONFIGS
 
 log = logging.getLogger("fourier-logger")
 log.setLevel(logging.INFO)
@@ -138,7 +137,8 @@ def subgrid_to_facet_algorithm(
         )
         for i0 in range(sparse_ft_class.nsubgrid):
             NAF_MNAF = numpy.zeros(
-                (sparse_ft_class.xM_yN_size, sparse_ft_class.yP_size), dtype=complex
+                (sparse_ft_class.xM_yN_size, sparse_ft_class.yP_size),
+                dtype=complex,
             )
             for i1 in range(sparse_ft_class.nsubgrid):
                 if use_dask:
@@ -151,15 +151,21 @@ def subgrid_to_facet_algorithm(
                             use_dask=use_dask,
                             nout=1,
                         ),
-                        shape=(sparse_ft_class.xM_yN_size, sparse_ft_class.yP_size),
+                        shape=(
+                            sparse_ft_class.xM_yN_size,
+                            sparse_ft_class.yP_size,
+                        ),
                         dtype=complex,
                     )
                 else:
-                    NAF_MNAF = NAF_MNAF + sparse_ft_class.add_subgrid_contribution(
-                        len(NAF_MNAF.shape),
-                        naf_naf[i0][i1][j0][j1],
-                        sparse_ft_class.subgrid_off[i1],
-                        1,
+                    NAF_MNAF = (
+                        NAF_MNAF
+                        + sparse_ft_class.add_subgrid_contribution(
+                            len(NAF_MNAF.shape),
+                            naf_naf[i0][i1][j0][j1],
+                            sparse_ft_class.subgrid_off[i1],
+                            1,
+                        )
                     )
             NAF_BMNAF = sparse_ft_class.finish_facet(
                 NAF_MNAF,
@@ -182,13 +188,16 @@ def subgrid_to_facet_algorithm(
                     dtype=complex,
                 )
             else:
-                MNAF_BMNAF = MNAF_BMNAF + sparse_ft_class.add_subgrid_contribution(
-                    len(MNAF_BMNAF.shape),
-                    NAF_BMNAF,
-                    sparse_ft_class.subgrid_off[i0],
-                    0,
-                    use_dask=use_dask,
-                    nout=1,
+                MNAF_BMNAF = (
+                    MNAF_BMNAF
+                    + sparse_ft_class.add_subgrid_contribution(
+                        len(MNAF_BMNAF.shape),
+                        NAF_BMNAF,
+                        sparse_ft_class.subgrid_off[i0],
+                        0,
+                        use_dask=use_dask,
+                        nout=1,
+                    )
                 )
         approx_facet[j0][j1] = sparse_ft_class.finish_facet(
             MNAF_BMNAF,
@@ -209,12 +218,15 @@ def facet_to_subgrid_2d_method_1(
     """
     Generate subgrid from facet 2D. 1st Method.
 
-    Approach 1: do prepare_facet step across both axes first, then go into the loop
-                over subgrids horizontally (axis=0) and within that, loop over subgrids
-                vertically (axis=1) and do the extract_subgrid step in these two directions
+    Approach 1: do prepare_facet step across both axes first,
+                then go into the loop over subgrids horizontally
+                (axis=0) and within that, loop over subgrids
+                vertically (axis=1) and do the extract_subgrid
+                step in these two directions
 
-    Having those operations separately means that we can shuffle things around quite a bit
-    without affecting the result. The obvious first choice might be to do all facet-preparation
+    Having those operations separately means that we can shuffle
+    things around quite a bit without affecting the result.
+    The obvious first choice might be to do all facet-preparation
     up-front, as this allows us to share the computation across all subgrids
 
     :param facet: 2D numpy array of facets
@@ -285,16 +297,18 @@ def facet_to_subgrid_2d_method_2(
     use_dask=False,
 ):
     """
-    Approach 2: First, do prepare_facet on the horizontal axis (axis=0), then
-                for loop for the horizontal subgrid direction, and do extract_subgrid
-                within same loop do prepare_facet in the vertical case (axis=1), then
-                go into the fila subgrid loop in the vertical dir and do extract_subgrid for that
+    Approach 2: First, do prepare_facet on the horizontal axis
+                (axis=0), then for loop for the horizontal subgrid direction,
+                and do extract_subgrid within same loop do prepare_facet
+                in the vertical case (axis=1), then go into the fila subgrid
+                loop in the vertical dir and do extract_subgrid for that
 
-    However, remember that `prepare_facet` increases the amount of data involved, which in turn
-    means that we need to shuffle more data through subsequent computations. Therefore it is actually
-    more efficient to first do the subgrid-specific reduction, and *then* continue with the (constant)
-    facet preparation along the other axis. We can tackle both axes in whatever order we like,
-    it doesn't make a difference for the result.
+    However, remember that `prepare_facet` increases the amount of data
+    involved, which in turn means that we need to shuffle more data through
+    subsequent computations. Therefore it is actually more efficient to first
+    do the subgrid-specific reduction, and *then* continue with the (constant)
+    facet preparation along the other axis. We can tackle both axes in whatever
+    order we like, it doesn't make a difference for the result.
 
     :param facet: 2D numpy array of facets
     :param sparse_ft_class: SparseFourierTransform class object
@@ -461,18 +475,21 @@ def generate_approx_subgrid(NMBF_NMBF, sparse_ft_class, use_dask=False):
         for j0, j1 in itertools.product(
             range(sparse_ft_class.nfacet), range(sparse_ft_class.nfacet)
         ):
-            summed_facet = summed_facet + sparse_ft_class.add_facet_contribution(
-                sparse_ft_class.add_facet_contribution(
-                    NMBF_NMBF[i0][i1][j0][j1],
-                    sparse_ft_class.facet_off[j0],
-                    axis=0,
+            summed_facet = (
+                summed_facet
+                + sparse_ft_class.add_facet_contribution(
+                    sparse_ft_class.add_facet_contribution(
+                        NMBF_NMBF[i0][i1][j0][j1],
+                        sparse_ft_class.facet_off[j0],
+                        axis=0,
+                        use_dask=use_dask,
+                        nout=1,
+                    ),
+                    sparse_ft_class.facet_off[j1],
+                    axis=1,
                     use_dask=use_dask,
                     nout=1,
-                ),
-                sparse_ft_class.facet_off[j1],
-                axis=1,
-                use_dask=use_dask,
-                nout=1,
+                )
             )
 
         approx_subgrid[i0][i1] = sparse_ft_class.finish_subgrid(
@@ -501,8 +518,9 @@ def _run_algorithm(
     The three approaches:
       - differ in when facet is prepared and which axis is run first
       - all give the same result, but with a different speed
-      - #1 is slowest, because that prepares all facets first, which substantially increases their size
-        and hence, puts a large amount of data into the following loops
+      - #1 is slowest, because that prepares all facets first,
+        which substantially increases their size and hence, puts a
+        large amount of data into the following loops
 
     Subgrid-to-facet only has a single version.
 
@@ -510,8 +528,8 @@ def _run_algorithm(
     :param FG_2: FFT of G_2; to be split into facets
     :param sparse_ft_class: SparseFourierTransform class object
     :param use_dask: use dask.delayed or not
-    :param version_to_run: which facet-to-subgrid version (method) to run: 1, 2, or 3
-                           (if not 1, or 2, it runs 3)
+    :param version_to_run: which facet-to-subgrid version (method)
+                           to run: 1, 2, or 3 (if not 1, or 2, it runs 3)
     """
     subgrid_2, facet_2 = make_subgrid_and_facet(
         G_2,
@@ -580,14 +598,15 @@ def _run_algorithm(
 def main(fundamental_params, to_plot=True, fig_name=None, use_dask=False):
     """
 
-    Main execution function that reads in the configuration, generates the source data,
-    and runs the algorithm.
+    Main execution function that reads in the configuration,
+    generates the source data, and runs the algorithm.
 
     :param fundamental_params: dict of parameters needed to instantiate
-                               src.fourier_transform.algorithm_parameters.DistributedFFT
+                    src.fourier_transform.algorithm_parameters.DistributedFFT
     :param to_plot: run plotting?
-    :param fig_name: If given, figures will be saved with this prefix into PNG files.
-                     If to_plot is set to False, fig_name doesn't have an effect.
+    :param fig_name: If given, figures are saved with this prefix into
+                     PNG files. If to_plot is set to False,
+                     fig_name doesn't have an effect.
     :param use_dask: boolean; use dask?
     """
     log.info("== Chosen configuration")
@@ -601,13 +620,16 @@ def main(fundamental_params, to_plot=True, fig_name=None, use_dask=False):
     log.info("\n== Generate layout (facets and subgrids")
     # Layout subgrids + facets
     log.info(
-        "%d subgrids, %d facets needed to cover"
-        % (sparse_ft_class.nsubgrid, sparse_ft_class.nfacet)
+        "%s subgrids, %s facets needed to cover",
+        sparse_ft_class.nsubgrid,
+        sparse_ft_class.nfacet,
     )
 
     log.info("\n== Generate A/B masks and subgrid/facet offsets")
-    # Determine subgrid/facet offsets and the appropriate A/B masks for cutting them out.
-    # We are aiming for full coverage here: Every pixel is part of exactly one subgrid / facet.
+    # Determine subgrid/facet offsets and the appropriate
+    # A/B masks for cutting them out.
+    # We are aiming for full coverage here:
+    #   Every pixel is part of exactly one subgrid / facet.
 
     # adding sources
     add_sources = True
@@ -638,7 +660,9 @@ def main(fundamental_params, to_plot=True, fig_name=None, use_dask=False):
         # without sources
         G_2 = (
             numpy.exp(
-                2j * numpy.pi * numpy.random.rand(sparse_ft_class.N, sparse_ft_class.N)
+                2j
+                * numpy.pi
+                * numpy.random.rand(sparse_ft_class.N, sparse_ft_class.N)
             )
             * numpy.random.rand(sparse_ft_class.N, sparse_ft_class.N)
             / 2
@@ -705,5 +729,6 @@ if __name__ == "__main__":
         main(test_conf, to_plot=False, use_dask=True)
     tear_down_dask(client)
 
-    # all above needs commenting and this uncommenting if want to run it without dask
+    # all above needs commenting and this uncommenting if
+    # want to run it without dask
     # main(to_plot=False)

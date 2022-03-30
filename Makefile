@@ -5,5 +5,5 @@ include .make/oci.mk
 
 PROJECT_NAME = ska-sdp-distributed-fourier-transform
 
-python-do-lint:
-	black --check src/ tests/
+# C0103: invalid-name (caused by non-compliant variable names)
+PYTHON_SWITCHES_FOR_PYLINT = --disable C0103

@@ -2,8 +2,8 @@ import numpy
 import pytest
 
 from src.fourier_transform.algorithm_parameters import (
-    BaseParameters,
     BaseArrays,
+    BaseParameters,
 )
 
 TEST_PARAMS = {
@@ -105,9 +105,11 @@ def test_base_arrays_pure_arrays():
     based on pure calculations, therefore I decided not to test
     their actual values, only that the code calculating them doesn't break
     when the class is instantiated with correct parameters.
+
+    Note: F841 flake8 error ignored: "assigned but not used variable"
     """
     array_class = BaseArrays(**TEST_PARAMS)
-    fb = array_class.Fb
-    fn = array_class.Fn
-    facet_m0_trunc = array_class.facet_m0_trunc
-    pswf = array_class.pswf
+    fb = array_class.Fb  # noqa: F841
+    fn = array_class.Fn  # noqa: F841
+    facet_m0_trunc = array_class.facet_m0_trunc  # noqa: F841
+    pswf = array_class.pswf  # noqa: F841
