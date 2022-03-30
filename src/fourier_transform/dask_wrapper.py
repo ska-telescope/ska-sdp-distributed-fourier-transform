@@ -18,6 +18,10 @@ log = logging.getLogger("fourier-logger")
 def dask_wrapper(func):
     """
     The Dask wrapper function
+
+    If arg use_dask = True and arg nout is provided,
+    then function is run with dask.delayed.
+    Else, it is executed in serial as normal.
     """
 
     @functools.wraps(func)  # preserves information about the original function
@@ -41,8 +45,12 @@ def dask_wrapper(func):
 def set_up_dask(scheduler_address=None):
     """
     Set up the Dask Client
+
+    :param scheduler_address: IP_address:PORT of scheduler
+                              if None, a local cluster is created with machine resources
+    :return: Dask client
     """
-    client = Client(scheduler_address)  # set up local cluster on your laptop
+    client = Client(scheduler_address)
     log.info(client.dashboard_link)
     return client
 
