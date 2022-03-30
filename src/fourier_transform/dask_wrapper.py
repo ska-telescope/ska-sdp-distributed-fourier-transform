@@ -38,11 +38,11 @@ def dask_wrapper(func):
     return wrapper
 
 
-def set_up_dask():
+def set_up_dask(scheduler_address=None):
     """
     Set up the Dask Client
     """
-    client = Client()  # set up local cluster on your laptop
+    client = Client(scheduler_address)  # set up local cluster on your laptop
     log.info(client.dashboard_link)
     return client
 
