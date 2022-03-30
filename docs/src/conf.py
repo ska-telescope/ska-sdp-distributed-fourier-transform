@@ -106,8 +106,10 @@ exclude_patterns = []
 pygments_style = "sphinx"
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
-todo_include_todos = True
+todo_include_todos = False
 
+# Avoid duplicate showing of functions in API doc
+numpydoc_show_class_members = False
 
 # -- Options for HTML output ----------------------------------------------
 

@@ -16,6 +16,10 @@ log = logging.getLogger("fourier-logger")
 
 
 def dask_wrapper(func):
+    """
+    The Dask wrapper function
+    """
+
     @functools.wraps(func)  # preserves information about the original function
     def wrapper(*args, **kwargs):
         try:
@@ -35,10 +39,16 @@ def dask_wrapper(func):
 
 
 def set_up_dask():
+    """
+    Set up the Dask Client
+    """
     client = Client()  # set up local cluster on your laptop
     log.info(client.dashboard_link)
     return client
 
 
 def tear_down_dask(client):
+    """
+    Close the Dask Client
+    """
     client.close()

@@ -27,8 +27,8 @@ from src.fourier_transform.fourier_algorithm import (
     make_subgrid_and_facet,
 )
 from src.utils import (
-    plot_1,
-    plot_2,
+    plot_pswf,
+    plot_work_terms,
     errors_facet_to_subgrid_2d,
     test_accuracy_facet_to_subgrid,
     test_accuracy_subgrid_to_facet,
@@ -580,6 +580,10 @@ def _run_algorithm(
 
 def main(fundamental_params, to_plot=True, fig_name=None, use_dask=False):
     """
+
+    Main execution function that reads in the configuration, generates the source data,
+    and runs the algorithm.
+
     :param fundamental_params: dict of parameters needed to instantiate
                                src.fourier_transform.algorithm_parameters.DistributedFFT
     :param to_plot: run plotting?
@@ -592,8 +596,8 @@ def main(fundamental_params, to_plot=True, fig_name=None, use_dask=False):
     log.info(sparse_ft_class)
 
     if to_plot:
-        plot_1(sparse_ft_class.pswf, sparse_ft_class, fig_name=fig_name)
-        plot_2(sparse_ft_class, fig_name=fig_name)
+        plot_pswf(sparse_ft_class.pswf, sparse_ft_class, fig_name=fig_name)
+        plot_work_terms(sparse_ft_class, fig_name=fig_name)
 
     log.info("\n== Generate layout (facets and subgrids")
     # Layout subgrids + facets
@@ -677,27 +681,10 @@ def main(fundamental_params, to_plot=True, fig_name=None, use_dask=False):
         fig_name=fig_name,
     )
 
-    test_accuracy_facet_to_subgrid(
-        sparse_ft_class,
-        xs=252,
-        ys=252,
-        to_plot=to_plot,
-        fig_name=fig_name,
-    )
-
     errors_subgrid_to_facet_2d(
         approx_facet,
         facet_2,
-        sparse_ft_class.nfacet,
-        sparse_ft_class.yB_size,
-        to_plot=to_plot,
-        fig_name=fig_name,
-    )
-
-    test_accuracy_subgrid_to_facet(
         sparse_ft_class,
-        xs=252,
-        ys=252,
         to_plot=to_plot,
         fig_name=fig_name,
     )
