@@ -127,6 +127,8 @@ def test_end_to_end_2d_dask(use_dask):
         decimal=4,
     )
 
+    # TODO: we need to finish this test (implement the approx_subgrid tests of it)
+
     if use_dask:
         tear_down_dask(client)
 
