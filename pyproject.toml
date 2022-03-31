@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ska-sdp-distributed-fourier-transform"
-version = "0.1.0"
+version = "0.0.0"
 description = "SKA SDP Distributed Fourier Transform"
 authors = ["SKA SDP Developers"]
 license = "BSD-3-Clause"
