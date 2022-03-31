@@ -28,6 +28,8 @@ def create_slice(fill_val, axis_val, dims, axis):
 
     :return: tuple of length dims
     """
+    # pylint: disable=consider-using-generator
+    # TODO: pylint's suggestion of using a generator should be investigated
     if not isinstance(axis, int) or not isinstance(dims, int):
         raise ValueError(
             "create_slice: axis and dims values have to be integers."
@@ -135,15 +137,14 @@ def coordinates(n):
     n2 = n // 2
     if n % 2 == 0:
         return numpy.mgrid[-n2:n2] / n
-    else:
-        # ignore flake8 "extra whitespace" error (E203)
-        return numpy.mgrid[-n2 : n2 + 1] / n  # noqa: E203
+    # ignore flake8 "extra whitespace" error (E203)
+    return numpy.mgrid[-n2 : n2 + 1] / n  # noqa: E203
 
 
 @dask_wrapper
 def _ith_subgrid_facet_element(
     true_image, offset_i, true_usable_size, mask_element, axis=(0, 1), **kwargs
-):
+):  # pylint: disable=unused-argument
     """
     Calculate a single facet or subgrid element.
 

@@ -1,3 +1,6 @@
+"""
+Unit tests for fourier_algorithm.py functions
+"""
 import dask
 import numpy
 import pytest
@@ -462,6 +465,9 @@ def test_broadcast_raises_error(dims, axis):
     ],
 )
 def test_create_slice(dims, axis, expected_tuple):
+    """
+    Test create_slice. See parametrize list for more info.
+    """
     fill_val = 2
     axis_val = 6
     result = create_slice(fill_val, axis_val, dims, axis)

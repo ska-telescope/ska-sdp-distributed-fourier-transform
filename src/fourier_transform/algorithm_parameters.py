@@ -1,3 +1,4 @@
+# pylint: disable=unused-argument
 """
 The main data classes are listed in this module.
 
@@ -65,6 +66,8 @@ class BaseParameters:
     :param nsubgrid: number of subgrids
     :param nfacet: number of facets
     """
+
+    # pylint: disable=too-many-instance-attributes
 
     def __init__(self, **fundamental_constants):
         # Fundamental sizes and parameters
@@ -161,6 +164,8 @@ class BaseArrays(BaseParameters):
         respectively (to the positions of the subgrids and facets)
     """
 
+    # pylint: disable=too-many-instance-attributes
+
     def __init__(self, **fundamental_constants):
         super().__init__(**fundamental_constants)
 
@@ -211,9 +216,9 @@ class BaseArrays(BaseParameters):
         border = (
             offsets + numpy.hstack([offsets[1:], [self.N + offsets[0]]])
         ) // 2
-        for i in range(len(offsets)):
-            left = (border[i - 1] - offsets[i] + mask_size // 2) % self.N
-            right = border[i] - offsets[i] + mask_size // 2
+        for i, offset in enumerate(offsets):
+            left = (border[i - 1] - offset + mask_size // 2) % self.N
+            right = border[i] - offset + mask_size // 2
 
             if not left >= 0 and right <= mask_size:
                 raise ValueError(
@@ -301,17 +306,19 @@ class BaseArrays(BaseParameters):
         return self._facet_m0_trunc
 
     @property
-    def pswf(self, alpha=0):
+    def pswf(self):
         """
         Calculate 1D PSWF (prolate-spheroidal wave function) at the
         full required resolution (facet size)
 
         See also: VLA Scientific Memoranda 129, 131, 132
-
-        :param alpha: mode parameter (integer) for the PSWF eigenfunctions,
-        using zero for zeroth order
         """
+        # alpha: mode parameter (integer) for the PSWF
+        # eigenfunctions using zero for zeroth order
+        alpha = 0
+
         if self._pswf is None:
+            # pylint: disable=no-member
             pswf = scipy.special.pro_ang1(
                 alpha,
                 alpha,
@@ -342,9 +349,6 @@ class SparseFourierTransform(BaseArrays):
 
     The algorithm was developed for 2D input arrays (images).
     """
-
-    def __init__(self, **fundamental_constants):
-        super().__init__(**fundamental_constants)
 
     # facet to subgrid algorithm
     @dask_wrapper

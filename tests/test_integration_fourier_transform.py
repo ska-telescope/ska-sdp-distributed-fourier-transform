@@ -1,3 +1,4 @@
+# pylint: disable=redefined-outer-name
 """
 End-to-end and integration tests.
 """
@@ -33,7 +34,7 @@ from tests.test_reference_data.ref_data_2d import (
 log = logging.getLogger("fourier-logger")
 log.setLevel(logging.WARNING)
 
-TARGET_PARS = {
+TEST_PARAMS = {
     "W": 13.25,
     "fov": 0.75,
     "N": 1024,
@@ -63,13 +64,19 @@ def _check_difference(calculated, original, size):
     return err_mean, err_mean_img
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def target_distr_fft():
-    return SparseFourierTransform(**TARGET_PARS)
+    """
+    Pytest fixture for instantiated SparseFourierTransform
+    """
+    return SparseFourierTransform(**TEST_PARAMS)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def subgrid_and_facet(target_distr_fft):
+    """
+    Pytest fixture for generating subgrid and facet array for tests
+    """
     fg = numpy.zeros((target_distr_fft.N, target_distr_fft.N))
     fg[252, 252] = 1
     g = ifft(ifft(fg, axis=0), axis=1)
@@ -95,12 +102,12 @@ def test_end_to_end_2d_dask(use_dask):
     if use_dask:
         client = set_up_dask()
 
-    (
+    (  # pylint: disable=unused-variable
         result_subgrid,
         result_facet,
         result_approx_subgrid,
         result_approx_facet,
-    ) = main(TARGET_PARS, to_plot=False, use_dask=use_dask)
+    ) = main(TEST_PARAMS, to_plot=False, use_dask=use_dask)
 
     # check array shapes
     assert result_subgrid.shape == (6, 6, 188, 188)
@@ -188,7 +195,7 @@ def test_end_to_end_2d_dask_logging(use_dask):
     ]
 
     with patch("logging.Logger.info") as mock_log:
-        main(TARGET_PARS, to_plot=False, use_dask=use_dask)
+        main(TEST_PARAMS, to_plot=False, use_dask=use_dask)
         for log_call in expected_log_calls:
             assert log_call in mock_log.call_args_list
 

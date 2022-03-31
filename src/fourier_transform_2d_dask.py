@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
+# pylint: disable=too-many-locals
 """
 Main algorithm routine.
 The functions that conduct the main Dask-implemented algorithm
@@ -41,8 +42,6 @@ log.addHandler(logging.StreamHandler(sys.stdout))
 # Plot setup
 pylab.rcParams["figure.figsize"] = 16, 4
 pylab.rcParams["image.cmap"] = "viridis"
-
-ALPHA = 0
 
 
 def _generate_subgrid_contributions(subgrid_2, sparse_ft_class, use_dask):
