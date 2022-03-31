@@ -32,3 +32,15 @@ make python-lint
 The linting job in the CI pipeline does the same checks, and it will fail if
 the code does not pass all of them.
 
+## Creating a new release
+
+When you are ready to make a new release:
+
+  - Check out the main branch
+  - Create an issue in the [Release Management](https://jira.skatelescope.org/projects/REL/summary) project
+  - Update the version number in `.release` with
+    - `bump-patch-release`,
+    - `bump-minor-release`, or
+    - `bump-major-release`
+  - Create the git tag with `make git-create-tag`
+  - Push the changes with `make git-push-tag`

@@ -10,6 +10,7 @@ The main function calls all the functions.
 import itertools
 import logging
 import time
+import os
 
 import dask
 import numpy
@@ -30,8 +31,6 @@ from src.utils import (
     plot_pswf,
     plot_work_terms,
     errors_facet_to_subgrid_2d,
-    test_accuracy_facet_to_subgrid,
-    test_accuracy_subgrid_to_facet,
     errors_subgrid_to_facet_2d,
 )
 from src.swift_configs import SWIFT_CONFIGS
@@ -696,9 +695,12 @@ if __name__ == "__main__":
     # Fixing seed of numpy random
     numpy.random.seed(123456789)
 
-    test_conf = SWIFT_CONFIGS["3k[1]-n1536-512"]
+    scheduler = os.environ.get("DASK_SCHEDULER", None)
+    log.info("Scheduler: %s", scheduler)
 
-    client = set_up_dask()
+    test_conf = SWIFT_CONFIGS["1k[1]-512-256"]
+
+    client = set_up_dask(scheduler_address=scheduler)
     with performance_report(filename="dask-report-2d.html"):
         main(test_conf, to_plot=False, use_dask=True)
     tear_down_dask(client)
