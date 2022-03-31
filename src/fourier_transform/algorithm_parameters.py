@@ -269,10 +269,7 @@ class BaseArrays(BaseParameters):
         if self._Fn is None:
             self._Fn = self.pswf[
                 (self.yN_size // 2)
-                # ignore flake8 error: "extra whitespace" (E203)
-                % int(self.N / self.xM_size) :: int(  # noqa: E203
-                    self.N / self.xM_size
-                )
+                % int(self.N / self.xM_size) :: int(self.N / self.xM_size)
             ]
 
         return self._Fn

@@ -10,3 +10,6 @@ PROJECT_NAME = ska-sdp-distributed-fourier-transform
 # R0801: duplicate-code (some are duplicated between the main function and utils
 #		 these will eventually need to be resolved, utils cleaned up
 PYTHON_SWITCHES_FOR_PYLINT = --disable=C0103,W0511,R0801
+
+# flake8 and black don't agree on "extra whitespace", we ignore the flake8 error
+PYTHON_SWITCHES_FOR_FLAKE8 = --ignore=E203

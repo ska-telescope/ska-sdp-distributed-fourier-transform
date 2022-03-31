@@ -137,8 +137,8 @@ def coordinates(n):
     n2 = n // 2
     if n % 2 == 0:
         return numpy.mgrid[-n2:n2] / n
-    # ignore flake8 "extra whitespace" error (E203)
-    return numpy.mgrid[-n2 : n2 + 1] / n  # noqa: E203
+
+    return numpy.mgrid[-n2 : n2 + 1] / n
 
 
 @dask_wrapper

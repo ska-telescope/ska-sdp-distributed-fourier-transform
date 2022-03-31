@@ -9,18 +9,6 @@ from src.fourier_transform.algorithm_parameters import (
     BaseArrays,
     BaseParameters,
 )
-
-# TEST_PARAMS = {
-#     "W": 13.25,
-#     "fov": 0.75,
-#     "N": 1024,
-#     "Nx": 4,
-#     "yB_size": 256,
-#     "yN_size": 320,
-#     "yP_size": 512,
-#     "xA_size": 188,
-#     "xM_size": 256,
-# }
 from tests.test_integration_fourier_transform import TEST_PARAMS
 
 
