@@ -15,9 +15,10 @@ at: https://gitlab.com/ska-telescope/sdi/ska-cicd-makefile#keeping-up-to-date
 
 ## Contributing to this repository
 
-[Black](https://github.com/psf/black) is used to keep the Python code in good shape.
+[Black](https://github.com/psf/black), [isort](https://pycqa.github.io/isort/),
+and various linting tools are used to keep the Python code in good shape.
 Please check that your code follows the formatting rules before committing it
-to the repository. You can apply Black to the code with:
+to the repository. You can apply Black and isort to the code with:
 
 ```bash
 make python-format

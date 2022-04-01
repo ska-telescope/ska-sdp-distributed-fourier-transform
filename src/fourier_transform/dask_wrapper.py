@@ -1,9 +1,9 @@
 """
 The dask wrapper.
 
-We wrap the Dask delayed implementation in a dask wrapper where if use_dask is set to True,
-the dask wrapper function will call the dask.delayed option for the computation.
-
+We wrap the Dask delayed implementation in a dask
+wrapper where if use_dask is set to True, the dask wrapper
+function will call the dask.delayed option for the computation.
 """
 
 import functools
@@ -47,7 +47,7 @@ def set_up_dask(scheduler_address=None):
     Set up the Dask Client
 
     :param scheduler_address: IP_address:PORT of scheduler
-                              if None, a local cluster is created with machine resources
+                if None, a local cluster is created with machine resources
     :return: Dask client
     """
     client = Client(scheduler_address)

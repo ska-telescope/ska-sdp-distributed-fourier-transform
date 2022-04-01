@@ -3,6 +3,7 @@ Distributed Fourier Transform Module.
 Included are a list of base functions that are used across the code.
 """
 import itertools
+
 import numpy
 
 from src.fourier_transform.dask_wrapper import dask_wrapper
@@ -21,13 +22,18 @@ def create_slice(fill_val, axis_val, dims, axis):
 
     :param fill_val: value to use for dimensions where dim != axis
     :param axis_val: value to use for dimensions where dim == axis
-    :param dims: length of tuple to be produced (i.e. number of dimensions); int
+    :param dims: length of tuple to be produced
+                 (i.e. number of dimensions); int
     :param axis: axis (index) along which axis_val to be used; int
 
     :return: tuple of length dims
     """
+    # pylint: disable=consider-using-generator
+    # TODO: pylint's suggestion of using a generator should be investigated
     if not isinstance(axis, int) or not isinstance(dims, int):
-        raise ValueError("create_slice: axis and dims values have to be integers.")
+        raise ValueError(
+            "create_slice: axis and dims values have to be integers."
+        )
 
     return tuple([axis_val if i == axis else fill_val for i in range(dims)])
 
@@ -62,7 +68,10 @@ def pad_mid(a, n, axis):
     if n == n0:
         return a
     pad = create_slice(
-        (0, 0), (n // 2 - n0 // 2, (n + 1) // 2 - (n0 + 1) // 2), len(a.shape), axis
+        (0, 0),
+        (n // 2 - n0 // 2, (n + 1) // 2 - (n0 + 1) // 2),
+        len(a.shape),
+        axis,
     )
     return numpy.pad(a, pad, mode="constant", constant_values=0.0)
 
@@ -128,14 +137,14 @@ def coordinates(n):
     n2 = n // 2
     if n % 2 == 0:
         return numpy.mgrid[-n2:n2] / n
-    else:
-        return numpy.mgrid[-n2 : n2 + 1] / n
+
+    return numpy.mgrid[-n2 : n2 + 1] / n
 
 
 @dask_wrapper
 def _ith_subgrid_facet_element(
     true_image, offset_i, true_usable_size, mask_element, axis=(0, 1), **kwargs
-):
+):  # pylint: disable=unused-argument
     """
     Calculate a single facet or subgrid element.
 
@@ -156,7 +165,9 @@ def _ith_subgrid_facet_element(
     if isinstance(axis, tuple) and len(axis) == 2:
         extracted = extract_mid(
             extract_mid(
-                numpy.roll(true_image, offset_i, axis), true_usable_size, axis[0]
+                numpy.roll(true_image, offset_i, axis),
+                true_usable_size,
+                axis[0],
             ),
             true_usable_size,
             axis[1],
@@ -183,8 +194,8 @@ def make_subgrid_and_facet(
 
     :param G: "ground truth", the actual input data
     :param FG: FFT of input data
-    :param constants_class: BaseArrays or SparseFourierTransform class object containing
-                            fundamental and derived parameters
+    :param constants_class: BaseArrays or SparseFourierTransform class object
+                            containing fundamental and derived parameters
     :param dims: Dimensions; integer 1 or 2 for 1D or 2D
     :param use_dask: run function with dask.delayed or not?
     :return: tuple of two numpy.ndarray (subgrid, facet)
@@ -253,10 +264,14 @@ def make_subgrid_and_facet(
         ):
             subgrid[i0][i1] = _ith_subgrid_facet_element(
                 G,
-                (-constants_class.subgrid_off[i0], -constants_class.subgrid_off[i1]),
+                (
+                    -constants_class.subgrid_off[i0],
+                    -constants_class.subgrid_off[i1],
+                ),
                 constants_class.xA_size,
                 numpy.outer(
-                    constants_class.subgrid_A[i0], constants_class.subgrid_A[i1]
+                    constants_class.subgrid_A[i0],
+                    constants_class.subgrid_A[i1],
                 ),
                 axis=(0, 1),
                 use_dask=use_dask,
@@ -267,9 +282,14 @@ def make_subgrid_and_facet(
         ):
             facet[j0][j1] = _ith_subgrid_facet_element(
                 FG,
-                (-constants_class.facet_off[j0], -constants_class.facet_off[j1]),
+                (
+                    -constants_class.facet_off[j0],
+                    -constants_class.facet_off[j1],
+                ),
                 constants_class.yB_size,
-                numpy.outer(constants_class.facet_B[j0], constants_class.facet_B[j1]),
+                numpy.outer(
+                    constants_class.facet_B[j0], constants_class.facet_B[j1]
+                ),
                 axis=(0, 1),
                 use_dask=use_dask,
                 nout=1,

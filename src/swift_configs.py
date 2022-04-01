@@ -1,27 +1,30 @@
-# Configuration naming convention:
-#
-#   <image size>[<fov>]-n?<padded facet size>-<padded subgrid size>
-#
-# Effectiveness percent gives communication overhead (100% would be
-# not transferring any redundant data). If "n" is given, it is a
-# new-style configuration with yN_size = yP_size. This results
-# generally in being able to cover the image with fewer facets, for
-# instance:
-#
-#   "12k[1]-8k-384": ..., # nfacet=4², eff 60.6%
-#   "12k[1]-n8k-384": ..., # nfacet=2², eff 66.4%
-#   "12k[1]-n4k-384": ..., # nfacet=4², eff 57.8%
-#
-# I.e. wheras before we would need 4 8k facets to cover 12k, with
-# new-style configuration 2 is enough, so we can actually make facets
-# half as big, which is much cheaper to compute. Note however that
-# over-the-wire efficiency *decreases* a bit (not always the case, but
-# generally true because without image-space resampling we have less
-# freedom in parameter choice)
-#
-# Configurations are sorted by "families" with a fixed N:yP_size ratio
-# while keeping subgrid size constant (which generally leads to an
-# equivalent configuration / same efficiency).
+# pylint: disable=too-many-lines
+"""
+Configuration naming convention:
+
+  <image size>[<fov>]-n?<padded facet size>-<padded subgrid size>
+
+Effectiveness percent gives communication overhead (100% would be
+not transferring any redundant data). If "n" is given, it is a
+new-style configuration with yN_size = yP_size. This results
+generally in being able to cover the image with fewer facets, for
+instance:
+
+  "12k[1]-8k-384": ..., # nfacet=4², eff 60.6%
+  "12k[1]-n8k-384": ..., # nfacet=2², eff 66.4%
+  "12k[1]-n4k-384": ..., # nfacet=4², eff 57.8%
+
+I.e. whereas before we would need 4 8k facets to cover 12k, with
+new-style configuration 2 is enough, so we can actually make facets
+half as big, which is much cheaper to compute. Note however that
+over-the-wire efficiency *decreases* a bit (not always the case, but
+generally true because without image-space resampling we have less
+freedom in parameter choice)
+
+Configurations are sorted by "families" with a fixed N:yP_size ratio
+while keeping subgrid size constant (which generally leads to an
+equivalent configuration / same efficiency).
+"""
 
 SWIFT_CONFIGS = {
     "16k[1]-n8k-512": dict(

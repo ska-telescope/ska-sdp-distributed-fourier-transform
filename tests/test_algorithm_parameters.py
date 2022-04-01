@@ -1,22 +1,15 @@
+"""
+Unit tests for algorithm_parameters.py functions
+"""
+
 import numpy
 import pytest
 
 from src.fourier_transform.algorithm_parameters import (
-    BaseParameters,
     BaseArrays,
+    BaseParameters,
 )
-
-TEST_PARAMS = {
-    "W": 13.25,
-    "fov": 0.75,
-    "N": 1024,
-    "Nx": 4,
-    "yB_size": 256,
-    "yN_size": 320,
-    "yP_size": 512,
-    "xA_size": 188,
-    "xM_size": 256,
-}
+from tests.test_integration_fourier_transform import TEST_PARAMS
 
 
 def test_base_params_fundamental():
@@ -90,6 +83,7 @@ def test_base_arrays_generate_mask():
     mask_size = 188
     offsets = [4, 192, 380, 568, 756, 944]
 
+    # pylint: disable=protected-access
     mask = array_class._generate_mask(mask_size, offsets)
     assert mask.shape == (len(offsets), mask_size)
     assert (mask[0, :52] == 0.0).all()
@@ -105,9 +99,12 @@ def test_base_arrays_pure_arrays():
     based on pure calculations, therefore I decided not to test
     their actual values, only that the code calculating them doesn't break
     when the class is instantiated with correct parameters.
+
+    Note: F841 flake8 error ignored: "assigned but not used variable"
     """
+    # pylint: disable=unused-variable
     array_class = BaseArrays(**TEST_PARAMS)
-    fb = array_class.Fb
-    fn = array_class.Fn
-    facet_m0_trunc = array_class.facet_m0_trunc
-    pswf = array_class.pswf
+    fb = array_class.Fb  # noqa: F841
+    fn = array_class.Fn  # noqa: F841
+    facet_m0_trunc = array_class.facet_m0_trunc  # noqa: F841
+    pswf = array_class.pswf  # noqa: F841
