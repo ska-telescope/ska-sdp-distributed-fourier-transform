@@ -50,7 +50,10 @@ def set_up_dask(scheduler_address=None):
                 if None, a local cluster is created with machine resources
     :return: Dask client
     """
-    client = Client(scheduler_address)
+    if scheduler_address:
+        client = Client(scheduler_address)
+    else:
+        client = Client(scheduler_address, n_workers=16, threads_per_worker=1)
     log.info(client.dashboard_link)
     return client
 

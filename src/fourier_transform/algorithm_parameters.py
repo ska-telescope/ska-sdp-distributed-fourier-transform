@@ -22,13 +22,22 @@ import scipy.special
 
 from src.fourier_transform.dask_wrapper import dask_wrapper
 from src.fourier_transform.fourier_algorithm import (
-    broadcast,
-    coordinates,
-    create_slice,
     extract_mid,
-    fft,
+    coordinates,
     ifft,
     pad_mid,
+    broadcast,
+    create_slice,
+    fft,
+    # pure function
+    prepare_facet,
+    extract_facet_contrib_to_subgrid,
+    add_facet_contribution,
+    finish_subgrid,
+    prepare_subgrid,
+    extract_subgrid_contrib_to_facet,
+    add_subgrid_contribution,
+    finish_facet,
 )
 
 
@@ -165,9 +174,10 @@ class BaseArrays(BaseParameters):
     """
 
     # pylint: disable=too-many-instance-attributes
+    __slots__ = ()
 
     def __init__(self, **fundamental_constants):
-        super().__init__(**fundamental_constants)
+        super(BaseArrays, self).__init__(**fundamental_constants)
 
         self._facet_off = None
         self._subgrid_off = None
@@ -194,9 +204,7 @@ class BaseArrays(BaseParameters):
         Subgrid offset array
         """
         if self._subgrid_off is None:
-            self._subgrid_off = (
-                self.xA_size * numpy.arange(self.nsubgrid) + self.Nx
-            )
+            self._subgrid_off = self.xA_size * numpy.arange(self.nsubgrid) + self.Nx
 
         return self._subgrid_off
 
@@ -213,12 +221,10 @@ class BaseArrays(BaseParameters):
         :return: mask (subgrid_A or facet_B)
         """
         mask = numpy.zeros((len(offsets), mask_size), dtype=int)
-        border = (
-            offsets + numpy.hstack([offsets[1:], [self.N + offsets[0]]])
-        ) // 2
-        for i, offset in enumerate(offsets):
-            left = (border[i - 1] - offset + mask_size // 2) % self.N
-            right = border[i] - offset + mask_size // 2
+        border = (offsets + numpy.hstack([offsets[1:], [self.N + offsets[0]]])) // 2
+        for i in range(len(offsets)):
+            left = (border[i - 1] - offsets[i] + mask_size // 2) % self.N
+            right = border[i] - offsets[i] + mask_size // 2
 
             if not left >= 0 and right <= mask_size:
                 raise ValueError(
@@ -245,9 +251,7 @@ class BaseArrays(BaseParameters):
         Subgrid mask
         """
         if self._subgrid_A is None:
-            self._subgrid_A = self._generate_mask(
-                self.xA_size, self.subgrid_off
-            )
+            self._subgrid_A = self._generate_mask(self.xA_size, self.subgrid_off)
 
         return self._subgrid_A
 
@@ -281,10 +285,7 @@ class BaseArrays(BaseParameters):
         """
         if self._facet_m0_trunc is None:
             temp_facet_m0_trunc = self.pswf * numpy.sinc(
-                coordinates(self.yN_size)
-                * self.xM_size
-                / self.N
-                * self.yN_size
+                coordinates(self.yN_size) * self.xM_size / self.N * self.yN_size
             )
             self._facet_m0_trunc = (
                 self.xM_size
@@ -303,7 +304,7 @@ class BaseArrays(BaseParameters):
         return self._facet_m0_trunc
 
     @property
-    def pswf(self):
+    def pswf(self, alpha=0):
         """
         Calculate 1D PSWF (prolate-spheroidal wave function) at the
         full required resolution (facet size)
@@ -317,10 +318,7 @@ class BaseArrays(BaseParameters):
         if self._pswf is None:
             # pylint: disable=no-member
             pswf = scipy.special.pro_ang1(
-                alpha,
-                alpha,
-                numpy.pi * self.W / 2,
-                2 * coordinates(self.yN_size),
+                alpha, alpha, numpy.pi * self.W / 2, 2 * coordinates(self.yN_size)
             )[0]
             pswf[0] = 0  # zap NaN
 
@@ -347,8 +345,13 @@ class SparseFourierTransform(BaseArrays):
     The algorithm was developed for 2D input arrays (images).
     """
 
+    __slots__ = ()
+
+    def __init__(self, **fundamental_constants):
+        super(SparseFourierTransform, self).__init__(**fundamental_constants)
+
     # facet to subgrid algorithm
-    @dask_wrapper
+    # @dask_wrapper
     def prepare_facet(self, facet, axis, **kwargs):
         """
         Calculate the inverse FFT of a padded facet element multiplied by Fb
@@ -362,15 +365,9 @@ class SparseFourierTransform(BaseArrays):
 
         :return: TODO: BF? prepared facet
         """
-        BF = pad_mid(
-            facet * broadcast(self.Fb, len(facet.shape), axis),
-            self.yP_size,
-            axis,
-        )
-        BF = ifft(BF, axis)
-        return BF
+        res = dask_wrapper(prepare_facet)(facet, axis, self.Fb, self.yP_size, **kwargs)
+        return res
 
-    @dask_wrapper
     def extract_facet_contrib_to_subgrid(
         self,
         BF,
@@ -390,30 +387,23 @@ class SparseFourierTransform(BaseArrays):
 
         :return: contribution of facet to subgrid
         """
-        dims = len(BF.shape)
-        BF_mid = extract_mid(
-            numpy.roll(BF, -subgrid_off_elem * self.yP_size // self.N, axis),
-            self.xMxN_yP_size,
+        res = dask_wrapper(extract_facet_contrib_to_subgrid)(
+            BF,
             axis,
-        )
-        MBF = broadcast(self.facet_m0_trunc, dims, axis) * BF_mid
-        MBF_sum = numpy.array(extract_mid(MBF, self.xM_yP_size, axis))
-        xN_yP_size = self.xMxN_yP_size - self.xM_yP_size
-        slc1 = create_slice(slice(None), slice(xN_yP_size // 2), dims, axis)
-        slc2 = create_slice(
-            slice(None), slice(-xN_yP_size // 2, None), dims, axis
-        )
-        MBF_sum[slc1] += MBF[slc2]
-        MBF_sum[slc2] += MBF[slc1]
-
-        return broadcast(self.Fn, len(BF.shape), axis) * extract_mid(
-            fft(MBF_sum, axis), self.xM_yN_size, axis
+            subgrid_off_elem,
+            self.yP_size,
+            self.xMxN_yP_size,
+            self.xM_yP_size,
+            self.xM_yN_size,
+            self.N,
+            self.Fn,
+            self.facet_m0_trunc,
+            **kwargs,
         )
 
-    @dask_wrapper
-    def add_facet_contribution(
-        self, facet_contrib, facet_off_elem, axis, **kwargs
-    ):
+        return res
+
+    def add_facet_contribution(self, facet_contrib, facet_off_elem, axis, **kwargs):
         """
         Further transforms facet contributions, which then will be summed up.
 
@@ -426,16 +416,12 @@ class SparseFourierTransform(BaseArrays):
 
         :return: TODO??
         """
-        return numpy.roll(
-            pad_mid(facet_contrib, self.xM_size, axis),
-            facet_off_elem * self.xM_size // self.N,
-            axis=axis,
+        res = dask_wrapper(add_facet_contribution)(
+            facet_contrib, facet_off_elem, axis, self.xM_size, self.N, **kwargs
         )
+        return res
 
-    @dask_wrapper
-    def finish_subgrid(
-        self, summed_facets, subgrid_mask1, subgrid_mask2, **kwargs
-    ):
+    def finish_subgrid(self, summed_facets, subgrid_mask1, subgrid_mask2, **kwargs):
         """
         Obtain finished subgrid.
         Operation performed for both axis
@@ -450,18 +436,12 @@ class SparseFourierTransform(BaseArrays):
 
         :return: approximate subgrid element
         """
-        tmp = extract_mid(
-            extract_mid(
-                ifft(ifft(summed_facets, axis=0), axis=1), self.xA_size, axis=0
-            ),
-            self.xA_size,
-            axis=1,
+        res = dask_wrapper(finish_subgrid)(
+            summed_facets, subgrid_mask1, subgrid_mask2, self.xA_size, **kwargs
         )
-        approx_subgrid = tmp * numpy.outer(subgrid_mask1, subgrid_mask2)
-        return approx_subgrid
+        return res
 
     # subgrid to facet algorithm
-    @dask_wrapper
     def prepare_subgrid(self, subgrid, **kwargs):
         """
         Calculate the FFT of a padded subgrid element.
@@ -475,17 +455,11 @@ class SparseFourierTransform(BaseArrays):
 
         :return: TODO: the FS ??? term
         """
-        padded = pad_mid(
-            pad_mid(subgrid, self.xM_size, axis=0), self.xM_size, axis=1
-        )
-        fftd = fft(fft(padded, axis=0), axis=1)
+        res = dask_wrapper(prepare_subgrid)(subgrid, self.xM_size, **kwargs)
 
-        return fftd
+        return res
 
-    @dask_wrapper
-    def extract_subgrid_contrib_to_facet(
-        self, FSi, facet_off_elem, axis, **kwargs
-    ):
+    def extract_subgrid_contrib_to_facet(self, FSi, facet_off_elem, axis, **kwargs):
         """
         Extract contribution of subgrid to a facet.
 
@@ -499,13 +473,18 @@ class SparseFourierTransform(BaseArrays):
         :return: Contribution of subgrid to facet
 
         """
-        return broadcast(self.Fn, len(FSi.shape), axis) * extract_mid(
-            numpy.roll(FSi, -facet_off_elem * self.xM_size // self.N, axis),
-            self.xM_yN_size,
+        res = dask_wrapper(extract_subgrid_contrib_to_facet)(
+            FSi,
+            facet_off_elem,
             axis,
+            self.xM_size,
+            self.xM_yN_size,
+            self.N,
+            self.Fn,
+            **kwargs,
         )
+        return res
 
-    @dask_wrapper
     def add_subgrid_contribution(
         self,
         dims,
@@ -529,26 +508,21 @@ class SparseFourierTransform(BaseArrays):
         :return summed subgrid contributions
 
         """
-        xN_yP_size = self.xMxN_yP_size - self.xM_yP_size
-        NjSi_mid = ifft(pad_mid(NjSi, self.xM_yP_size, axis), axis)
-        NjSi_temp = pad_mid(NjSi_mid, self.xMxN_yP_size, axis)
-        slc1 = create_slice(slice(None), slice(xN_yP_size // 2), dims, axis)
-        slc2 = create_slice(
-            slice(None), slice(-xN_yP_size // 2, None), dims, axis
-        )
-        NjSi_temp[slc1] = NjSi_mid[slc2]
-        NjSi_temp[slc2] = NjSi_mid[slc1]
-        NjSi_temp = NjSi_temp * broadcast(
-            self.facet_m0_trunc, len(NjSi.shape), axis
-        )
-
-        return numpy.roll(
-            pad_mid(NjSi_temp, self.yP_size, axis),
-            subgrid_off_elem * self.yP_size // self.N,
-            axis=axis,
+        res = dask_wrapper(add_subgrid_contribution)(
+            dims,
+            NjSi,
+            subgrid_off_elem,
+            axis,
+            self.xMxN_yP_size,
+            self.xM_yP_size,
+            self.yP_size,
+            self.N,
+            self.facet_m0_trunc,
+            **kwargs,
         )
 
-    @dask_wrapper
+        return res
+
     def finish_facet(self, MiNjSi_sum, facet_B_elem, axis, **kwargs):
         """
         Obtain finished facet.
@@ -566,6 +540,7 @@ class SparseFourierTransform(BaseArrays):
 
         :return: finished (approximate) facet element
         """
-        return extract_mid(
-            fft(MiNjSi_sum, axis), self.yB_size, axis
-        ) * broadcast(self.Fb * facet_B_elem, len(MiNjSi_sum.shape), axis)
+        res = dask_wrapper(finish_facet)(
+            MiNjSi_sum, facet_B_elem, axis, self.yB_size, self.Fb, **kwargs
+        )
+        return res

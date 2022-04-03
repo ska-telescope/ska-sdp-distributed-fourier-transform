@@ -31,9 +31,7 @@ def create_slice(fill_val, axis_val, dims, axis):
     # pylint: disable=consider-using-generator
     # TODO: pylint's suggestion of using a generator should be investigated
     if not isinstance(axis, int) or not isinstance(dims, int):
-        raise ValueError(
-            "create_slice: axis and dims values have to be integers."
-        )
+        raise ValueError("create_slice: axis and dims values have to be integers.")
 
     return tuple([axis_val if i == axis else fill_val for i in range(dims)])
 
@@ -287,9 +285,7 @@ def make_subgrid_and_facet(
                     -constants_class.facet_off[j1],
                 ),
                 constants_class.yB_size,
-                numpy.outer(
-                    constants_class.facet_B[j0], constants_class.facet_B[j1]
-                ),
+                numpy.outer(constants_class.facet_B[j0], constants_class.facet_B[j1]),
                 axis=(0, 1),
                 use_dask=use_dask,
                 nout=1,
@@ -298,3 +294,162 @@ def make_subgrid_and_facet(
         raise ValueError("Wrong dimensions. Only 1D and 2D are supported.")
 
     return subgrid, facet
+
+
+# ----------pure---function------------
+def prepare_facet(facet, axis, Fb, yP_size, **kwargs):
+    BF = pad_mid(facet * broadcast(Fb, len(facet.shape), axis), yP_size, axis)
+    BF = ifft(BF, axis)
+    return BF
+
+
+def extract_facet_contrib_to_subgrid(
+    BF,
+    axis,
+    subgrid_off_elem,
+    yP_size,
+    xMxN_yP_size,
+    xM_yP_size,
+    xM_yN_size,
+    N,
+    Fn,
+    facet_m0_trunc,
+    **kwargs
+):
+    dims = len(BF.shape)
+    BF_mid = extract_mid(
+        numpy.roll(BF, -subgrid_off_elem * yP_size // N, axis),
+        xMxN_yP_size,
+        axis,
+    )
+    MBF = broadcast(facet_m0_trunc, dims, axis) * BF_mid
+    MBF_sum = numpy.array(extract_mid(MBF, xM_yP_size, axis))
+    xN_yP_size = xMxN_yP_size - xM_yP_size
+    slc1 = create_slice(slice(None), slice(xN_yP_size // 2), dims, axis)
+    slc2 = create_slice(slice(None), slice(-xN_yP_size // 2, None), dims, axis)
+    MBF_sum[slc1] += MBF[slc2]
+    MBF_sum[slc2] += MBF[slc1]
+
+    return broadcast(Fn, len(BF.shape), axis) * extract_mid(
+        fft(MBF_sum, axis), xM_yN_size, axis
+    )
+
+
+def add_facet_contribution(facet_contrib, facet_off_elem, axis, xM_size, N, **kwargs):
+    """
+    Further transforms facet contributions, which then will be summed up.
+
+    :param facet_contrib: array-chunk of individual facet contributions
+    :param facet_off_elem: facet offset for the facet_contrib array chunk
+    :param axis: axis along which the operations are performed (0 or 1)
+    :param kwargs: needs to contain the following if dask is used:
+            use_dask: True
+            nout: <number of function outputs> --> 1
+
+    :return: TODO??
+    """
+    return numpy.roll(
+        pad_mid(facet_contrib, xM_size, axis),
+        facet_off_elem * xM_size // N,
+        axis=axis,
+    )
+
+
+def finish_subgrid(summed_facets, subgrid_mask1, subgrid_mask2, xA_size, **kwargs):
+    """
+    Obtain finished subgrid.
+    Operation performed for both axis (only works on 2D arrays in its current form).
+
+    :param summed_facets: summed facets contributing to thins subgrid
+    :param subgrid_mask1: ith subgrid mask element
+    :param subgrid_mask2: (i+1)th subgrid mask element
+    :param kwargs: needs to contain the following if dask is used:
+            use_dask: True
+            nout: <number of function outputs> --> 1
+
+    :return: approximate subgrid element
+    """
+    tmp = extract_mid(
+        extract_mid(ifft(ifft(summed_facets, axis=0), axis=1), xA_size, axis=0),
+        xA_size,
+        axis=1,
+    )
+    approx_subgrid = tmp * numpy.outer(subgrid_mask1, subgrid_mask2)
+    return approx_subgrid
+
+
+def prepare_subgrid(subgrid, xM_size, **kwargs):
+    """
+    Calculate the FFT of a padded subgrid element.
+    No reason to do this per-axis, so always do it for both axis.
+    (Note: it will only work for 2D subgrid arrays)
+
+    :param subgrid: single subgrid array element
+    :param kwargs: needs to contain the following if dask is used:
+            use_dask: True
+            nout: <number of function outputs> --> 1
+
+    :return: TODO: the FS ??? term
+    """
+    padded = pad_mid(pad_mid(subgrid, xM_size, axis=0), xM_size, axis=1)
+    fftd = fft(fft(padded, axis=0), axis=1)
+
+    return fftd
+
+
+def extract_subgrid_contrib_to_facet(
+    FSi, facet_off_elem, axis, xM_size, xM_yN_size, N, Fn, **kwargs
+):
+    """
+    Extract contribution of subgrid to a facet.
+
+    :param Fsi: TODO???
+    :param facet_off_elem: single facet offset element
+    :param axis: axis along which the operations are performed (0 or 1)
+    :param kwargs: needs to contain the following if dask is used:
+            use_dask: True
+            nout: <number of function outputs> --> 1
+
+    :return: Contribution of subgrid to facet
+
+    """
+    return broadcast(Fn, len(FSi.shape), axis) * extract_mid(
+        numpy.roll(FSi, -facet_off_elem * xM_size // N, axis),
+        xM_yN_size,
+        axis,
+    )
+
+
+def add_subgrid_contribution(
+    dims,
+    NjSi,
+    subgrid_off_elem,
+    axis,
+    xMxN_yP_size,
+    xM_yP_size,
+    yP_size,
+    N,
+    facet_m0_trunc,
+    **kwargs
+):
+    xN_yP_size = xMxN_yP_size - xM_yP_size
+    NjSi_mid = ifft(pad_mid(NjSi, xM_yP_size, axis), axis)
+    NjSi_temp = pad_mid(NjSi_mid, xMxN_yP_size, axis)
+    slc1 = create_slice(slice(None), slice(xN_yP_size // 2), dims, axis)
+    slc2 = create_slice(slice(None), slice(-xN_yP_size // 2, None), dims, axis)
+    NjSi_temp[slc1] = NjSi_mid[slc2]
+    NjSi_temp[slc2] = NjSi_mid[slc1]
+    NjSi_temp = NjSi_temp * broadcast(facet_m0_trunc, len(NjSi.shape), axis)
+
+    return numpy.roll(
+        pad_mid(NjSi_temp, yP_size, axis),
+        subgrid_off_elem * yP_size // N,
+        axis=axis,
+    )
+
+
+def finish_facet(MiNjSi_sum, facet_B_elem, axis, yB_size, Fb, **kwargs):
+
+    return extract_mid(fft(MiNjSi_sum, axis), yB_size, axis) * broadcast(
+        Fb * facet_B_elem, len(MiNjSi_sum.shape), axis
+    )
