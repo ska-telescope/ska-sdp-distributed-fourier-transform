@@ -239,7 +239,7 @@ def single_subgrid_to_facet_contributions(
     return subgrid_contrib
 
 
-@dask.delayed(nout=2)
+@dask.delayed
 def sum_subgrid_contrib_to_facet(
     naf_naf,
     j0,
@@ -880,14 +880,12 @@ def _run_algorithm(
     elif version_to_run == 3:
         # Version #3
         t = time.time()
-        approx_subgrid = facet_to_subgrid_2d_method_3(
-            facet_2, sparse_ft_class, use_dask=use_dask
-        )
+        approx_subgrid = facet_to_subgrid_2d_method_3(facet_2, sparse_ft_class)
         log.info("%s s", time.time() - t)
     else:
         t = time.time()
         approx_subgrid = facet_to_subgrid_2d_method_3_serial(
-            facet_2, sparse_ft_class, client=client
+            facet_2, sparse_ft_class
         )
         log.info("%s s", time.time() - t)
     # ==== Subgrid to Facet ====
@@ -896,9 +894,10 @@ def _run_algorithm(
     # and has not involved data redistribution yet.
 
     t = time.time()
-    approx_facet = subgrid_to_facet_algorithm_2(
-        subgrid_2, sparse_ft_class, client=client
-    )
+    if version_to_run <= 3:
+        approx_facet = subgrid_to_facet_algorithm(subgrid_2, sparse_ft_class)
+    else:
+        approx_facet = subgrid_to_facet_algorithm_2(subgrid_2, sparse_ft_class)
     log.info("%s s", time.time() - t)
 
     return subgrid_2, facet_2, approx_subgrid, approx_facet
