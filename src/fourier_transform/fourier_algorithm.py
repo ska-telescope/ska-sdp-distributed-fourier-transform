@@ -1,4 +1,5 @@
 # pylint: disable=too-many-locals, too-many-arguments
+# pylint: disable=unused-argument
 """
 Distributed Fourier Transform Module.
 Included are a list of base functions that are used across the code.
@@ -296,7 +297,7 @@ def make_subgrid_and_facet(G, FG, constants_class, dims, use_dask=False):
 
 
 # ----------pure---function------------
-def prepare_facet(facet, axis, Fb, yP_size):
+def prepare_facet(facet, axis, Fb, yP_size, **kwargs):
     """
     Calculate the inverse FFT of a padded facet element multiplied by Fb
     (Fb: Fourier transform of grid correction function)
@@ -325,6 +326,7 @@ def extract_facet_contrib_to_subgrid(
     N,
     Fn,
     facet_m0_trunc,
+    **kwargs
 ):
     """
     Extract the facet contribution to a subgrid.
@@ -357,7 +359,9 @@ def extract_facet_contrib_to_subgrid(
     )
 
 
-def add_facet_contribution(facet_contrib, facet_off_elem, axis, xM_size, N):
+def add_facet_contribution(
+    facet_contrib, facet_off_elem, axis, xM_size, N, **kwargs
+):
     """
     Further transforms facet contributions, which then will be summed up.
 
@@ -377,7 +381,9 @@ def add_facet_contribution(facet_contrib, facet_off_elem, axis, xM_size, N):
     )
 
 
-def finish_subgrid(summed_facets, subgrid_mask1, subgrid_mask2, xA_size):
+def finish_subgrid(
+    summed_facets, subgrid_mask1, subgrid_mask2, xA_size, **kwargs
+):
     """
     Obtain finished subgrid.
     Operation performed for both axis (only works on 2D arrays).
@@ -402,7 +408,7 @@ def finish_subgrid(summed_facets, subgrid_mask1, subgrid_mask2, xA_size):
     return approx_subgrid
 
 
-def prepare_subgrid(subgrid, xM_size):
+def prepare_subgrid(subgrid, xM_size, **kwargs):
     """
     Calculate the FFT of a padded subgrid element.
     No reason to do this per-axis, so always do it for both axis.
@@ -422,7 +428,7 @@ def prepare_subgrid(subgrid, xM_size):
 
 
 def extract_subgrid_contrib_to_facet(
-    FSi, facet_off_elem, axis, xM_size, xM_yN_size, N, Fn
+    FSi, facet_off_elem, axis, xM_size, xM_yN_size, N, Fn, **kwargs
 ):
     """
     Extract contribution of subgrid to a facet.
@@ -452,6 +458,7 @@ def add_subgrid_contribution(
     yP_size,
     N,
     facet_m0_trunc,
+    **kwargs
 ):
     """
     Further transform subgrid contributions, which are then summed up.
@@ -484,7 +491,7 @@ def add_subgrid_contribution(
     )
 
 
-def finish_facet(MiNjSi_sum, facet_B_elem, axis, yB_size, Fb):
+def finish_facet(MiNjSi_sum, facet_B_elem, axis, yB_size, Fb, **kwargs):
     """
     Obtain finished facet.
 
