@@ -1,4 +1,5 @@
 # pylint: disable=too-many-locals, too-many-arguments
+# pylint: disable=unused-argument
 """
 Distributed Fourier Transform Module.
 Included are a list of base functions that are used across the code.
