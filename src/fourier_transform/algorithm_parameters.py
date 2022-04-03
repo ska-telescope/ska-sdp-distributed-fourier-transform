@@ -175,7 +175,7 @@ class BaseArrays(BaseParameters):
     __slots__ = ()
 
     def __init__(self, **fundamental_constants):
-        super(BaseArrays, self).__init__(**fundamental_constants)
+        super().__init__(**fundamental_constants)
 
         self._facet_off = None
         self._subgrid_off = None
@@ -357,8 +357,8 @@ class SparseFourierTransform(BaseArrays):
 
     __slots__ = ()
 
-    def __init__(self, **fundamental_constants):
-        super(SparseFourierTransform, self).__init__(**fundamental_constants)
+    # def __init__(self, **fundamental_constants):
+    #     super().__init__(**fundamental_constants)
 
     # facet to subgrid algorithm
     # @dask_wrapper
@@ -504,12 +504,7 @@ class SparseFourierTransform(BaseArrays):
         return res
 
     def add_subgrid_contribution(
-        self,
-        dims,
-        NjSi,
-        subgrid_off_elem,
-        axis,
-        **kwargs,
+        self, dims, NjSi, subgrid_off_elem, axis, **kwargs
     ):
         """
         Further transform subgrid contributions, which are then summed up.

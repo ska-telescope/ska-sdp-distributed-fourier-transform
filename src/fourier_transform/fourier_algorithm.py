@@ -1,3 +1,4 @@
+# pylint: disable=too-many-locals, too-many-arguments
 """
 Distributed Fourier Transform Module.
 Included are a list of base functions that are used across the code.
@@ -182,13 +183,7 @@ def _ith_subgrid_facet_element(
 #   the computation becomes extremely slow and my laptop cannot handle it.
 #   This suggests that something wasn't right and the dask setup wasn't ideal
 #   hence I left these here as a separate function, and not part of the class.
-def make_subgrid_and_facet(
-    G,
-    FG,
-    constants_class,
-    dims,
-    use_dask=False,
-):
+def make_subgrid_and_facet(G, FG, constants_class, dims, use_dask=False):
     """
     Calculate the actual subgrids and facets. Dask.delayed compatible version
 
@@ -301,7 +296,19 @@ def make_subgrid_and_facet(
 
 
 # ----------pure---function------------
-def prepare_facet(facet, axis, Fb, yP_size, **kwargs):
+def prepare_facet(facet, axis, Fb, yP_size):
+    """
+    Calculate the inverse FFT of a padded facet element multiplied by Fb
+    (Fb: Fourier transform of grid correction function)
+
+    :param facet: single facet element
+    :param axis: axis along which operations are performed (0 or 1)
+    :param kwargs: needs to contain the following if dask is used:
+            use_dask: True
+            nout: <number of function outputs> --> 1
+
+    :return: TODO: BF? prepared facet
+    """
     BF = pad_mid(facet * broadcast(Fb, len(facet.shape), axis), yP_size, axis)
     BF = ifft(BF, axis)
     return BF
@@ -318,8 +325,19 @@ def extract_facet_contrib_to_subgrid(
     N,
     Fn,
     facet_m0_trunc,
-    **kwargs
 ):
+    """
+    Extract the facet contribution to a subgrid.
+
+    :param BF: TODO: ? prepared facet
+    :param axis: axis along which the operations are performed (0 or 1)
+    :param subgrid_off_elem: single subgrid offset element
+    :param kwargs: needs to contain the following if dask is used:
+            use_dask: True
+            nout: <number of function outputs> --> 1
+
+    :return: contribution of facet to subgrid
+    """
     dims = len(BF.shape)
     BF_mid = extract_mid(
         numpy.roll(BF, -subgrid_off_elem * yP_size // N, axis),
@@ -339,9 +357,7 @@ def extract_facet_contrib_to_subgrid(
     )
 
 
-def add_facet_contribution(
-    facet_contrib, facet_off_elem, axis, xM_size, N, **kwargs
-):
+def add_facet_contribution(facet_contrib, facet_off_elem, axis, xM_size, N):
     """
     Further transforms facet contributions, which then will be summed up.
 
@@ -361,9 +377,7 @@ def add_facet_contribution(
     )
 
 
-def finish_subgrid(
-    summed_facets, subgrid_mask1, subgrid_mask2, xA_size, **kwargs
-):
+def finish_subgrid(summed_facets, subgrid_mask1, subgrid_mask2, xA_size):
     """
     Obtain finished subgrid.
     Operation performed for both axis (only works on 2D arrays).
@@ -388,7 +402,7 @@ def finish_subgrid(
     return approx_subgrid
 
 
-def prepare_subgrid(subgrid, xM_size, **kwargs):
+def prepare_subgrid(subgrid, xM_size):
     """
     Calculate the FFT of a padded subgrid element.
     No reason to do this per-axis, so always do it for both axis.
@@ -408,7 +422,7 @@ def prepare_subgrid(subgrid, xM_size, **kwargs):
 
 
 def extract_subgrid_contrib_to_facet(
-    FSi, facet_off_elem, axis, xM_size, xM_yN_size, N, Fn, **kwargs
+    FSi, facet_off_elem, axis, xM_size, xM_yN_size, N, Fn
 ):
     """
     Extract contribution of subgrid to a facet.
@@ -424,9 +438,7 @@ def extract_subgrid_contrib_to_facet(
 
     """
     return broadcast(Fn, len(FSi.shape), axis) * extract_mid(
-        numpy.roll(FSi, -facet_off_elem * xM_size // N, axis),
-        xM_yN_size,
-        axis,
+        numpy.roll(FSi, -facet_off_elem * xM_size // N, axis), xM_yN_size, axis
     )
 
 
@@ -440,8 +452,22 @@ def add_subgrid_contribution(
     yP_size,
     N,
     facet_m0_trunc,
-    **kwargs
 ):
+    """
+    Further transform subgrid contributions, which are then summed up.
+
+    :param dims: length of tuple to be produced by create_slice
+                 (i.e. number of dimensions); int
+    :param NjSi: TODO
+    :param subgrid_off_elem: single subgrid offset element
+    :param axis: axis along which operations are performed (0 or 1)
+    :param kwargs: needs to contain the following if dask is used:
+            use_dask: True
+            nout: <number of function outputs> --> 1
+
+    :return summed subgrid contributions
+
+    """
     xN_yP_size = xMxN_yP_size - xM_yP_size
     NjSi_mid = ifft(pad_mid(NjSi, xM_yP_size, axis), axis)
     NjSi_temp = pad_mid(NjSi_mid, xMxN_yP_size, axis)
@@ -458,8 +484,23 @@ def add_subgrid_contribution(
     )
 
 
-def finish_facet(MiNjSi_sum, facet_B_elem, axis, yB_size, Fb, **kwargs):
+def finish_facet(MiNjSi_sum, facet_B_elem, axis, yB_size, Fb):
+    """
+    Obtain finished facet.
 
+    It extracts from the padded facet (obtained from subgrid via FFT)
+    the true-sized facet and multiplies with masked Fb.
+    (Fb: Fourier transform of grid correction function)
+
+    :param MiNjSi_sum: sum of subgrid contributions to a facet
+    :param facet_B_elem: a facet mask element
+    :param axis: axis along which operations are performed (0 or 1)
+    :param kwargs: needs to contain the following if dask is used:
+            use_dask: True
+            nout: <number of function outputs> --> 1
+
+    :return: finished (approximate) facet element
+    """
     return extract_mid(fft(MiNjSi_sum, axis), yB_size, axis) * broadcast(
         Fb * facet_B_elem, len(MiNjSi_sum.shape), axis
     )
