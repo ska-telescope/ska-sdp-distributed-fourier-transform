@@ -31,7 +31,9 @@ def create_slice(fill_val, axis_val, dims, axis):
     # pylint: disable=consider-using-generator
     # TODO: pylint's suggestion of using a generator should be investigated
     if not isinstance(axis, int) or not isinstance(dims, int):
-        raise ValueError("create_slice: axis and dims values have to be integers.")
+        raise ValueError(
+            "create_slice: axis and dims values have to be integers."
+        )
 
     return tuple([axis_val if i == axis else fill_val for i in range(dims)])
 
@@ -285,7 +287,9 @@ def make_subgrid_and_facet(
                     -constants_class.facet_off[j1],
                 ),
                 constants_class.yB_size,
-                numpy.outer(constants_class.facet_B[j0], constants_class.facet_B[j1]),
+                numpy.outer(
+                    constants_class.facet_B[j0], constants_class.facet_B[j1]
+                ),
                 axis=(0, 1),
                 use_dask=use_dask,
                 nout=1,
@@ -335,7 +339,9 @@ def extract_facet_contrib_to_subgrid(
     )
 
 
-def add_facet_contribution(facet_contrib, facet_off_elem, axis, xM_size, N, **kwargs):
+def add_facet_contribution(
+    facet_contrib, facet_off_elem, axis, xM_size, N, **kwargs
+):
     """
     Further transforms facet contributions, which then will be summed up.
 
@@ -355,10 +361,12 @@ def add_facet_contribution(facet_contrib, facet_off_elem, axis, xM_size, N, **kw
     )
 
 
-def finish_subgrid(summed_facets, subgrid_mask1, subgrid_mask2, xA_size, **kwargs):
+def finish_subgrid(
+    summed_facets, subgrid_mask1, subgrid_mask2, xA_size, **kwargs
+):
     """
     Obtain finished subgrid.
-    Operation performed for both axis (only works on 2D arrays in its current form).
+    Operation performed for both axis (only works on 2D arrays).
 
     :param summed_facets: summed facets contributing to thins subgrid
     :param subgrid_mask1: ith subgrid mask element
@@ -370,7 +378,9 @@ def finish_subgrid(summed_facets, subgrid_mask1, subgrid_mask2, xA_size, **kwarg
     :return: approximate subgrid element
     """
     tmp = extract_mid(
-        extract_mid(ifft(ifft(summed_facets, axis=0), axis=1), xA_size, axis=0),
+        extract_mid(
+            ifft(ifft(summed_facets, axis=0), axis=1), xA_size, axis=0
+        ),
         xA_size,
         axis=1,
     )
