@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
-# pylint: disable=too-many-locals, too-many-arguments, redefined-outer-name
+# pylint: disable=too-many-locals, too-many-arguments
+# pylint: disable=redefined-outer-name, too-many-lines
 """
 Main algorithm routine.
 The functions that conduct the main Dask-implemented algorithm
@@ -880,7 +881,9 @@ def _run_algorithm(
     elif version_to_run == 3:
         # Version #3
         t = time.time()
-        approx_subgrid = facet_to_subgrid_2d_method_3(facet_2, sparse_ft_class)
+        approx_subgrid = facet_to_subgrid_2d_method_3(
+            facet_2, sparse_ft_class, use_dask=use_dask
+        )
         log.info("%s s", time.time() - t)
     else:
         t = time.time()
@@ -895,7 +898,9 @@ def _run_algorithm(
 
     t = time.time()
     if version_to_run <= 3:
-        approx_facet = subgrid_to_facet_algorithm(subgrid_2, sparse_ft_class)
+        approx_facet = subgrid_to_facet_algorithm(
+            subgrid_2, sparse_ft_class, use_dask=use_dask
+        )
     else:
         approx_facet = subgrid_to_facet_algorithm_2(subgrid_2, sparse_ft_class)
     log.info("%s s", time.time() - t)
