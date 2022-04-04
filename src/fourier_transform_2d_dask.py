@@ -824,7 +824,7 @@ def generate_approx_subgrid(NMBF_NMBF, sparse_ft_class, use_dask=False):
 
 
 def _run_algorithm(
-    G_2, FG_2, sparse_ft_class, use_dask, version_to_run=4, client=None
+    G_2, FG_2, sparse_ft_class, use_dask, version_to_run=3, client=None
 ):
     """
     Run facet-to-subgrid and subgrid-to-facet algorithm.
@@ -1044,8 +1044,8 @@ if __name__ == "__main__":
     scheduler = os.environ.get("DASK_SCHEDULER", None)
     log.info("Scheduler: %s", scheduler)
 
-    test_conf = SWIFT_CONFIGS["1k[1]-512-256"]
-
+    test_conf = SWIFT_CONFIGS["16k[1]-n16k-256"]
+    # 16k[1]-n16k-256  1k[1]-512-256
     client = set_up_dask(scheduler_address=scheduler)
     # with performance_report(filename="dask-report-2d.html"):
     main(test_conf, to_plot=False, use_dask=True, client=client)

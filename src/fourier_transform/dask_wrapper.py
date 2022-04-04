@@ -53,7 +53,7 @@ def set_up_dask(scheduler_address=None):
     if scheduler_address:
         client = Client(scheduler_address)
     else:
-        client = Client(scheduler_address, n_workers=16, threads_per_worker=1)
+        client = Client(scheduler_address, n_workers=4, threads_per_worker=1)
     log.info(client.dashboard_link)
     return client
 
