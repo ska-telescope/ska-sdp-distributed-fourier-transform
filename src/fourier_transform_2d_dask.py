@@ -846,8 +846,12 @@ def _run_algorithm(
     :param version_to_run: which facet-to-subgrid version (method)
                            to run: 1, 2, or 3 (if not 1, or 2, it runs 3)
     """
-    G_2_submit = client.scatter(G_2)
-    FG_2_submit = client.scatter(FG_2)
+    if client is None:
+        G_2_submit = G_2
+        FG_2_submit = FG_2
+    else:
+        G_2_submit = client.scatter(G_2)
+        FG_2_submit = client.scatter(FG_2)
     subgrid_2, facet_2 = make_subgrid_and_facet(
         G_2_submit, FG_2_submit, sparse_ft_class, dims=2, use_dask=use_dask
     )
@@ -952,6 +956,9 @@ def main(
 
     # adding sources
     add_sources = True
+
+    # TODO: If we need to process large scale Grids/Facets, the "add_source"
+    #       branches need to be modified by using DFT (ORC-1228)
     if add_sources:
         FG_2 = numpy.zeros((sparse_ft_class.N, sparse_ft_class.N))
         source_count = 1000

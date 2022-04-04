@@ -236,6 +236,7 @@ def make_subgrid_and_facet(G, FG, constants_class, dims, use_dask=False):
             (
                 constants_class.nsubgrid,
                 constants_class.nsubgrid,
+                # TODO: (WF) - It seemed we need to remvoe following 2 lines when using Dask
                 constants_class.xA_size,
                 constants_class.xA_size,
             ),
