@@ -236,7 +236,7 @@ def make_subgrid_and_facet(G, FG, constants_class, dims, use_dask=False):
             (
                 constants_class.nsubgrid,
                 constants_class.nsubgrid,
-                # TODO: (WF) - Need to remvoe following 2 lines when using Dask?
+                # TODO: (WF) - Need to remove 2 lines if using Dask
                 constants_class.xA_size,
                 constants_class.xA_size,
             ),
