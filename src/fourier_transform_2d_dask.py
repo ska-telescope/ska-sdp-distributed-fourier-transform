@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-# pylint: disable=too-many-locals, too-many-arguments
+# pylint: disable=unused-argument, too-many-locals, too-many-arguments
 # pylint: disable=redefined-outer-name, too-many-lines
 """
 Main algorithm routine.
