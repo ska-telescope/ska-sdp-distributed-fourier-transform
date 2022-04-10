@@ -685,8 +685,8 @@ def test_accuracy_subgrid_to_facet(
 
 @dask_wrapper
 def add_two(one, two, **kwargs):
-    """function for Iterative operations, Making the construction
-        of graphs faster.
+    """Functions for iterative operations to
+           accelerate the construction of graphs
 
     :param one: array or graph
     :param two: array or graph

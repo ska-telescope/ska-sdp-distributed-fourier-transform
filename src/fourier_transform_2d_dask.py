@@ -141,18 +141,20 @@ def subgrid_to_facet_algorithm(
     for j0, j1 in itertools.product(
         range(sparse_ft_class.nfacet), range(sparse_ft_class.nfacet)
     ):
-        MNAF_BMNAF = numpy.zeros(
-            (sparse_ft_class.yP_size, sparse_ft_class.yB_size), dtype=complex
-        )
         if use_dask:
             MNAF_BMNAF = None
-        for i0 in range(sparse_ft_class.nsubgrid):
-            NAF_MNAF = numpy.zeros(
-                (sparse_ft_class.xM_yN_size, sparse_ft_class.yP_size),
-                dtype=complex,
+        else:
+            MNAF_BMNAF = numpy.zeros(
+                (sparse_ft_class.yP_size, sparse_ft_class.yB_size), dtype=complex
             )
+        for i0 in range(sparse_ft_class.nsubgrid):
             if use_dask:
                 NAF_MNAF = None
+            else:
+                NAF_MNAF = numpy.zeros(
+                    (sparse_ft_class.xM_yN_size, sparse_ft_class.yP_size),
+                    dtype=complex,
+                )
             for i1 in range(sparse_ft_class.nsubgrid):
                 if use_dask:
                     tmp_NAF_MNAF = sparse_ft_class.add_subgrid_contribution(
