@@ -143,7 +143,7 @@ def coordinates(n):
 
 @dask_wrapper
 def _ith_subgrid_facet_element(
-    true_image, offset_i, true_usable_size, mask_element, axis=(0, 1), **kwargs
+    true_image, offset_i, true_usable_size, mask_element, axis, **kwargs
 ):  # pylint: disable=unused-argument
     """
     Calculate a single facet or subgrid element.
@@ -182,10 +182,12 @@ def _ith_subgrid_facet_element(
 #   the computation becomes extremely slow and my laptop cannot handle it.
 #   This suggests that something wasn't right and the dask setup wasn't ideal
 #   hence I left these here as a separate function, and not part of the class.
+# pylint: disable=too-many-arguments
 def make_subgrid_and_facet(
     G,
     FG,
     constants_class,
+    base_arrays,
     dims,
     use_dask=False,
 ):
@@ -197,6 +199,7 @@ def make_subgrid_and_facet(
     :param constants_class: BaseArrays or SparseFourierTransform class object
                             containing fundamental and derived parameters
     :param dims: Dimensions; integer 1 or 2 for 1D or 2D
+    :param base_arrays: base_arrays object or future is use_dask = True
     :param use_dask: run function with dask.delayed or not?
     :return: tuple of two numpy.ndarray (subgrid, facet)
     """
@@ -216,9 +219,9 @@ def make_subgrid_and_facet(
         for i in range(constants_class.nsubgrid):
             subgrid[i] = _ith_subgrid_facet_element(
                 G,
-                -constants_class.subgrid_off[i],
+                -base_arrays.subgrid_off[i],
                 constants_class.xA_size,
-                constants_class.subgrid_A[i],
+                base_arrays.subgrid_A[i],
                 axis=0,
                 use_dask=use_dask,
                 nout=1,
@@ -227,9 +230,9 @@ def make_subgrid_and_facet(
         for j in range(constants_class.nfacet):
             facet[j] = _ith_subgrid_facet_element(
                 FG,
-                -constants_class.facet_off[j],
+                -base_arrays.facet_off[j],
                 constants_class.yB_size,
-                constants_class.facet_B[j],
+                base_arrays.facet_B[j],
                 axis=0,
                 use_dask=use_dask,
                 nout=1,
@@ -265,13 +268,13 @@ def make_subgrid_and_facet(
             subgrid[i0][i1] = _ith_subgrid_facet_element(
                 G,
                 (
-                    -constants_class.subgrid_off[i0],
-                    -constants_class.subgrid_off[i1],
+                    -base_arrays.subgrid_off[i0],
+                    -base_arrays.subgrid_off[i1],
                 ),
                 constants_class.xA_size,
                 numpy.outer(
-                    constants_class.subgrid_A[i0],
-                    constants_class.subgrid_A[i1],
+                    base_arrays.subgrid_A[i0],
+                    base_arrays.subgrid_A[i1],
                 ),
                 axis=(0, 1),
                 use_dask=use_dask,
@@ -283,13 +286,11 @@ def make_subgrid_and_facet(
             facet[j0][j1] = _ith_subgrid_facet_element(
                 FG,
                 (
-                    -constants_class.facet_off[j0],
-                    -constants_class.facet_off[j1],
+                    -base_arrays.facet_off[j0],
+                    -base_arrays.facet_off[j1],
                 ),
                 constants_class.yB_size,
-                numpy.outer(
-                    constants_class.facet_B[j0], constants_class.facet_B[j1]
-                ),
+                numpy.outer(base_arrays.facet_B[j0], base_arrays.facet_B[j1]),
                 axis=(0, 1),
                 use_dask=use_dask,
                 nout=1,
