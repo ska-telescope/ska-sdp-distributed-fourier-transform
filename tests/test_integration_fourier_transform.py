@@ -25,10 +25,8 @@ from src.fourier_transform_2d_dask import (
     facet_to_subgrid_2d_method_1,
     facet_to_subgrid_2d_method_2,
     facet_to_subgrid_2d_method_3,
-    facet_to_subgrid_2d_method_3_serial,
     main,
     subgrid_to_facet_algorithm,
-    subgrid_to_facet_algorithm_2,
 )
 from tests.test_reference_data.ref_data_2d import (
     EXPECTED_FACET_2D,
@@ -113,7 +111,9 @@ def test_end_to_end_2d_dask(use_dask):
     # Fixing seed of numpy random
     numpy.random.seed(123456789)
 
-    # do it before client avoid pro_ang1
+    # We need to call scipy.special.pro_ang1 function before setting up Dask
+    # context. Detailed information could be found at Jira ORC-1214
+
     base_arrays_class = BaseArrays(**TEST_PARAMS)
     _ = base_arrays_class.pswf
 
@@ -187,7 +187,6 @@ def test_end_to_end_2d_dask_logging(use_dask):
     # Fixing seed of numpy random
     numpy.random.seed(123456789)
 
-    # do it before client avoid pro_ang1
     base_arrays_class = BaseArrays(**TEST_PARAMS)
     _ = base_arrays_class.pswf
 
@@ -247,11 +246,9 @@ def test_end_to_end_2d_dask_logging(use_dask):
         (False, facet_to_subgrid_2d_method_1),
         (False, facet_to_subgrid_2d_method_2),
         (False, facet_to_subgrid_2d_method_3),
-        (False, facet_to_subgrid_2d_method_3_serial),
         (True, facet_to_subgrid_2d_method_1),
         (True, facet_to_subgrid_2d_method_2),
         (True, facet_to_subgrid_2d_method_3),
-        (True, facet_to_subgrid_2d_method_3_serial),
     ],
 )
 def test_facet_to_subgrid_methods(
@@ -303,9 +300,7 @@ def test_facet_to_subgrid_methods(
     "use_dask,tested_function",
     [
         (False, subgrid_to_facet_algorithm),
-        (False, subgrid_to_facet_algorithm_2),
         (True, subgrid_to_facet_algorithm),
-        (True, subgrid_to_facet_algorithm_2),
     ],
 )
 def test_subgrid_to_facet(
