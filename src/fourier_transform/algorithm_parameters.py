@@ -357,7 +357,7 @@ class SparseFourierTransform(BaseParameters):
 
         :param facet: single facet element
         :param axis: axis along which operations are performed (0 or 1)
-        :param base_arrays: base_arrays object or future is use_dask = True
+        :param base_arrays: base_arrays object or future if use_dask = True
         :param kwargs: needs to contain the following if dask is used:
                 use_dask: True
                 nout: <number of function outputs> --> 1
