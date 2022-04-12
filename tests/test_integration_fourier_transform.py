@@ -95,7 +95,6 @@ def subgrid_and_facet(target_distr_fft, base_arrays):
     subgrid, facet = make_subgrid_and_facet(
         g,
         fg,
-        target_distr_fft,
         base_arrays,
         dims=2,
         use_dask=False,
@@ -111,10 +110,10 @@ def test_end_to_end_2d_dask(use_dask):
     # Fixing seed of numpy random
     numpy.random.seed(123456789)
 
+    base_arrays_class = BaseArrays(**TEST_PARAMS)
+
     # We need to call scipy.special.pro_ang1 function before setting up Dask
     # context. Detailed information could be found at Jira ORC-1214
-
-    base_arrays_class = BaseArrays(**TEST_PARAMS)
     _ = base_arrays_class.pswf
 
     if use_dask:

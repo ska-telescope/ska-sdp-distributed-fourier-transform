@@ -583,7 +583,6 @@ def _run_algorithm(
     subgrid_2, facet_2 = make_subgrid_and_facet(
         G_2,
         FG_2,
-        sparse_ft_class,
         base_arrays,  # still use object，
         dims=2,
         use_dask=use_dask,
@@ -786,9 +785,10 @@ if __name__ == "__main__":
     test_conf = SWIFT_CONFIGS["1k[1]-512-256"]
 
     log.info("== Chosen configuration")
+    base_arrays_class = BaseArrays(**test_conf)
+
     # We need to call scipy.special.pro_ang1 function before setting up Dask
     # context. Detailed information could be found at Jira ORC-1214
-    base_arrays_class = BaseArrays(**test_conf)
     _ = base_arrays_class.pswf
 
     client_dask = set_up_dask(scheduler_address=scheduler)
