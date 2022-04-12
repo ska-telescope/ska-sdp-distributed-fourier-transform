@@ -11,7 +11,10 @@ import numpy
 import pytest
 from numpy.testing import assert_array_almost_equal
 
-from src.fourier_transform.algorithm_parameters import SparseFourierTransform
+from src.fourier_transform.algorithm_parameters import (
+    BaseArrays,
+    SparseFourierTransform,
+)
 from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
 from src.fourier_transform.fourier_algorithm import (
     fft,
@@ -73,7 +76,15 @@ def target_distr_fft():
 
 
 @pytest.fixture(scope="module")
-def subgrid_and_facet(target_distr_fft):
+def base_arrays():
+    """
+    Pytest fixture for instantiated SparseFourierTransform
+    """
+    return BaseArrays(**TEST_PARAMS)
+
+
+@pytest.fixture(scope="module")
+def subgrid_and_facet(target_distr_fft, base_arrays):
     """
     Pytest fixture for generating subgrid and facet array for tests
     """
@@ -84,7 +95,7 @@ def subgrid_and_facet(target_distr_fft):
     subgrid, facet = make_subgrid_and_facet(
         g,
         fg,
-        target_distr_fft,
+        base_arrays,
         dims=2,
         use_dask=False,
     )
@@ -99,15 +110,29 @@ def test_end_to_end_2d_dask(use_dask):
     # Fixing seed of numpy random
     numpy.random.seed(123456789)
 
+    base_arrays_class = BaseArrays(**TEST_PARAMS)
+
+    # We need to call scipy.special.pro_ang1 function before setting up Dask
+    # context. Detailed information could be found at Jira ORC-1214
+    _ = base_arrays_class.pswf
+
     if use_dask:
         client = set_up_dask()
+    else:
+        client = None
 
     (  # pylint: disable=unused-variable
         result_subgrid,
         result_facet,
         result_approx_subgrid,
         result_approx_facet,
-    ) = main(TEST_PARAMS, to_plot=False, use_dask=use_dask)
+    ) = main(
+        base_arrays_class,
+        TEST_PARAMS,
+        to_plot=False,
+        use_dask=use_dask,
+        client=client,
+    )
 
     # check array shapes
     assert result_subgrid.shape == (6, 6, 188, 188)
@@ -161,8 +186,13 @@ def test_end_to_end_2d_dask_logging(use_dask):
     # Fixing seed of numpy random
     numpy.random.seed(123456789)
 
+    base_arrays_class = BaseArrays(**TEST_PARAMS)
+    _ = base_arrays_class.pswf
+
     if use_dask:
         client = set_up_dask()
+    else:
+        client = None
 
     # the values in this test slightly changed (10-5 - 10-10)
     # could this be because originally numpy.fft2 was used for the 2d version?
@@ -195,7 +225,13 @@ def test_end_to_end_2d_dask_logging(use_dask):
     ]
 
     with patch("logging.Logger.info") as mock_log:
-        main(TEST_PARAMS, to_plot=False, use_dask=use_dask)
+        main(
+            base_arrays_class,
+            TEST_PARAMS,
+            to_plot=False,
+            use_dask=use_dask,
+            client=client,
+        )
         for log_call in expected_log_calls:
             assert log_call in mock_log.call_args_list
 
@@ -215,7 +251,7 @@ def test_end_to_end_2d_dask_logging(use_dask):
     ],
 )
 def test_facet_to_subgrid_methods(
-    use_dask, tested_function, target_distr_fft, subgrid_and_facet
+    use_dask, tested_function, target_distr_fft, base_arrays, subgrid_and_facet
 ):
     """
     Integration test for facet->subgrid algorithm.
@@ -230,10 +266,15 @@ def test_facet_to_subgrid_methods(
     """
     if use_dask:
         client = set_up_dask()
+        base_arrays_submit = client.scatter(base_arrays)
+    else:
+        base_arrays_submit = base_arrays
 
     subgrid, facet = subgrid_and_facet[0], subgrid_and_facet[1]
 
-    result = tested_function(facet, target_distr_fft, use_dask=use_dask)
+    result = tested_function(
+        facet, target_distr_fft, base_arrays_submit, use_dask=use_dask
+    )
     if use_dask:
         result = dask.compute(result, sync=True)[0]
         result = numpy.array(result)
@@ -254,8 +295,16 @@ def test_facet_to_subgrid_methods(
         tear_down_dask(client)
 
 
-@pytest.mark.parametrize("use_dask", [False, True])
-def test_subgrid_to_facet(use_dask, target_distr_fft, subgrid_and_facet):
+@pytest.mark.parametrize(
+    "use_dask,tested_function",
+    [
+        (False, subgrid_to_facet_algorithm),
+        (True, subgrid_to_facet_algorithm),
+    ],
+)
+def test_subgrid_to_facet(
+    use_dask, tested_function, target_distr_fft, base_arrays, subgrid_and_facet
+):
     """
     Integration test for subgrid->facet algorithm.
 
@@ -269,11 +318,14 @@ def test_subgrid_to_facet(use_dask, target_distr_fft, subgrid_and_facet):
     """
     if use_dask:
         client = set_up_dask()
+        base_arrays_submit = client.scatter(base_arrays)
+    else:
+        base_arrays_submit = base_arrays
 
     subgrid, facet = subgrid_and_facet[0], subgrid_and_facet[1]
 
-    result = subgrid_to_facet_algorithm(
-        subgrid, target_distr_fft, use_dask=use_dask
+    result = tested_function(
+        subgrid, target_distr_fft, base_arrays_submit, use_dask=use_dask
     )
 
     if use_dask:
