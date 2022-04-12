@@ -1,4 +1,4 @@
-# pylint: disable=too-many-locals, too-many-arguments
+# pylint: disable=too-many-locals, too-many-arguments, unused-argument
 """
 Utility Functions
 
@@ -12,6 +12,7 @@ import logging
 import numpy
 from matplotlib import patches, pylab
 
+from src.fourier_transform.dask_wrapper import dask_wrapper
 from src.fourier_transform.fourier_algorithm import (
     coordinates,
     extract_mid,
@@ -680,3 +681,18 @@ def test_accuracy_subgrid_to_facet(
         else:
             full_name = None
         display_plots(x, fig_name=full_name)
+
+
+@dask_wrapper
+def add_two(one, two, **kwargs):
+    """Functions for iterative operations to
+           accelerate the construction of graphs
+
+    :param one: array or graph
+    :param two: array or graph
+
+    :returns: added object
+    """
+    if one is None:
+        return two
+    return one + two
