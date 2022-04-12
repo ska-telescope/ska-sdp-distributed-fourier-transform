@@ -15,9 +15,17 @@ log.setLevel(logging.INFO)
 log.addHandler(logging.StreamHandler(sys.stdout))
 
 
-def run_swift_params():
+def run_swift_params(k):
+
     # Fixing seed of numpy random
     numpy.random.seed(123456789)
+
+    test_conf = SWIFT_CONFIGS[k]
+    # with performance_report(filename="dask-report-" + k + ".html"):
+    main(test_conf, to_plot=False, use_dask=True)
+
+
+if __name__ == "__main__":
 
     scheduler = os.environ.get("DASK_SCHEDULER", None)
     log.info("Scheduler: %s", scheduler)
@@ -25,15 +33,8 @@ def run_swift_params():
     client = set_up_dask(scheduler_address=scheduler)
 
     for k, v in SWIFT_CONFIGS.items():
-        log.info("Testing configuration:", k)
-        test_conf = SWIFT_CONFIGS[k]
-        with performance_report(filename="dask-report-"+k+".html"):
-            main(test_conf, to_plot=False, use_dask=True)
-
+        log.info("Testing configuration: {}".format(k))
+        run_swift_params(k)
         log.info("Finished test.")
 
     tear_down_dask(client)
-
-if __name__ == '__main__':
-
-    run_swift_params()
