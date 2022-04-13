@@ -110,6 +110,10 @@ def subgrid_and_facet(target_distr_fft, base_arrays):
     [
         ([], "1k[1]-512-256"),
         (["--swift_config", "3k[1]-n1536-512"], "3k[1]-n1536-512"),
+        (
+            ["--swift_config", "1k[1]-512-256,3k[1]-n1536-512"],
+            "1k[1]-512-256,3k[1]-n1536-512",
+        ),
     ],
 )
 def test_cli_parser(args, expected_config_key):
@@ -128,10 +132,13 @@ def test_main_wrong_arg():
     when the wrong swift_config key is provided.
     """
     parser = cli_parser()
-    args = parser.parse_args(["--swift_config", "non-existent-key"])
+    args = parser.parse_args(
+        ["--swift_config", "1k[1]-512-256,non-existent-key"]
+    )
     expected_message = (
-        "Provided argument does not match any swift configuration keys. "
-        "Please consult src/swift_configs.py for available options."
+        "Provided argument (non-existent-key) does not match any "
+        "swift configuration keys. Please consult src/swift_configs.py "
+        "for available options."
     )
 
     with pytest.raises(KeyError) as error_string:

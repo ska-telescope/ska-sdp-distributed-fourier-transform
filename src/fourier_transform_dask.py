@@ -803,7 +803,10 @@ def cli_parser():
         type=str,
         default="1k[1]-512-256",
         help="Dictionary key from swift_configs.py corresponding "
-        "to the configuration we want to run the algorithm for",
+        "to the configuration we want to run the algorithm for."
+        "If coma-separated list of strings, then the code "
+        "will iterate through each key. "
+        "e.g. '12k[1]-n6k-512,10k[1]-n5k-512,8k[1]-n4k-512'",
     )
 
     return parser
@@ -819,23 +822,30 @@ def main(args):
     scheduler = os.environ.get("DASK_SCHEDULER", None)
     log.info("Scheduler: %s", scheduler)
 
-    try:
-        swift_config = SWIFT_CONFIGS[args.swift_config]
-    except KeyError as error:
-        raise KeyError(
-            "Provided argument does not match any swift configuration keys. "
-            "Please consult src/swift_configs.py for available options."
-        ) from error
+    swift_config_keys = args.swift_config.split(",")
+    # check that all the keys are valid
+    for c in swift_config_keys:
+        try:
+            SWIFT_CONFIGS[c]
+        except KeyError as error:
+            raise KeyError(
+                f"Provided argument ({c}) does not match any swift "
+                f"configuration keys. Please consult src/swift_configs.py "
+                f"for available options."
+            ) from error
 
     client_dask = set_up_dask(scheduler_address=scheduler)
-    with performance_report(filename="dask-report-2d.html"):
-        run_distributed_fft(
-            # base_arrays_class,
-            swift_config,
-            to_plot=False,
-            use_dask=True,
-            client=client_dask,
-        )
+    for config_key in swift_config_keys:
+        log.info("Running for swift-config: %s", config_key)
+        with performance_report(filename=f"dask-report-{config_key}.html"):
+            run_distributed_fft(
+                # base_arrays_class,
+                SWIFT_CONFIGS[config_key],
+                to_plot=False,
+                use_dask=True,
+                client=client_dask,
+            )
+            client_dask.restart()
     tear_down_dask(client_dask)
 
     # all above needs commenting and this uncommenting if
