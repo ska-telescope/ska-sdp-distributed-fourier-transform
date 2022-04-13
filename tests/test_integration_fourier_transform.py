@@ -149,11 +149,11 @@ def test_end_to_end_2d_dask(use_dask):
     # Fixing seed of numpy random
     numpy.random.seed(123456789)
 
-    base_arrays_class = BaseArrays(**TEST_PARAMS)
-
-    # We need to call scipy.special.pro_ang1 function before setting up Dask
-    # context. Detailed information could be found at Jira ORC-1214
-    _ = base_arrays_class.pswf
+    # base_arrays_class = BaseArrays(**TEST_PARAMS)
+    #
+    # # We need to call scipy.special.pro_ang1 function before setting up Dask
+    # # context. Detailed information could be found at Jira ORC-1214
+    # _ = base_arrays_class.pswf
 
     if use_dask:
         client = set_up_dask()
@@ -166,7 +166,7 @@ def test_end_to_end_2d_dask(use_dask):
         result_approx_subgrid,
         result_approx_facet,
     ) = run_distributed_fft(
-        base_arrays_class,
+        # base_arrays_class,
         TEST_PARAMS,
         to_plot=False,
         use_dask=use_dask,
@@ -225,8 +225,8 @@ def test_end_to_end_2d_dask_logging(use_dask):
     # Fixing seed of numpy random
     numpy.random.seed(123456789)
 
-    base_arrays_class = BaseArrays(**TEST_PARAMS)
-    _ = base_arrays_class.pswf
+    # base_arrays_class = BaseArrays(**TEST_PARAMS)
+    # _ = base_arrays_class.pswf
 
     if use_dask:
         client = set_up_dask()
@@ -265,7 +265,7 @@ def test_end_to_end_2d_dask_logging(use_dask):
 
     with patch("logging.Logger.info") as mock_log:
         run_distributed_fft(
-            base_arrays_class,
+            # base_arrays_class,
             TEST_PARAMS,
             to_plot=False,
             use_dask=use_dask,

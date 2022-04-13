@@ -233,69 +233,59 @@ class BaseArrays(BaseParameters):
         """
         Calculate facet mask
         """
-        if self._facet_B is None:
-            self._facet_B = self._generate_mask(self.yB_size, self.facet_off)
+        facet_B = self._generate_mask(self.yB_size, self.facet_off)
 
-        return self._facet_B
+        return facet_B
 
     def calculate_subgrid_A(self):
         """
         Calculate subgrid mask
         """
-        if self._subgrid_A is None:
-            self._subgrid_A = self._generate_mask(
-                self.xA_size, self.subgrid_off
-            )
+        subgrid_A = self._generate_mask(self.xA_size, self.subgrid_off)
 
-        return self._subgrid_A
+        return subgrid_A
 
     def calculate_Fb(self):
         """
         Calculate the Fourier transform of grid correction function
         """
-        if self._Fb is None:
-            self._Fb = 1 / extract_mid(self.pswf, self.yB_size, axis=0)
+        Fb = 1 / extract_mid(self.pswf, self.yB_size, axis=0)
 
-        return self._Fb
+        return Fb
 
     def calculate_Fn(self):
         """
         Calculate the Fourier transform of gridding function
         """
-        if self._Fn is None:
-            self._Fn = self.pswf[
-                (self.yN_size // 2)
-                % int(self.N / self.xM_size) :: int(self.N / self.xM_size)
-            ]
+        Fn = self.pswf[
+            (self.yN_size // 2)
+            % int(self.N / self.xM_size) :: int(self.N / self.xM_size)
+        ]
 
-        return self._Fn
+        return Fn
 
     def calculate_facet_m0_trunc(self):
         """
         Calculate the mask truncated to a facet (image space)
         """
-        if self._facet_m0_trunc is None:
-            temp_facet_m0_trunc = self.pswf * numpy.sinc(
-                coordinates(self.yN_size)
-                * self.xM_size
-                / self.N
-                * self.yN_size
-            )
-            self._facet_m0_trunc = (
-                self.xM_size
-                * self.yP_size
-                / self.N
-                * extract_mid(
-                    ifft(
-                        pad_mid(temp_facet_m0_trunc, self.yP_size, axis=0),
-                        axis=0,
-                    ),
-                    self.xMxN_yP_size,
+        temp_facet_m0_trunc = self.pswf * numpy.sinc(
+            coordinates(self.yN_size) * self.xM_size / self.N * self.yN_size
+        )
+        facet_m0_trunc = (
+            self.xM_size
+            * self.yP_size
+            / self.N
+            * extract_mid(
+                ifft(
+                    pad_mid(temp_facet_m0_trunc, self.yP_size, axis=0),
                     axis=0,
-                ).real
-            )
+                ),
+                self.xMxN_yP_size,
+                axis=0,
+            ).real
+        )
 
-        return self._facet_m0_trunc
+        return facet_m0_trunc
 
     def calculate_pswf(self):
         """
@@ -308,22 +298,21 @@ class BaseArrays(BaseParameters):
         # eigenfunctions using zero for zeroth order
         alpha = 0
 
-        if self._pswf is None:
-            # pylint: disable=no-member
-            pswf = scipy.special.pro_ang1(
-                alpha,
-                alpha,
-                numpy.pi * self.W / 2,
-                2 * coordinates(self.yN_size),
-            )[0]
-            pswf[0] = 0  # zap NaN
+        # pylint: disable=no-member
+        pswf = scipy.special.pro_ang1(
+            alpha,
+            alpha,
+            numpy.pi * self.W / 2,
+            2 * coordinates(self.yN_size),
+        )[0]
+        pswf[0] = 0  # zap NaN
 
-            self._pswf = pswf.real
-            self._pswf /= numpy.prod(
-                numpy.arange(2 * alpha - 1, 0, -2, dtype=float)
-            )  # double factorial
+        pswf = pswf.real
+        pswf /= numpy.prod(
+            numpy.arange(2 * alpha - 1, 0, -2, dtype=float)
+        )  # double factorial
 
-        return self._pswf
+        return pswf
 
 
 class SparseFourierTransform(BaseParameters):
