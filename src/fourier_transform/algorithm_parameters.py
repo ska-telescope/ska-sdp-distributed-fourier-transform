@@ -193,12 +193,12 @@ class BaseArrays(BaseParameters):
     def __init__(self, **fundamental_constants):
         super().__init__(**fundamental_constants)
 
-        self._facet_B = None
-        self._subgrid_A = None
-        self._Fb = None
-        self._Fn = None
-        self._facet_m0_trunc = None
-        self._pswf = None
+        self.facet_B = self.calculate_facet_B()
+        self.subgrid_A = self.calculate_subgrid_A()
+        self.Fb = self.calculate_Fb()
+        self.Fn = self.calculate_Fn()
+        self.facet_m0_trunc = self.calculate_facet_m0_trunc()
+        self.pswf = self.calculate_pswf()
 
     def _generate_mask(self, mask_size, offsets):
         """
@@ -229,20 +229,18 @@ class BaseArrays(BaseParameters):
 
         return mask
 
-    @property
-    def facet_B(self):
+    def calculate_facet_B(self):
         """
-        Facet mask
+        Calculate facet mask
         """
         if self._facet_B is None:
             self._facet_B = self._generate_mask(self.yB_size, self.facet_off)
 
         return self._facet_B
 
-    @property
-    def subgrid_A(self):
+    def calculate_subgrid_A(self):
         """
-        Subgrid mask
+        Calculate subgrid mask
         """
         if self._subgrid_A is None:
             self._subgrid_A = self._generate_mask(
@@ -251,20 +249,18 @@ class BaseArrays(BaseParameters):
 
         return self._subgrid_A
 
-    @property
-    def Fb(self):
+    def calculate_Fb(self):
         """
-        Fourier transform of grid correction function
+        Calculate the Fourier transform of grid correction function
         """
         if self._Fb is None:
             self._Fb = 1 / extract_mid(self.pswf, self.yB_size, axis=0)
 
         return self._Fb
 
-    @property
-    def Fn(self):
+    def calculate_Fn(self):
         """
-        Fourier transform of gridding function
+        Calculate the Fourier transform of gridding function
         """
         if self._Fn is None:
             self._Fn = self.pswf[
@@ -274,10 +270,9 @@ class BaseArrays(BaseParameters):
 
         return self._Fn
 
-    @property
-    def facet_m0_trunc(self):
+    def calculate_facet_m0_trunc(self):
         """
-        Mask truncated to a facet (image space)
+        Calculate the mask truncated to a facet (image space)
         """
         if self._facet_m0_trunc is None:
             temp_facet_m0_trunc = self.pswf * numpy.sinc(
@@ -302,8 +297,7 @@ class BaseArrays(BaseParameters):
 
         return self._facet_m0_trunc
 
-    @property
-    def pswf(self):
+    def calculate_pswf(self):
         """
         Calculate 1D PSWF (prolate-spheroidal wave function) at the
         full required resolution (facet size)

@@ -648,7 +648,7 @@ def _run_algorithm(
 
 # pylint: disable=too-many-arguments
 def run_distributed_fft(
-    base_arrays,
+    # base_arrays,
     fundamental_params,
     to_plot=True,
     fig_name=None,
@@ -668,6 +668,7 @@ def run_distributed_fft(
                      fig_name doesn't have an effect.
     :param use_dask: boolean; use dask?
     """
+    base_arrays = BaseArrays(**fundamental_params)
     sparse_ft_class = SparseFourierTransform(**fundamental_params)
     log.info("== Chosen configuration")
     log.info(sparse_ft_class)
@@ -816,15 +817,12 @@ def main(args):
             "Please consult src/swift_configs.py for available options."
         ) from error
 
-    base_arrays_class = BaseArrays(**swift_config)
-    # We need to call scipy.special.pro_ang1 function before setting up Dask
-    # context. Detailed information could be found at Jira ORC-1214
-    _ = base_arrays_class.pswf
+    # base_arrays_class = BaseArrays(**swift_config)
 
     client_dask = set_up_dask(scheduler_address=scheduler)
     with performance_report(filename="dask-report-2d.html"):
         run_distributed_fft(
-            base_arrays_class,
+            # base_arrays_class,
             swift_config,
             to_plot=False,
             use_dask=True,
