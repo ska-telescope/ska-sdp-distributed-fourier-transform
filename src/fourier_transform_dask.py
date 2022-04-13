@@ -86,8 +86,9 @@ def _generate_subgrid_contributions(
             NAF_AF = sparse_ft_class.extract_subgrid_contrib_to_facet(
                 AF_AF,
                 sparse_ft_class.facet_off[j0],
+                base_arrays.Fn,
+                # base_arrays=base_arrays,
                 axis=0,
-                base_arrays=base_arrays,
                 use_dask=use_dask,
                 nout=1,
             )
@@ -97,8 +98,8 @@ def _generate_subgrid_contributions(
                 ] = sparse_ft_class.extract_subgrid_contrib_to_facet(
                     NAF_AF,
                     sparse_ft_class.facet_off[j1],
+                    base_arrays.Fn,
                     axis=1,
-                    base_arrays=base_arrays,
                     use_dask=use_dask,
                     nout=1,
                 )
@@ -163,8 +164,8 @@ def subgrid_to_facet_algorithm(
                         2,
                         naf_naf[i0][i1][j0][j1],
                         sparse_ft_class.subgrid_off[i1],
+                        base_arrays.facet_m0_trunc,
                         axis=1,
-                        base_arrays=base_arrays,
                         use_dask=use_dask,
                         nout=1,
                     )
@@ -178,17 +179,17 @@ def subgrid_to_facet_algorithm(
                             len(NAF_MNAF.shape),
                             naf_naf[i0][i1][j0][j1],
                             sparse_ft_class.subgrid_off[i1],
+                            base_arrays.facet_m0_trunc,
                             axis=1,
-                            base_arrays=base_arrays,
                             use_dask=use_dask,
                             nout=1,
                         )
                     )
             NAF_BMNAF = sparse_ft_class.finish_facet(
                 NAF_MNAF,
-                j1,
+                base_arrays.facet_B[j1],
+                base_arrays.Fb,
                 axis=1,
-                base_arrays=base_arrays,
                 use_dask=use_dask,
                 nout=0,
             )
@@ -197,8 +198,8 @@ def subgrid_to_facet_algorithm(
                     2,
                     NAF_BMNAF,
                     sparse_ft_class.subgrid_off[i0],
+                    base_arrays.facet_m0_trunc,
                     axis=0,
-                    base_arrays=base_arrays,
                     use_dask=use_dask,
                     nout=1,
                 )
@@ -212,17 +213,17 @@ def subgrid_to_facet_algorithm(
                         len(MNAF_BMNAF.shape),
                         NAF_BMNAF,
                         sparse_ft_class.subgrid_off[i0],
+                        base_arrays.facet_m0_trunc,
                         axis=0,
-                        base_arrays=base_arrays,
                         use_dask=use_dask,
                         nout=1,
                     )
                 )
         approx_facet[j0][j1] = sparse_ft_class.finish_facet(
             MNAF_BMNAF,
-            j0,
+            base_arrays.facet_B[j0],
+            base_arrays.Fb,
             axis=0,
-            base_arrays=base_arrays,
             use_dask=use_dask,
             nout=1,
         )
@@ -278,14 +279,14 @@ def facet_to_subgrid_2d_method_1(
         BF_F = sparse_ft_class.prepare_facet(
             facet[j0][j1],
             0,
-            base_arrays,
+            base_arrays.Fb,
             use_dask=use_dask,
             nout=1,
         )
         BF_BF = sparse_ft_class.prepare_facet(
             BF_F,
             1,
-            base_arrays,
+            base_arrays.Fb,
             use_dask=use_dask,
             nout=1,
         )
@@ -294,7 +295,8 @@ def facet_to_subgrid_2d_method_1(
                 BF_BF,
                 0,
                 sparse_ft_class.subgrid_off[i0],
-                base_arrays=base_arrays,
+                base_arrays.facet_m0_trunc,
+                base_arrays.Fn,
                 use_dask=use_dask,
                 nout=1,
             )
@@ -305,7 +307,8 @@ def facet_to_subgrid_2d_method_1(
                     NMBF_BF,
                     1,
                     sparse_ft_class.subgrid_off[i1],
-                    base_arrays=base_arrays,
+                    base_arrays.facet_m0_trunc,
+                    base_arrays.Fn,
                     use_dask=use_dask,
                     nout=1,
                 )
@@ -364,7 +367,7 @@ def facet_to_subgrid_2d_method_2(
         BF_F = sparse_ft_class.prepare_facet(
             facet[j0][j1],
             0,
-            base_arrays,
+            base_arrays.Fb,
             use_dask=use_dask,
             nout=1,
         )
@@ -373,14 +376,15 @@ def facet_to_subgrid_2d_method_2(
                 BF_F,
                 0,
                 sparse_ft_class.subgrid_off[i0],
-                base_arrays=base_arrays,
+                base_arrays.facet_m0_trunc,
+                base_arrays.Fn,
                 use_dask=use_dask,
                 nout=1,
             )
             NMBF_BF = sparse_ft_class.prepare_facet(
                 NMBF_F,
                 1,
-                base_arrays,
+                base_arrays.Fb,
                 use_dask=use_dask,
                 nout=1,
             )
@@ -391,7 +395,8 @@ def facet_to_subgrid_2d_method_2(
                     NMBF_BF,
                     1,
                     sparse_ft_class.subgrid_off[i1],
-                    base_arrays=base_arrays,
+                    base_arrays.facet_m0_trunc,
+                    base_arrays.Fn,
                     use_dask=use_dask,
                     nout=1,
                 )
@@ -441,7 +446,7 @@ def facet_to_subgrid_2d_method_3(
         F_BF = sparse_ft_class.prepare_facet(
             facet[j0][j1],
             1,
-            base_arrays,
+            base_arrays.Fb,
             use_dask=use_dask,
             nout=1,
         )
@@ -450,14 +455,15 @@ def facet_to_subgrid_2d_method_3(
                 F_BF,
                 1,
                 sparse_ft_class.subgrid_off[i1],
-                base_arrays=base_arrays,
+                base_arrays.facet_m0_trunc,
+                base_arrays.Fn,
                 use_dask=use_dask,
                 nout=1,
             )
             BF_NMBF = sparse_ft_class.prepare_facet(
                 F_NMBF,
                 0,
-                base_arrays,
+                base_arrays.Fb,
                 use_dask=use_dask,
                 nout=1,
             )
@@ -468,7 +474,8 @@ def facet_to_subgrid_2d_method_3(
                     BF_NMBF,
                     0,
                     sparse_ft_class.subgrid_off[i0],
-                    base_arrays=base_arrays,
+                    base_arrays.facet_m0_trunc,
+                    base_arrays.Fn,
                     use_dask=use_dask,
                     nout=1,
                 )
@@ -534,9 +541,11 @@ def generate_approx_subgrid(
 
         approx_subgrid[i0][i1] = sparse_ft_class.finish_subgrid(
             summed_facet,
-            subgrid_mask1_idx=i0,
-            subgrid_mask2_idx=i1,
-            base_arrays=base_arrays,
+            # subgrid_mask1_idx=i0,
+            # subgrid_mask2_idx=i1,
+            # base_arrays=base_arrays,
+            base_arrays.subgrid_A[i0],
+            base_arrays.subgrid_A[i1],
             use_dask=use_dask,
             nout=1,
         )
@@ -577,7 +586,8 @@ def _run_algorithm(
     if use_dask and client is not None:
         G_2 = client.scatter(G_2)
         FG_2 = client.scatter(FG_2)
-        base_arrays_submit = client.scatter(base_arrays)
+        # base_arrays_submit = client.scatter(base_arrays)
+        base_arrays_submit = base_arrays
     else:
         base_arrays_submit = base_arrays
 
@@ -816,8 +826,6 @@ def main(args):
             "Provided argument does not match any swift configuration keys. "
             "Please consult src/swift_configs.py for available options."
         ) from error
-
-    # base_arrays_class = BaseArrays(**swift_config)
 
     client_dask = set_up_dask(scheduler_address=scheduler)
     with performance_report(filename="dask-report-2d.html"):

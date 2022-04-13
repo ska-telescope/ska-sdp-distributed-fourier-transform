@@ -305,7 +305,8 @@ def test_facet_to_subgrid_methods(
     """
     if use_dask:
         client = set_up_dask()
-        base_arrays_submit = client.scatter(base_arrays)
+        # base_arrays_submit = client.scatter(base_arrays)
+        base_arrays_submit = base_arrays
     else:
         base_arrays_submit = base_arrays
 
@@ -357,7 +358,8 @@ def test_subgrid_to_facet(
     """
     if use_dask:
         client = set_up_dask()
-        base_arrays_submit = client.scatter(base_arrays)
+        # base_arrays_submit = client.scatter(base_arrays)
+        base_arrays_submit = base_arrays
     else:
         base_arrays_submit = base_arrays
 
