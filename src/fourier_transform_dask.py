@@ -8,6 +8,7 @@ include the subgrid to facet, and facet to subgrid transformations.
 The main function calls all the functions.
 """
 
+import argparse
 import itertools
 import logging
 import os
@@ -646,7 +647,7 @@ def _run_algorithm(
 
 
 # pylint: disable=too-many-arguments
-def main(
+def run_distributed_fft(
     base_arrays,
     fundamental_params,
     to_plot=True,
@@ -668,6 +669,7 @@ def main(
     :param use_dask: boolean; use dask?
     """
     sparse_ft_class = SparseFourierTransform(**fundamental_params)
+    log.info("== Chosen configuration")
     log.info(sparse_ft_class)
 
     if to_plot:
@@ -775,27 +777,55 @@ def main(
     return subgrid_2, facet_2, approx_subgrid, approx_facet
 
 
-if __name__ == "__main__":
+def cli_parser():
+    """
+    Parse command line arguments
+
+    :return: argparse
+    """
+    parser = argparse.ArgumentParser(
+        description="Distributed Fast Fourier Transform",
+        fromfile_prefix_chars="@",
+    )
+    parser.add_argument(
+        "--swift_config",
+        type=str,
+        default="1k[1]-512-256",
+        help="Dictionary key from swift_configs.py corresponding "
+        "to the configuration we want to run the algorithm for",
+    )
+
+    return parser
+
+
+def main(args):
+    """
+    Main function to run the Distributed FFT
+    """
     # Fixing seed of numpy random
     numpy.random.seed(123456789)
 
     scheduler = os.environ.get("DASK_SCHEDULER", None)
     log.info("Scheduler: %s", scheduler)
 
-    test_conf = SWIFT_CONFIGS["1k[1]-512-256"]
+    try:
+        swift_config = SWIFT_CONFIGS[args.swift_config]
+    except KeyError as error:
+        raise KeyError(
+            "Provided argument does not match any swift configuration keys. "
+            "Please consult src/swift_configs.py for available options."
+        ) from error
 
-    log.info("== Chosen configuration")
-    base_arrays_class = BaseArrays(**test_conf)
-
+    base_arrays_class = BaseArrays(**swift_config)
     # We need to call scipy.special.pro_ang1 function before setting up Dask
     # context. Detailed information could be found at Jira ORC-1214
     _ = base_arrays_class.pswf
 
     client_dask = set_up_dask(scheduler_address=scheduler)
     with performance_report(filename="dask-report-2d.html"):
-        main(
+        run_distributed_fft(
             base_arrays_class,
-            test_conf,
+            swift_config,
             to_plot=False,
             use_dask=True,
             client=client_dask,
@@ -805,3 +835,9 @@ if __name__ == "__main__":
     # all above needs commenting and this uncommenting if
     # want to run it without dask
     # main(to_plot=False)
+
+
+if __name__ == "__main__":
+    dfft_parser = cli_parser()
+    parsed_args = dfft_parser.parse_args()
+    main(parsed_args)

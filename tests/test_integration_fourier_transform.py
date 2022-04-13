@@ -2,6 +2,7 @@
 """
 End-to-end and integration tests.
 """
+
 import itertools
 import logging
 from unittest.mock import call, patch
@@ -21,11 +22,13 @@ from src.fourier_transform.fourier_algorithm import (
     ifft,
     make_subgrid_and_facet,
 )
-from src.fourier_transform_2d_dask import (
+from src.fourier_transform_dask import (
+    cli_parser,
     facet_to_subgrid_2d_method_1,
     facet_to_subgrid_2d_method_2,
     facet_to_subgrid_2d_method_3,
     main,
+    run_distributed_fft,
     subgrid_to_facet_algorithm,
 )
 from tests.test_reference_data.ref_data_2d import (
@@ -102,6 +105,42 @@ def subgrid_and_facet(target_distr_fft, base_arrays):
     return subgrid, facet
 
 
+@pytest.mark.parametrize(
+    "args, expected_config_key",
+    [
+        ([], "1k[1]-512-256"),
+        (["--swift_config", "3k[1]-n1536-512"], "3k[1]-n1536-512"),
+    ],
+)
+def test_cli_parser(args, expected_config_key):
+    """
+    cli_parser correctly parses command line arguments
+    and uses defaults.
+    """
+    parser = cli_parser()
+    result = parser.parse_args(args)
+    assert result.swift_config == expected_config_key
+
+
+def test_main_wrong_arg():
+    """
+    main raises KeyError with correct message,
+    when the wrong swift_config key is provided.
+    """
+    parser = cli_parser()
+    args = parser.parse_args(["--swift_config", "non-existent-key"])
+    expected_message = (
+        "Provided argument does not match any swift configuration keys. "
+        "Please consult src/swift_configs.py for available options."
+    )
+
+    with pytest.raises(KeyError) as error_string:
+        main(args)
+
+    # the following is how we can get the error message out of the information
+    assert str(error_string.value) == f"'{expected_message}'"
+
+
 @pytest.mark.parametrize("use_dask", [False, True])
 def test_end_to_end_2d_dask(use_dask):
     """
@@ -126,7 +165,7 @@ def test_end_to_end_2d_dask(use_dask):
         result_facet,
         result_approx_subgrid,
         result_approx_facet,
-    ) = main(
+    ) = run_distributed_fft(
         base_arrays_class,
         TEST_PARAMS,
         to_plot=False,
@@ -225,7 +264,7 @@ def test_end_to_end_2d_dask_logging(use_dask):
     ]
 
     with patch("logging.Logger.info") as mock_log:
-        main(
+        run_distributed_fft(
             base_arrays_class,
             TEST_PARAMS,
             to_plot=False,

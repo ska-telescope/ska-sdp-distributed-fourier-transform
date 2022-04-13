@@ -12,7 +12,7 @@ API
 .. automodapi::    src.fourier_transform.dask_wrapper
    :no-inheritance-diagram:
 
-.. automodapi::    src.fourier_transform_2d_dask
+.. automodapi::    src.fourier_transform_dask
    :no-inheritance-diagram:
 
 .. automodapi::    src.utils
