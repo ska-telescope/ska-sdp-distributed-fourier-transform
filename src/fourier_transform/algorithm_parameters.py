@@ -195,10 +195,10 @@ class BaseArrays(BaseParameters):
 
         self.facet_B = self.calculate_facet_B()
         self.subgrid_A = self.calculate_subgrid_A()
+        self.pswf = self.calculate_pswf()
         self.Fb = self.calculate_Fb()
         self.Fn = self.calculate_Fn()
         self.facet_m0_trunc = self.calculate_facet_m0_trunc()
-        self.pswf = self.calculate_pswf()
 
     def _generate_mask(self, mask_size, offsets):
         """
