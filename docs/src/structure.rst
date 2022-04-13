@@ -14,7 +14,7 @@ The following diagram demonstrates the folder structure in the
     |           algorithm_parameters.py
     |           fourier_algorithm.py
     |           dask_wrapper.py
-    |       fourier_transform_2d_dask.py
+    |       fourier_transform_dask.py
     |       utils.py
     |       swift_configs.py
     |__ tests
@@ -36,7 +36,7 @@ The following diagram demonstrates the folder structure in the
     * **dask_wrapper.py:** contains a few functions that help wrap the distributed coded into dask delayed,
       and set up and tear down the dask client.
 
-- **src/fourier_transform_2d_dask.py:** contains the main function which orchestrates the code.
+- **src/fourier_transform_dask.py:** contains the main function which orchestrates the code.
   It also decides whether to run the code with Dask or not. It is set up to run the algorithm in 2D.
 
 - **src/utils.py:** contains plotting and validation testing utils

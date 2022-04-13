@@ -15,7 +15,7 @@ One configuration example is ::
  test_conf =
  dict(W=11.0, fov=1, N=4096, Nx=64, yB_size=1408, yN_size=2048, yP_size=2048, xA_size=448, xM_size=512)
 
-which stands for a 4k size image. You will need to replace that with the default in the main function in fourier_transform_2d_dask.py.
+which stands for a 4k size image. You will need to replace that with the default in the main function in fourier_transform_dask.py.
 
 There are also the options to specify whether to use Dask or not in the code, and whether to do a plotting check. Simply set::
 
