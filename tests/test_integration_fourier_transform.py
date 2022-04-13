@@ -123,6 +123,10 @@ def test_cli_parser(args, expected_config_key):
 
 
 def test_main_wrong_arg():
+    """
+    main raises KeyError with correct message,
+    when the wrong swift_config key is provided.
+    """
     parser = cli_parser()
     args = parser.parse_args(["--swift_config", "non-existent-key"])
     expected_message = (

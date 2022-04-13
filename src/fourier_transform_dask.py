@@ -799,6 +799,9 @@ def cli_parser():
 
 
 def main(args):
+    """
+    Main function to run the Distributed FFT
+    """
     # Fixing seed of numpy random
     numpy.random.seed(123456789)
 
@@ -807,11 +810,11 @@ def main(args):
 
     try:
         swift_config = SWIFT_CONFIGS[args.swift_config]
-    except KeyError:
+    except KeyError as error:
         raise KeyError(
             "Provided argument does not match any swift configuration keys. "
             "Please consult src/swift_configs.py for available options."
-        )
+        ) from error
 
     base_arrays_class = BaseArrays(**swift_config)
     # We need to call scipy.special.pro_ang1 function before setting up Dask
@@ -835,6 +838,6 @@ def main(args):
 
 
 if __name__ == "__main__":
-    parser = cli_parser()
-    args = parser.parse_args()
-    main(args)
+    dfft_parser = cli_parser()
+    parsed_args = dfft_parser.parse_args()
+    main(parsed_args)
