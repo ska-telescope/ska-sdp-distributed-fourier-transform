@@ -38,6 +38,8 @@ Distributed FFT algorithm (facet->subgrid and subgrid->facet directions)::
 
 You need to replace `<config-key>` with one of the dictionary keys
 found in src/switf_configs.py. Default is "1k[1]-512-256".
+The code will iterate through multiple configurations if you provide
+the keys as coma-separated arguments `<config_key1>,<config_key2>`.
 
 Specify the `DASK_SCHEDULER` environment variable to use a specific
 Dask cluster for your run.

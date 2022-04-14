@@ -23,3 +23,5 @@ In order to access the scripts and run them from bash, execute the following::
 
 Make sure you use the correct tag. It will take you to the `/app` directory,
 which contains all the files from the repository.
+
+You may also use jupyter-lab, which is also installed on the image (only from v0.2.0).

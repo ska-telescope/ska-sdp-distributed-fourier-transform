@@ -170,7 +170,6 @@ def test_end_to_end_2d_dask(use_dask):
         result_approx_subgrid,
         result_approx_facet,
     ) = run_distributed_fft(
-        # base_arrays_class,
         TEST_PARAMS,
         to_plot=False,
         use_dask=use_dask,
