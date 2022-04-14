@@ -52,7 +52,8 @@ class BaseParameters:
 
     A / x --> grid (frequency) space; B / y --> image (facet) space
 
-    The class, in addition, derives the following, commonly used sizes:
+    The class, in addition, derives the following,
+    commonly used sizes (integers), and offset arrays:
 
     :param xM_yP_size: (padded subgrid size * padded facet size) / N
     :param xM_yN_size: (padded subgrid size * padding) / N
@@ -65,6 +66,8 @@ class BaseParameters:
                        i.e. xMxN_yP_size - xM_yP_size
     :param nsubgrid: number of subgrids
     :param nfacet: number of facets
+    :param facet_off: facet offset (numpy array)
+    :param subgrid_off: subgrid offset (numpy array)
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -116,10 +119,9 @@ class BaseParameters:
 
     def calculate_facet_off(self):
         """
-        Callculate facet offset array
+        Calculate facet offset array
         """
         facet_off = self.yB_size * numpy.arange(self.nfacet)
-
         return facet_off
 
     def calculate_subgrid_off(self):
@@ -127,7 +129,6 @@ class BaseParameters:
         Calculate subgrid offset array
         """
         subgrid_off = self.xA_size * numpy.arange(self.nsubgrid) + self.Nx
-
         return subgrid_off
 
     def __str__(self):
@@ -148,7 +149,9 @@ class BaseParameters:
             f"xMxN_yP_size = {self.xMxN_yP_size}\n"
             f"xN_yP_size = {self.xN_yP_size}\n"
             f"nsubgrid = {self.nsubgrid}\n"
-            f"nfacet = {self.nfacet}"
+            f"nfacet = {self.nfacet}\n"
+            f"facet_off = {self.facet_off}\n"
+            f"subgrid_off = {self.subgrid_off}"
         )
         return class_string
 
@@ -160,8 +163,6 @@ class BaseArrays(BaseParameters):
 
     It contains the following arrays (in addition to BaseParameters):
 
-    :param facet_off: facet offset
-    :param subgrid_off: subgrid offset
     :param facet_B: facet mask
     :param subgrid_A: subgrid mask
     :param Fb: Fourier transform of grid correction function
@@ -229,7 +230,6 @@ class BaseArrays(BaseParameters):
         Calculate facet mask
         """
         facet_B = self._generate_mask(self.yB_size, self.facet_off)
-
         return facet_B
 
     def calculate_subgrid_A(self):
@@ -237,7 +237,6 @@ class BaseArrays(BaseParameters):
         Calculate subgrid mask
         """
         subgrid_A = self._generate_mask(self.xA_size, self.subgrid_off)
-
         return subgrid_A
 
     def calculate_Fb(self):
@@ -245,7 +244,6 @@ class BaseArrays(BaseParameters):
         Calculate the Fourier transform of grid correction function
         """
         Fb = 1 / extract_mid(self.pswf, self.yB_size, axis=0)
-
         return Fb
 
     def calculate_Fn(self):
@@ -256,7 +254,6 @@ class BaseArrays(BaseParameters):
             (self.yN_size // 2)
             % int(self.N / self.xM_size) :: int(self.N / self.xM_size)
         ]
-
         return Fn
 
     def calculate_facet_m0_trunc(self):
@@ -279,7 +276,6 @@ class BaseArrays(BaseParameters):
                 axis=0,
             ).real
         )
-
         return facet_m0_trunc
 
     def calculate_pswf(self):
@@ -310,12 +306,9 @@ class BaseArrays(BaseParameters):
         return pswf
 
 
-class SparseFourierTransform(BaseParameters):
+class StreamingDistributedFFT(BaseParameters):
     """
-    Sparse Fourier Transform class
-
-    "Sparse" because instead of individual points in frequency
-    space we handle entire sub-grids, when running FT.
+    Streaming Distributed Fourier Transform class
 
     It takes the fundamental_constants dict as input
     (see BaseParameters class).
@@ -334,7 +327,7 @@ class SparseFourierTransform(BaseParameters):
 
         :param facet: single facet element
         :param axis: axis along which operations are performed (0 or 1)
-        :param base_arrays: base_arrays object or future if use_dask = True
+        :param Fb: Fourier transform of grid correction function
         :param kwargs: needs to contain the following if dask is used:
                 use_dask: True
                 nout: <number of function outputs> --> 1
@@ -365,7 +358,8 @@ class SparseFourierTransform(BaseParameters):
         :param BF: TODO: ? prepared facet
         :param axis: axis along which the operations are performed (0 or 1)
         :param subgrid_off_elem: single subgrid offset element
-        :param base_arrays: base array, future object if dask is used:
+        :param facet_m0_trunc: mask truncated to a facet (image space)
+        :param Fn: Fourier transform of gridding function
         :param kwargs: needs to contain the following if dask is used:
                 use_dask: True
                 nout: <number of function outputs> --> 1
@@ -418,9 +412,6 @@ class SparseFourierTransform(BaseParameters):
     def finish_subgrid(
         self,
         summed_facets,
-        # subgrid_mask1_idx,
-        # subgrid_mask2_idx,
-        # base_arrays,
         subgrid_mask1,
         subgrid_mask2,
         **kwargs,
@@ -431,9 +422,8 @@ class SparseFourierTransform(BaseParameters):
         (only works on 2D arrays in its current form).
 
         :param summed_facets: summed facets contributing to thins subgrid
-        :param subgrid_mask1_idx: ith subgrid mask element's index
-        :param subgrid_mask2_idx: (i+1)th subgrid mask element's index
-        :param base_arrays: base_arrays object or future is use_dask = True
+        :param subgrid_mask1: ith subgrid mask element
+        :param subgrid_mask2: (i+1)th subgrid mask element
         :param kwargs: needs to contain the following if dask is used:
                 use_dask: True
                 nout: <number of function outputs> --> 1
@@ -484,8 +474,8 @@ class SparseFourierTransform(BaseParameters):
 
         :param Fsi: TODO???
         :param facet_off_elem: single facet offset element
+        :param Fn: Fourier transform of gridding function
         :param axis: axis along which the operations are performed (0 or 1)
-        :param base_arrays: base_arrays object or future is use_dask = True
         :param kwargs: needs to contain the following if dask is used:
                 use_dask: True
                 nout: <number of function outputs> --> 1
@@ -521,8 +511,8 @@ class SparseFourierTransform(BaseParameters):
                      (i.e. number of dimensions); int
         :param NjSi: TODO
         :param subgrid_off_elem: single subgrid offset element
+        :param facet_m0_trunc: mask truncated to a facet (image space)
         :param axis: axis along which operations are performed (0 or 1)
-        :param base_arrays: base_arrays object or future is use_dask = True
         :param kwargs: needs to contain the following if dask is used:
                 use_dask: True
                 nout: <number of function outputs> --> 1
@@ -559,9 +549,9 @@ class SparseFourierTransform(BaseParameters):
         (Fb: Fourier transform of grid correction function)
 
         :param MiNjSi_sum: sum of subgrid contributions to a facet
-        :param facet_B_mask_idx: a facet mask index
+        :param facet_B_mask_elem: a facet mask element
+        :param Fb: Fourier transform of grid correction function
         :param axis: axis along which operations are performed (0 or 1)
-        :param base_arrays: base_arrays object or future is use_dask = True
         :param kwargs: needs to contain the following if dask is used:
                 use_dask: True
                 nout: <number of function outputs> --> 1

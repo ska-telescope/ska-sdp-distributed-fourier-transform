@@ -195,8 +195,8 @@ def make_subgrid_and_facet(
 
     :param G: "ground truth", the actual input data
     :param FG: FFT of input data
+    :param base_arrays: BaseArrays class object
     :param dims: Dimensions; integer 1 or 2 for 1D or 2D
-    :param base_arrays: base_arrays object or future if use_dask = True
     :param use_dask: run function with dask.delayed or not?
     :return: tuple of two numpy.ndarray (subgrid, facet)
     """

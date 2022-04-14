@@ -103,12 +103,11 @@ def display_plots(x, legend=None, grid=False, xlim=None, fig_name=None):
         pylab.savefig(f"{fig_name}.png")
 
 
-def plot_pswf(pswf, constants_class, fig_name=None):
+def plot_pswf(constants_class, fig_name=None):
     """
     Plot to check that PSWF indeed satisfies intended bounds.
 
-    :param pswf: prolate-spheroidal wave function
-    :param constants_class: BaseArrays or DistributedFFT class object
+    :param constants_class: BaseArrays class object
                             containing fundamental and derived parameters
     :param fig_name: partial name or prefix (can include path) if figure
                      is saved. If None, pylab.show() is called instead
@@ -122,7 +121,12 @@ def plot_pswf(pswf, constants_class, fig_name=None):
     pylab.semilogy(
         coordinates(4 * int(xN_size)) * 4 * xN_size / constants_class.N,
         extract_mid(
-            numpy.abs(ifft(pad_mid(pswf, constants_class.N, axis=0), axis=0)),
+            numpy.abs(
+                ifft(
+                    pad_mid(constants_class.pswf, constants_class.N, axis=0),
+                    axis=0,
+                )
+            ),
             4 * int(xN_size),
             axis=0,
         ),
@@ -141,7 +145,8 @@ def plot_pswf(pswf, constants_class, fig_name=None):
 
     pylab.clf()
     pylab.semilogy(
-        coordinates(constants_class.yN_size) * constants_class.yN_size, pswf
+        coordinates(constants_class.yN_size) * constants_class.yN_size,
+        constants_class.pswf,
     )
     pylab.legend(["$\\mathcal{F}[n]$"])
     mark_range("$y_B$", -yB, yB)
@@ -160,7 +165,7 @@ def plot_work_terms(constants_class, fig_name=None):
     We need both n and b in image space.
 
     TODO: What exactly are these work terms??
-    :param constants_class: BaseArrays or DistributedFFT class object
+    :param constants_class: BaseArrays class object
                             containing fundamental and derived parameters
     :param fig_name: partial name or prefix (can include path) if figure
                      is saved. If None, pylab.show() is called instead
@@ -220,7 +225,7 @@ def errors_facet_to_subgrid_2d(
     Calculate the error terms for the 2D facet to subgrid algorithm.
 
     :param NMBF_NMBF: array of individual facet contributions
-    :param constants_class: BaseArrays or SparseFourierTransform class object
+    :param constants_class: BaseArrays class object
                             containing fundamental and derived parameters
     :param subgrid_2: 2D numpy array of subgrids
     :param to_plot: run plotting?
@@ -265,7 +270,7 @@ def errors_subgrid_to_facet_2d(
     Calculate the error terms for the 2D subgrid to facet algorithm.
 
     :param BMNAF_BMNAF: array of individual subgrid contributions
-    :param constants_class: BaseArrays or SparseFourierTransform class object
+    :param constants_class: BaseArrays class object
                             containing fundamental and derived parameters
     :param facet_2: 2D numpy array of facets
     :param to_plot: run plotting?
@@ -305,8 +310,9 @@ def errors_subgrid_to_facet_2d(
 
 @dask_wrapper
 def add_two(one, two, **kwargs):
-    """Functions for iterative operations to
-           accelerate the construction of graphs
+    """
+    Functions for iterative operations to
+    accelerate the construction of graphs
 
     :param one: array or graph
     :param two: array or graph
