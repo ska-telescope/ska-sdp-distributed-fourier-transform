@@ -433,7 +433,8 @@ def make_subgrid_and_facet_from_hdf5(
     use_dask=False,
 ):
     """
-    Calculate the actual subgrids and facets. Hdf5 & Dask.delayed compatible version
+    Calculate the actual subgrids and facets. Hdf5 & Dask.delayed
+    compatible version
 
     :param G: the path of G hdf5 file
     :param FG: the path of FG hdf5 file
