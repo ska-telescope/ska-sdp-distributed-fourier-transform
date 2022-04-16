@@ -4,6 +4,7 @@ Included are a list of base functions that are used across the code.
 """
 import itertools
 
+import h5py
 import numpy
 
 from src.fourier_transform.dask_wrapper import dask_wrapper
@@ -295,4 +296,203 @@ def make_subgrid_and_facet(
     else:
         raise ValueError("Wrong dimensions. Only 1D and 2D are supported.")
 
+    return subgrid, facet
+
+
+def roll_and_extract_mid(shape, offsetx, true_usable_size):
+    """Calculate the slice of the roll + extract mid method
+
+    :param shape: shape full size data G/FG
+    :param offsetx: ith offset (subgrid or facet)
+    :param true_usable_size: xA_size for subgrid, and yB_size for facet
+
+    :return: slice list
+    """
+
+    cx = shape // 2
+    x_start = cx + offsetx - true_usable_size // 2
+
+    if true_usable_size % 2 != 0:
+        x_end = cx + offsetx + true_usable_size // 2 + 1
+    else:
+        x_end = cx + offsetx + true_usable_size // 2
+
+    assert x_end > x_start
+    assert x_end < 2 * shape
+    assert x_start < 2 * shape
+    if x_start >= shape:
+        slicex = [slice(x_start - shape, x_end - shape)]
+
+    elif x_end < 0:
+        slicex = [slice(x_start, x_end)]
+
+    elif x_start < 0 and x_end > 0:
+        slicex = [slice(0, x_end + x_start), slice(x_end, shape)]
+
+    elif x_end > shape and x_start > 0 and x_start < shape:
+        slicex = [slice(x_start, shape), slice(0, x_end - shape)]
+    elif x_end == 0 and x_start < 0:
+        slicex = [slice(-x_start, shape)]
+    else:
+        slicex = [slice(x_start, x_end)]
+
+    return slicex
+
+
+@dask_wrapper
+def _ith_subgrid_facet_element_from_hdf5(
+    hdf5_file,
+    dataset_name,
+    N,
+    offset_i,
+    true_usable_size,
+    base_arrays,
+    idx0,
+    idx1,
+    axis=(0, 1),
+    **kwargs
+):
+    """
+    Calculate a single facet or subgrid element from hdf5 with minimal memory.
+
+    :param hdf5_file: the file path of G/FG hdf5 file
+    :param dataset_name: G/FG hdf5 file dataset name
+    :param offset_i: ith offset (subgrid or facet)
+    :param true_usable_size: xA_size for subgrid, and yB_size for facet
+    :param base_arrays: base_arrays Graph or object
+    :param axis: axis (0, 1, or a tuple of both)
+    :param kwargs: needs to contain the following if dask is used:
+            use_dask: True
+            nout: <number of function outputs> --> 1
+
+    return subgrid or facets element graph
+    """
+    # process in task not in Construction graphs
+    if dataset_name == "G_data":
+        mask_element_in = base_arrays.subgrid_A
+    elif dataset_name == "FG_data":
+        mask_element_in = base_arrays.facet_B
+    else:
+        raise ValueError("unsupport dataset_name")
+    mask_element = numpy.outer(
+        mask_element_in[idx0],
+        mask_element_in[idx1],
+    )
+    f = h5py.File(hdf5_file, "r")
+    true_image_dataset = f[dataset_name]
+
+    slicex, slicey = roll_and_extract_mid(
+        N, -offset_i[0], true_usable_size
+    ), roll_and_extract_mid(N, -offset_i[1], true_usable_size)
+
+    if len(slicex) <= len(slicey):
+        iter_what1 = slicex
+        iter_what2 = slicey
+    else:
+        iter_what1 = slicey
+        iter_what2 = slicex
+
+    pointx = [0]
+    for sl in slicex:
+        dt = sl.stop - sl.start
+        pointx.append(dt + pointx[-1])
+
+    pointy = [0]
+    for sl in slicey:
+        dt = sl.stop - sl.start
+        pointy.append(dt + pointy[-1])
+
+    block_data = numpy.empty(
+        (true_usable_size, true_usable_size), dtype="complex128"
+    )
+    for i0 in range(len(iter_what1)):
+        for i1 in range(len(iter_what2)):
+            if len(slicex) <= len(slicey):
+                sltestx = slice(pointx[i0], pointx[i0 + 1])
+                sltesty = slice(pointy[i1], pointy[i1 + 1])
+                block_data[sltestx, sltesty] = true_image_dataset[
+                    slicex[i0], slicey[i1]
+                ]  # write it
+            else:
+                sltestx = slice(pointx[i1], pointx[i1 + 1])
+                sltesty = slice(pointy[i0], pointy[i0 + 1])
+                block_data[sltestx, sltesty] = true_image_dataset[
+                    slicex[i1], slicey[i0]
+                ]
+
+    res = block_data * mask_element
+    return res
+
+
+def make_subgrid_and_facet_from_hdf5(
+    G,
+    FG,
+    constants_class,
+    base_arrays,
+    dims,
+    use_dask=False,
+):
+    """
+    Calculate the actual subgrids and facets. Hdf5 & Dask.delayed compatible version
+
+    :param G: the path of G hdf5 file
+    :param FG: the path of FG hdf5 file
+    :param constants_class: constants_class object
+    :param base_arrays: base_arrays object or future if use_dask = True
+    :param use_dask: run function with dask.delayed or not?
+    :return: subgrid and facet graph list
+    """
+
+    subgrid = numpy.empty(
+        (
+            constants_class.nsubgrid,
+            constants_class.nsubgrid,
+        ),
+    ).tolist()
+    facet = numpy.empty(
+        (
+            constants_class.nfacet,
+            constants_class.nfacet,
+        ),
+    ).tolist()
+
+    for i0, i1 in itertools.product(
+        range(constants_class.nsubgrid), range(constants_class.nsubgrid)
+    ):
+        subgrid[i0][i1] = _ith_subgrid_facet_element_from_hdf5(
+            G,
+            "G_data",
+            constants_class.N,
+            (
+                -constants_class.subgrid_off[i0],
+                -constants_class.subgrid_off[i1],
+            ),
+            constants_class.xA_size,
+            base_arrays,
+            i0,
+            i1,
+            axis=(0, 1),
+            use_dask=True,
+            nout=1,
+        )
+
+    for j0, j1 in itertools.product(
+        range(constants_class.nfacet), range(constants_class.nfacet)
+    ):
+        facet[j0][j1] = _ith_subgrid_facet_element_from_hdf5(
+            FG,
+            "FG_data",
+            constants_class.N,
+            (
+                -constants_class.facet_off[j0],
+                -constants_class.facet_off[j1],
+            ),
+            constants_class.yB_size,
+            base_arrays,
+            j0,
+            j1,
+            axis=(0, 1),
+            use_dask=True,
+            nout=1,
+        )
     return subgrid, facet
