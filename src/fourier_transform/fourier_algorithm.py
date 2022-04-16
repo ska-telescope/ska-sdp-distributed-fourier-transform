@@ -349,7 +349,6 @@ def _ith_subgrid_facet_element_from_hdf5(
     base_arrays,
     idx0,
     idx1,
-    axis=(0, 1),
     **kwargs
 ):
     """
@@ -360,7 +359,6 @@ def _ith_subgrid_facet_element_from_hdf5(
     :param offset_i: ith offset (subgrid or facet)
     :param true_usable_size: xA_size for subgrid, and yB_size for facet
     :param base_arrays: base_arrays Graph or object
-    :param axis: axis (0, 1, or a tuple of both)
     :param kwargs: needs to contain the following if dask is used:
             use_dask: True
             nout: <number of function outputs> --> 1
@@ -429,7 +427,6 @@ def make_subgrid_and_facet_from_hdf5(
     FG,
     constants_class,
     base_arrays,
-    dims,
     use_dask=False,
 ):
     """
@@ -471,7 +468,6 @@ def make_subgrid_and_facet_from_hdf5(
             base_arrays,
             i0,
             i1,
-            axis=(0, 1),
             use_dask=True,
             nout=1,
         )
@@ -491,7 +487,6 @@ def make_subgrid_and_facet_from_hdf5(
             base_arrays,
             j0,
             j1,
-            axis=(0, 1),
             use_dask=True,
             nout=1,
         )
