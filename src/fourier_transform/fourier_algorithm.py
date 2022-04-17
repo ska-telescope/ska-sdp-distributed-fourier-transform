@@ -320,21 +320,24 @@ def roll_and_extract_mid(shape, offsetx, true_usable_size):
     assert x_end > x_start
     assert x_end < 2 * shape
     assert x_start < 2 * shape
-    if x_start >= shape:
-        slicex = [slice(x_start - shape, x_end - shape)]
 
-    elif x_end < 0:
-        slicex = [slice(x_start, x_end)]
+    if x_end <= 0:
+        slicex = [slice(x_start + shape, x_end + shape)]
     # pylint: disable=chained-comparison
     elif x_start < 0 and x_end > 0:
-        slicex = [slice(0, x_end + x_start), slice(x_end, shape)]
-    # pylint: disable=chained-comparison
-    elif x_end > shape and x_start > 0 and x_start < shape:
-        slicex = [slice(x_start, shape), slice(0, x_end - shape)]
-    elif x_end == 0 and x_start < 0:
-        slicex = [slice(-x_start, shape)]
-    else:
+        slicex = [slice(0, x_end), slice(x_start + shape, shape)]
+
+    elif x_end <= shape and x_start >= 0:
         slicex = [slice(x_start, x_end)]
+    # pylint: disable=chained-comparison
+    elif x_start < shape and x_end > shape:
+        slicex = [slice(x_start, shape), slice(0, x_end - shape)]
+
+    elif x_start >= shape:
+        slicex = [slice(x_start - shape, x_end - shape)]
+
+    else:
+        raise ValueError("unsupport slice")
 
     return slicex
 
