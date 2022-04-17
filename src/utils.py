@@ -880,16 +880,13 @@ def make_G_2_FG_2_hdf5(
 @dask_wrapper
 def error_task_subgrid_to_facet_2d(approx, true_image, num_true, **kwargs):
     """
-    Calculate the error terms for the 2D subgrid to facet algorithm.
+    Calculate the error terms for the a single 2D subgrid to facet algorithm.
 
-    :param approx: array of individual subgrid contributions
-    :param constants_class: BaseArrays or SparseFourierTransform class object
-                            containing fundamental and derived parameters
-    :param facet_2: 2D numpy array of facets
-    :param to_plot: run plotting?
-    :param fig_name: If given, figures will be saved with this prefix
-                     into PNG files. If to_plot is set to False,
-                     fig_name doesn't have an effect.
+    :param approx: array of individual facets
+    :param true_image: true_image of facets
+    :param num_true: number of facets
+
+    :returns: err_mean, err_mean_img
     """
     approx_img = numpy.zeros_like(approx) + approx
     err_mean = (
@@ -902,6 +899,15 @@ def error_task_subgrid_to_facet_2d(approx, true_image, num_true, **kwargs):
 
 @dask_wrapper
 def error_task_facet_to_subgrid_2d(approx, true_image, num_true, **kwargs):
+    """
+    Calculate the error terms for the a single 2D subgrid to facet algorithm.
+
+    :param approx: array of individual subgrid
+    :param true_image: true_image of subgrid
+    :param num_true: number of subgrid
+
+    :returns: err_mean, err_mean_img
+    """
     approx_img = numpy.zeros_like(approx) + approx
     err_mean = numpy.abs(approx_img - true_image) ** 2 / num_true**2
     err_mean_img = numpy.abs(
@@ -910,9 +916,14 @@ def error_task_facet_to_subgrid_2d(approx, true_image, num_true, **kwargs):
     return err_mean, err_mean_img
 
 
-# TODO: need reduce sum
 @dask_wrapper
 def sum_error_task(err_list, **kwargs):
+    """
+    Summing over error array
+    :param err_list: err_mean, err_mean_img list from subgrid or facets
+    :returns: sum of err_mean and err_mean_img
+    # TODO: need reduce sum
+    """
     err_mean = numpy.zeros_like(err_list[0][0])
     err_mean_img = numpy.zeros_like(err_list[0][1])
 
@@ -924,12 +935,30 @@ def sum_error_task(err_list, **kwargs):
 
 @dask_wrapper
 def mean_img_task(err_img, **kwargs):
+    """
+    the mean of err_mean, err_mean_img
+
+    This function is designed to work with sum_error_task's reduce summation
+
+    :param err_img: err_mean, err_mean_img
+    :returns: mean of err_mean and err_mean_img
+    """
     return numpy.sqrt(numpy.mean(err_img[0])), numpy.sqrt(
         numpy.mean(err_img[1])
     )
 
 
 def fund_errors(approx_what, number_what, true_what, error_task):
+    """
+    Functions for calculating the error common to facet or subgrid
+
+    :param approx_what: approx subgrid or facets
+    :param number_what: number of subgrid or facets
+    :param true_what: true subgrid or facets
+    :param error_task: error_task_subgrid_to_facet_2d or
+            error_task_facet_to_subgrid_2d function
+    :returns: mean of err_mean and err_mean_img
+    """
     error_task_list = []
     for i0, i1 in itertools.product(range(number_what), range(number_what)):
         tmp_error = error_task(
@@ -942,13 +971,20 @@ def fund_errors(approx_what, number_what, true_what, error_task):
         error_task_list.append(tmp_error)
 
     error_sum_map = sum_error_task(error_task_list, use_dask=True, nout=1)
-    mean_number = mean_img_task(error_sum_map, use_dask=True, nout=1)
-    return mean_number
+    return error_sum_map
 
 
 def errors_facet_to_subgrid_2d_dask(
-    approx_subgrid, sparse_ft_class, subgrid_2, to_plot, fig_name
+    approx_subgrid, sparse_ft_class, subgrid_2
 ):
+    """
+    Functions for calculating the error of approx subgrid
+
+    :param approx_subgrid: approx subgrid
+    :param sparse_ft_class: sparse_ft_class
+    :param subgrid_2: true subgrid
+    :returns: mean of err_mean and err_mean_img
+    """
     return fund_errors(
         approx_subgrid,
         sparse_ft_class.nsubgrid,
@@ -957,9 +993,15 @@ def errors_facet_to_subgrid_2d_dask(
     )
 
 
-def errors_subgrid_to_facet_2d_dask(
-    approx_facet, facet_2, sparse_ft_class, to_plot, fig_name
-):
+def errors_subgrid_to_facet_2d_dask(approx_facet, facet_2, sparse_ft_class):
+    """
+    Functions for calculating the error of approx facets
+
+    :param approx_facet: approx facets
+    :param sparse_ft_class: sparse_ft_class
+    :param facet_2: true facets
+    :returns: mean of err_mean and err_mean_img
+    """
     return fund_errors(
         approx_facet,
         sparse_ft_class.nfacet,
@@ -981,6 +1023,20 @@ def single_write_hdf5_task(
     block_data,
     **kwargs,
 ):
+    """
+    Single subgrid or facet write hdf5 file task
+
+    :param hdf5_path: approx facets
+    :param dataset_name: sparse_ft_class
+    :param N: full G or FG size
+    :param offset_i: subgrid or facets offset
+    :param block_size: subgrid or facets size
+    :param base_arrays: base_arrays
+    :param idx0: idx0
+    :param idx1: idx1
+    :param block_data: subgrid or facets data
+    :returns: hdf5 of approx subgrid or facets
+    """
     if dataset_name == "G_data":
         mask_element_in = base_arrays.subgrid_A
     elif dataset_name == "FG_data":
@@ -1016,31 +1072,34 @@ def single_write_hdf5_task(
     # write with Lock
     lock = Lock(hdf5_path)
     lock.acquire()
-    f = h5py.File(hdf5_path, "r+")
-    approx_image_dataset = f[dataset_name]
+    with h5py.File(hdf5_path, "r+") as f:
+        approx_image_dataset = f[dataset_name]
 
-    for i0 in range(len(iter_what1)):
-        for i1 in range(len(iter_what2)):
-            if len(slicex) <= len(slicey):
-                sltestx = slice(pointx[i0], pointx[i0 + 1])
-                sltesty = slice(pointy[i1], pointy[i1 + 1])
-                approx_image_dataset[slicex[i0], slicey[i1]] += block_data[
-                    sltestx, sltesty
-                ]  # write it
-            else:
-                sltestx = slice(pointx[i1], pointx[i1 + 1])
-                sltesty = slice(pointy[i0], pointy[i0 + 1])
-                approx_image_dataset[slicex[i1], slicey[i0]] += block_data[
-                    sltestx, sltesty
-                ]
-
-    f.close()
+        for i0 in range(len(iter_what1)):
+            for i1 in range(len(iter_what2)):
+                if len(slicex) <= len(slicey):
+                    sltestx = slice(pointx[i0], pointx[i0 + 1])
+                    sltesty = slice(pointy[i1], pointy[i1 + 1])
+                    approx_image_dataset[slicex[i0], slicey[i1]] += block_data[
+                        sltestx, sltesty
+                    ]  # write it
+                else:
+                    sltestx = slice(pointx[i1], pointx[i1 + 1])
+                    sltesty = slice(pointy[i0], pointy[i0 + 1])
+                    approx_image_dataset[slicex[i1], slicey[i0]] += block_data[
+                        sltestx, sltesty
+                    ]
     lock.release()
     return hdf5_path
 
 
 @dask_wrapper
 def trim(ls, **kwargs):
+    """
+    Fetch the first element of a list
+
+    :return: the first item
+    """
     return ls[0]
 
 
@@ -1052,6 +1111,18 @@ def write_hdf5(
     sparse_ft_class,
     base_arrays_submit,
 ):
+    """
+    Write approx subgrid and facet to hdf5
+
+    :param approx_subgrid: approx subgrid list
+    :param approx_facet: approx facet list
+    :param approx_subgrid_path: approx subgrid path
+    :param approx_facet_path: approx facet path
+    :param sparse_ft_class: SparseFourierTransform class object
+    :param base_arrays_submit: base_arrays_submit
+
+    :returns: hdf5 path of approx subgrid and facets
+    """
 
     # subgrid
     with h5py.File(approx_subgrid_path, "w") as f:

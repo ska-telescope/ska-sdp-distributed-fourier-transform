@@ -694,7 +694,6 @@ def run_distributed_fft(
             FG_2,
             sparse_ft_class,
             base_arrays_submit,
-            dims=2,
             use_dask=use_dask,
         )
     else:
@@ -727,16 +726,12 @@ def run_distributed_fft(
             approx_subgrid,
             sparse_ft_class,
             subgrid_2,
-            to_plot=to_plot,
-            fig_name=fig_name,
         )
 
         errors_subgrid_to_facet = errors_subgrid_to_facet_2d_dask(
             approx_facet,
             facet_2,
             sparse_ft_class,
-            to_plot=to_plot,
-            fig_name=fig_name,
         )
 
         approx_G_2_file, approx_FG_2_file = write_hdf5(
@@ -771,6 +766,13 @@ def run_distributed_fft(
             "errors_subgrid_to_facet RMSE: %s (image: %s)",
             errors_subgrid_to_facet[0],
             errors_subgrid_to_facet[1],
+        )
+
+        subgrid_2, facet_2, approx_subgrid, approx_facet = (
+            G_2_file,
+            FG_2_file,
+            approx_G_2_file,
+            approx_FG_2_file,
         )
 
     else:
@@ -816,8 +818,8 @@ def run_distributed_fft(
             to_plot=to_plot,
             fig_name=fig_name,
         )
-    # Is need return ?
-    # return subgrid_2, facet_2, approx_subgrid, approx_facet
+
+    return subgrid_2, facet_2, approx_subgrid, approx_facet
 
 
 def cli_parser():
@@ -841,7 +843,7 @@ def cli_parser():
     parser.add_argument(
         "--use_hdf5",
         type=str,
-        default="True",
+        default="False",
         help="use hdf5 to save G /FG, approx G /FG in large scale",
     )
 

@@ -325,10 +325,10 @@ def roll_and_extract_mid(shape, offsetx, true_usable_size):
 
     elif x_end < 0:
         slicex = [slice(x_start, x_end)]
-
+    # pylint: disable=chained-comparison
     elif x_start < 0 and x_end > 0:
         slicex = [slice(0, x_end + x_start), slice(x_end, shape)]
-
+    # pylint: disable=chained-comparison
     elif x_end > shape and x_start > 0 and x_start < shape:
         slicex = [slice(x_start, shape), slice(0, x_end - shape)]
     elif x_end == 0 and x_start < 0:
@@ -339,6 +339,7 @@ def roll_and_extract_mid(shape, offsetx, true_usable_size):
     return slicex
 
 
+# pylint: disable=too-many-locals,unused-argument
 @dask_wrapper
 def _ith_subgrid_facet_element_from_hdf5(
     hdf5_file,
@@ -349,7 +350,6 @@ def _ith_subgrid_facet_element_from_hdf5(
     base_arrays,
     idx0,
     idx1,
-    axis=(0, 1),
     **kwargs
 ):
     """
@@ -360,7 +360,6 @@ def _ith_subgrid_facet_element_from_hdf5(
     :param offset_i: ith offset (subgrid or facet)
     :param true_usable_size: xA_size for subgrid, and yB_size for facet
     :param base_arrays: base_arrays Graph or object
-    :param axis: axis (0, 1, or a tuple of both)
     :param kwargs: needs to contain the following if dask is used:
             use_dask: True
             nout: <number of function outputs> --> 1
@@ -424,12 +423,12 @@ def _ith_subgrid_facet_element_from_hdf5(
     return res
 
 
+# pylint: disable=unused-argument
 def make_subgrid_and_facet_from_hdf5(
     G,
     FG,
     constants_class,
     base_arrays,
-    dims,
     use_dask=False,
 ):
     """
@@ -472,7 +471,6 @@ def make_subgrid_and_facet_from_hdf5(
             base_arrays,
             i0,
             i1,
-            axis=(0, 1),
             use_dask=True,
             nout=1,
         )
@@ -492,7 +490,6 @@ def make_subgrid_and_facet_from_hdf5(
             base_arrays,
             j0,
             j1,
-            axis=(0, 1),
             use_dask=True,
             nout=1,
         )
