@@ -5,14 +5,14 @@ End-to-end and integration tests.
 
 import itertools
 import logging
+import os
 import traceback
 from unittest.mock import call, patch
 
-import os
 import dask
+import h5py
 import numpy
 import pytest
-import h5py
 from numpy.testing import assert_array_almost_equal
 
 from src.fourier_transform.algorithm_parameters import (
@@ -240,7 +240,6 @@ def test_end_to_end_2d_dask_hdf5(use_hdf5):
     if not os.path.exists(prefix):
         os.makedirs(prefix)
 
-  
     (  # pylint: disable=unused-variable
         G_2_file,
         FG_2_file,
@@ -260,15 +259,15 @@ def test_end_to_end_2d_dask_hdf5(use_hdf5):
     )
     tear_down_dask(client)
 
-    #compare hdf5
-    with h5py.File(G_2_file,"r") as f:
-        G = numpy.array(f['G_data'])
-    with h5py.File(approx_G_2_file,"r") as f:
-        AG = numpy.array(f['G_data'])
-    with h5py.File(FG_2_file,"r") as f:
-        FG = numpy.array(f['FG_data'])
-    with h5py.File(approx_FG_2_file,"r") as f:
-        AFG = numpy.array(f['FG_data'])
+    # compare hdf5
+    with h5py.File(G_2_file, "r") as f:
+        G = numpy.array(f["G_data"])
+    with h5py.File(approx_G_2_file, "r") as f:
+        AG = numpy.array(f["G_data"])
+    with h5py.File(FG_2_file, "r") as f:
+        FG = numpy.array(f["FG_data"])
+    with h5py.File(approx_FG_2_file, "r") as f:
+        AFG = numpy.array(f["FG_data"])
 
     # clean up
     if os.path.exists(prefix):
@@ -281,14 +280,12 @@ def test_end_to_end_2d_dask_hdf5(use_hdf5):
         except:
             os.removedirs(prefix)
 
+    error_G = numpy.std(numpy.abs(G - AG))
+    assert numpy.isclose(error_G, 2.3803543255644684e-08)
 
-    error_G = numpy.std(numpy.abs(G-AG))
-    assert numpy.isclose(error_G,2.3803543255644684e-08)
-    
-    error_FG = numpy.std(numpy.abs(FG-AFG))
-    assert numpy.isclose(error_FG,4.8362811108879716e-05)
+    error_FG = numpy.std(numpy.abs(FG - AFG))
+    assert numpy.isclose(error_FG, 4.8362811108879716e-05)
 
-    
 
 # this test does not seem to work with the gitlab-ci;
 @pytest.mark.skip
