@@ -1,4 +1,5 @@
 # pylint: disable=too-many-locals, too-many-arguments, unused-argument
+# pylint: disable=too-many-lines
 """
 Utility Functions
 
@@ -9,7 +10,6 @@ basic validation of the algorithm.
 import itertools
 import logging
 import os
-from http import client
 
 import h5py
 import numpy
@@ -1126,7 +1126,7 @@ def write_hdf5(
 
     # subgrid
     f = h5py.File(approx_subgrid_path, "w")
-    G_dataset = f.create_dataset(
+    f.create_dataset(
         "G_data", (sparse_ft_class.N, sparse_ft_class.N), dtype="complex128"
     )
     f.close()
@@ -1154,7 +1154,7 @@ def write_hdf5(
 
     # facets
     f = h5py.File(approx_facet_path, "w")
-    FG_dataset = f.create_dataset(
+    f.create_dataset(
         "FG_data", (sparse_ft_class.N, sparse_ft_class.N), dtype="complex128"
     )
     f.close()

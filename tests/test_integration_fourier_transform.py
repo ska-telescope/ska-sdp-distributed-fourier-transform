@@ -6,7 +6,7 @@ End-to-end and integration tests.
 import itertools
 import logging
 import os
-import traceback
+import shutil
 from unittest.mock import call, patch
 
 import dask
@@ -239,6 +239,9 @@ def test_end_to_end_2d_dask_hdf5(use_hdf5):
 
     if not os.path.exists(prefix):
         os.makedirs(prefix)
+    else:
+        shutil.rmtree(prefix)
+        os.makedirs(prefix)
 
     (  # pylint: disable=unused-variable
         G_2_file,
@@ -271,14 +274,7 @@ def test_end_to_end_2d_dask_hdf5(use_hdf5):
 
     # clean up
     if os.path.exists(prefix):
-        try:
-            os.remove(G_2_file)
-            os.remove(FG_2_file)
-            os.remove(approx_G_2_file)
-            os.remove(approx_FG_2_file)
-            os.removedirs(prefix)
-        except:
-            os.removedirs(prefix)
+        shutil.rmtree(prefix)
 
     error_G = numpy.std(numpy.abs(G - AG))
     assert numpy.isclose(error_G, 2.3803543255644684e-08)
