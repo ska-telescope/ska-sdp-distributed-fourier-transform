@@ -325,10 +325,10 @@ def roll_and_extract_mid(shape, offsetx, true_usable_size):
 
     elif x_end < 0:
         slicex = [slice(x_start, x_end)]
-
+    # pylint: disable=chained-comparison
     elif x_start < 0 and x_end > 0:
         slicex = [slice(0, x_end + x_start), slice(x_end, shape)]
-
+    # pylint: disable=chained-comparison
     elif x_end > shape and x_start > 0 and x_start < shape:
         slicex = [slice(x_start, shape), slice(0, x_end - shape)]
     elif x_end == 0 and x_start < 0:
@@ -339,6 +339,7 @@ def roll_and_extract_mid(shape, offsetx, true_usable_size):
     return slicex
 
 
+# pylint: disable=too-many-locals,unused-argument
 @dask_wrapper
 def _ith_subgrid_facet_element_from_hdf5(
     hdf5_file,
@@ -422,6 +423,7 @@ def _ith_subgrid_facet_element_from_hdf5(
     return res
 
 
+# pylint: disable=unused-argument
 def make_subgrid_and_facet_from_hdf5(
     G,
     FG,

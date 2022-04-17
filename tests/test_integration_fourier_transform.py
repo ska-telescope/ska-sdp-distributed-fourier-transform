@@ -215,6 +215,7 @@ def test_end_to_end_2d_dask(use_dask):
         tear_down_dask(client)
 
 
+# pylint: disable=too-many-locals
 @pytest.mark.parametrize("use_hdf5", [True])
 def test_end_to_end_2d_dask_hdf5(use_hdf5):
     """
@@ -254,7 +255,7 @@ def test_end_to_end_2d_dask_hdf5(use_hdf5):
         to_plot=False,
         use_dask=True,
         client=client,
-        use_hdf5=True,
+        use_hdf5=use_hdf5,
         G_2_file=prefix + g_file,
         FG_2_file=prefix + fg_file,
         approx_G_2_file=prefix + approx_g_file,
