@@ -1500,7 +1500,7 @@ heapdict = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9.5"
-content-hash = "a6c960606b3146370b2fea3e39e37f7ddd2bc778f7d05dbea82eda6b115309b3"
+content-hash = "7ba10341d64cc519cd3e8707f7dc2c07a172324d4a590f4b0216997cd2ca9b42"
 
 [metadata.files]
 appnope = [
