@@ -15,6 +15,7 @@ jupyter = "^1.0.0"
 matplotlib = "^3.5.1"
 numpy = "^1.22.3"
 scipy = {version="^1.8.0", python=">=3.9.5,<3.11"}
+h5py = "^3.6.0"
 
 [tool.poetry.dev-dependencies]
 isort = "^5.10.1"
