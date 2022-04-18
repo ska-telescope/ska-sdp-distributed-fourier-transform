@@ -1072,25 +1072,23 @@ def single_write_hdf5_task(
     # write with Lock
     lock = Lock(hdf5_path)
     lock.acquire()
-    f = h5py.File(hdf5_path, "r+")
-    approx_image_dataset = f[dataset_name]
+    with h5py.File(hdf5_path, "r+") as f:
+        approx_image_dataset = f[dataset_name]
 
-    for i0 in range(len(iter_what1)):
-        for i1 in range(len(iter_what2)):
-            if len(slicex) <= len(slicey):
-                sltestx = slice(pointx[i0], pointx[i0 + 1])
-                sltesty = slice(pointy[i1], pointy[i1 + 1])
-                approx_image_dataset[slicex[i0], slicey[i1]] += block_data[
-                    sltestx, sltesty
-                ]  # write it
-            else:
-                sltestx = slice(pointx[i1], pointx[i1 + 1])
-                sltesty = slice(pointy[i0], pointy[i0 + 1])
-                approx_image_dataset[slicex[i1], slicey[i0]] += block_data[
-                    sltestx, sltesty
-                ]
-
-    f.close()
+        for i0 in range(len(iter_what1)):
+            for i1 in range(len(iter_what2)):
+                if len(slicex) <= len(slicey):
+                    sltestx = slice(pointx[i0], pointx[i0 + 1])
+                    sltesty = slice(pointy[i1], pointy[i1 + 1])
+                    approx_image_dataset[slicex[i0], slicey[i1]] += block_data[
+                        sltestx, sltesty
+                    ]  # write it
+                else:
+                    sltestx = slice(pointx[i1], pointx[i1 + 1])
+                    sltesty = slice(pointy[i0], pointy[i0 + 1])
+                    approx_image_dataset[slicex[i1], slicey[i0]] += block_data[
+                        sltestx, sltesty
+                    ]
     lock.release()
     return hdf5_path
 
@@ -1099,6 +1097,8 @@ def single_write_hdf5_task(
 def trim(ls, **kwargs):
     """
     Fetch the first element of a list
+
+    :return: the first item
     """
     return ls[0]
 
@@ -1125,11 +1125,12 @@ def write_hdf5(
     """
 
     # subgrid
-    f = h5py.File(approx_subgrid_path, "w")
-    f.create_dataset(
-        "G_data", (sparse_ft_class.N, sparse_ft_class.N), dtype="complex128"
-    )
-    f.close()
+    with h5py.File(approx_subgrid_path, "w") as f:
+        f.create_dataset(
+            "G_data",
+            (sparse_ft_class.N, sparse_ft_class.N),
+            dtype="complex128",
+        )
     subgrid_res_list = []
     for i0, i1 in itertools.product(
         range(sparse_ft_class.nsubgrid), range(sparse_ft_class.nsubgrid)
@@ -1153,11 +1154,12 @@ def write_hdf5(
         subgrid_res_list.append(res)
 
     # facets
-    f = h5py.File(approx_facet_path, "w")
-    f.create_dataset(
-        "FG_data", (sparse_ft_class.N, sparse_ft_class.N), dtype="complex128"
-    )
-    f.close()
+    with h5py.File(approx_facet_path, "w") as f:
+        f.create_dataset(
+            "FG_data",
+            (sparse_ft_class.N, sparse_ft_class.N),
+            dtype="complex128",
+        )
     facet_res_list = []
     for j0, j1 in itertools.product(
         range(sparse_ft_class.nfacet), range(sparse_ft_class.nfacet)

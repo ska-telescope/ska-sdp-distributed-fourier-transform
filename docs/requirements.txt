@@ -2,6 +2,7 @@ numpy
 scipy
 dask
 distributed
+h5py
 matplotlib
 sphinx
 sphinx-argparse
