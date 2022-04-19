@@ -37,10 +37,16 @@ def test_base_params_derived():
         "nfacet": 4,
     }
 
+    expected_facet_off = numpy.array([0, 256, 512, 768])
+    expected_subgrid_off = numpy.array([4, 192, 380, 568, 756, 944])
+
     result = BaseParameters(**TEST_PARAMS)
 
     for k, v in expected_derived.items():
         assert result.__getattribute__(k) == v
+
+    assert (result.facet_off == expected_facet_off).all()
+    assert (result.subgrid_off == expected_subgrid_off).all()
 
 
 def test_base_params_check_params():
@@ -54,23 +60,6 @@ def test_base_params_check_params():
 
     with pytest.raises(ValueError):
         BaseParameters(**new_params)
-
-
-@pytest.mark.parametrize(
-    "attribute, expected_array",
-    [
-        ("facet_off", [0, 256, 512, 768]),
-        ("subgrid_off", [4, 192, 380, 568, 756, 944]),
-    ],
-)
-def test_base_arrays_offsets(attribute, expected_array):
-    """
-    Offsets are correctly calculated using input parameters.
-    """
-    array_class = BaseArrays(**TEST_PARAMS)
-
-    result = array_class.__getattribute__(attribute)
-    assert (result == numpy.array(expected_array)).all()
 
 
 def test_base_arrays_generate_mask():
