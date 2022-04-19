@@ -27,6 +27,24 @@ Please ensure you have all the dependency packages installed. T
 he installation is managed through `poetry <https://python-poetry.org/docs/>`_.
 Refer to their page for instructions.
 
+
+Running from the command line
+=============================
+
+A simple CLI is available to run the main python script, which executes the
+Distributed FFT algorithm (facet->subgrid and subgrid->facet directions)::
+
+    python -m src.fourier_transform_dask --swift-config "<config-key>"
+
+You need to replace `<config-key>` with one of the dictionary keys
+found in src/switf_configs.py. Default is "1k[1]-512-256".
+The code will iterate through multiple configurations if you provide
+the keys as coma-separated arguments `<config_key1>,<config_key2>`.
+
+Specify the `DASK_SCHEDULER` environment variable to use a specific
+Dask cluster for your run.
+
+
 .. toctree::
    :maxdepth: 2
 

@@ -40,8 +40,9 @@ When you are ready to make a new release:
   - Check out the main branch
   - Create an issue in the [Release Management](https://jira.skatelescope.org/projects/REL/summary) project
   - Update the version number in `.release` with
-    - `bump-patch-release`,
-    - `bump-minor-release`, or
-    - `bump-major-release`
+    - `make bump-patch-release`,
+    - `make bump-minor-release`, or
+    - `make bump-major-release`
+  - Set the Python package version in pyproject.toml `make python-set-release`
   - Create the git tag with `make git-create-tag`
   - Push the changes with `make git-push-tag`
