@@ -5,9 +5,12 @@ End-to-end and integration tests.
 
 import itertools
 import logging
+<<<<<<< HEAD
 import os
 import shutil
 from unittest.mock import call, patch
+=======
+>>>>>>> a416ae2ae9680cb7e10a061d6e0405105fae136f
 
 import dask
 import h5py
@@ -17,7 +20,7 @@ from numpy.testing import assert_array_almost_equal
 
 from src.fourier_transform.algorithm_parameters import (
     BaseArrays,
-    SparseFourierTransform,
+    StreamingDistributedFFT,
 )
 from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
 from src.fourier_transform.fourier_algorithm import (
@@ -78,7 +81,7 @@ def target_distr_fft():
     """
     Pytest fixture for instantiated SparseFourierTransform
     """
-    return SparseFourierTransform(**TEST_PARAMS)
+    return StreamingDistributedFFT(**TEST_PARAMS)
 
 
 @pytest.fixture(scope="module")
@@ -113,6 +116,10 @@ def subgrid_and_facet(target_distr_fft, base_arrays):
     [
         ([], "1k[1]-512-256"),
         (["--swift_config", "3k[1]-n1536-512"], "3k[1]-n1536-512"),
+        (
+            ["--swift_config", "1k[1]-512-256,3k[1]-n1536-512"],
+            "1k[1]-512-256,3k[1]-n1536-512",
+        ),
     ],
 )
 def test_cli_parser(args, expected_config_key):
@@ -131,10 +138,13 @@ def test_main_wrong_arg():
     when the wrong swift_config key is provided.
     """
     parser = cli_parser()
-    args = parser.parse_args(["--swift_config", "non-existent-key"])
+    args = parser.parse_args(
+        ["--swift_config", "1k[1]-512-256,non-existent-key"]
+    )
     expected_message = (
-        "Provided argument does not match any swift configuration keys. "
-        "Please consult src/swift_configs.py for available options."
+        "Provided argument (non-existent-key) does not match any "
+        "swift configuration keys. Please consult src/swift_configs.py "
+        "for available options."
     )
 
     with pytest.raises(KeyError) as error_string:
@@ -147,7 +157,11 @@ def test_main_wrong_arg():
 @pytest.mark.parametrize("use_dask", [False, True])
 def test_end_to_end_2d_dask(use_dask):
     """
-    Test that the 2d algorithm produces the same results with and without dask.
+    Test that the 2d algorithm produces the same results
+    with and without dask.
+
+    TODO: we need to finish this test
+        (implement the approx_subgrid tests of it)
     """
     # Fixing seed of numpy random
     numpy.random.seed(123456789)
@@ -377,14 +391,11 @@ def test_facet_to_subgrid_methods(
     """
     if use_dask:
         client = set_up_dask()
-        base_arrays_submit = client.scatter(base_arrays)
-    else:
-        base_arrays_submit = base_arrays
 
     subgrid, facet = subgrid_and_facet[0], subgrid_and_facet[1]
 
     result = tested_function(
-        facet, target_distr_fft, base_arrays_submit, use_dask=use_dask
+        facet, target_distr_fft, base_arrays, use_dask=use_dask
     )
     if use_dask:
         result = dask.compute(result, sync=True)[0]
@@ -429,14 +440,11 @@ def test_subgrid_to_facet(
     """
     if use_dask:
         client = set_up_dask()
-        base_arrays_submit = client.scatter(base_arrays)
-    else:
-        base_arrays_submit = base_arrays
 
     subgrid, facet = subgrid_and_facet[0], subgrid_and_facet[1]
 
     result = tested_function(
-        subgrid, target_distr_fft, base_arrays_submit, use_dask=use_dask
+        subgrid, target_distr_fft, base_arrays, use_dask=use_dask
     )
 
     if use_dask:

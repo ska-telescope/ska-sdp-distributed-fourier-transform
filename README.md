@@ -43,5 +43,6 @@ When you are ready to make a new release:
     - `make bump-patch-release`,
     - `make bump-minor-release`, or
     - `make bump-major-release`
+  - Set the Python package version in pyproject.toml `make python-set-release`
   - Create the git tag with `make git-create-tag`
   - Push the changes with `make git-push-tag`
