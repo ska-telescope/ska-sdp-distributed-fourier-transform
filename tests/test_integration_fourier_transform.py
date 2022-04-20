@@ -5,16 +5,19 @@ End-to-end and integration tests.
 
 import itertools
 import logging
+import os
+import shutil
 from unittest.mock import call, patch
 
 import dask
+import h5py
 import numpy
 import pytest
 from numpy.testing import assert_array_almost_equal
 
 from src.fourier_transform.algorithm_parameters import (
     BaseArrays,
-    SparseFourierTransform,
+    StreamingDistributedFFT,
 )
 from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
 from src.fourier_transform.fourier_algorithm import (
@@ -58,14 +61,14 @@ def _check_difference(calculated, original, size):
     err_mean_img = 0
     for i0, i1 in itertools.product(range(size), range(size)):
         err_mean += (
-            numpy.abs(calculated[i0, i1] - original[i0, i1]) ** 2 / size**2
+            numpy.abs(calculated[i0, i1] - original[i0, i1]) ** 2 / size ** 2
         )
         err_mean_img += (
             numpy.abs(
                 fft(fft(calculated[i0, i1] - original[i0, i1], axis=0), axis=1)
             )
             ** 2
-            / size**2
+            / size ** 2
         )
     return err_mean, err_mean_img
 
@@ -75,7 +78,7 @@ def target_distr_fft():
     """
     Pytest fixture for instantiated SparseFourierTransform
     """
-    return SparseFourierTransform(**TEST_PARAMS)
+    return StreamingDistributedFFT(**TEST_PARAMS)
 
 
 @pytest.fixture(scope="module")
@@ -110,6 +113,10 @@ def subgrid_and_facet(target_distr_fft, base_arrays):
     [
         ([], "1k[1]-512-256"),
         (["--swift_config", "3k[1]-n1536-512"], "3k[1]-n1536-512"),
+        (
+            ["--swift_config", "1k[1]-512-256,3k[1]-n1536-512"],
+            "1k[1]-512-256,3k[1]-n1536-512",
+        ),
     ],
 )
 def test_cli_parser(args, expected_config_key):
@@ -128,10 +135,13 @@ def test_main_wrong_arg():
     when the wrong swift_config key is provided.
     """
     parser = cli_parser()
-    args = parser.parse_args(["--swift_config", "non-existent-key"])
+    args = parser.parse_args(
+        ["--swift_config", "1k[1]-512-256,non-existent-key"]
+    )
     expected_message = (
-        "Provided argument does not match any swift configuration keys. "
-        "Please consult src/swift_configs.py for available options."
+        "Provided argument (non-existent-key) does not match any "
+        "swift configuration keys. Please consult src/swift_configs.py "
+        "for available options."
     )
 
     with pytest.raises(KeyError) as error_string:
@@ -144,7 +154,11 @@ def test_main_wrong_arg():
 @pytest.mark.parametrize("use_dask", [False, True])
 def test_end_to_end_2d_dask(use_dask):
     """
-    Test that the 2d algorithm produces the same results with and without dask.
+    Test that the 2d algorithm produces the same results
+    with and without dask.
+
+    TODO: we need to finish this test
+        (implement the approx_subgrid tests of it)
     """
     # Fixing seed of numpy random
     numpy.random.seed(123456789)
@@ -210,6 +224,75 @@ def test_end_to_end_2d_dask(use_dask):
 
     if use_dask:
         tear_down_dask(client)
+
+
+# pylint: disable=too-many-locals
+@pytest.mark.parametrize("use_hdf5", [True])
+def test_end_to_end_2d_dask_hdf5(use_hdf5):
+    """
+    Test that the 2d algorithm produces the same results with dask and hdf5.
+    """
+    # Fixing seed of numpy random
+    numpy.random.seed(123456789)
+
+    base_arrays_class = BaseArrays(**TEST_PARAMS)
+
+    # We need to call scipy.special.pro_ang1 function before setting up Dask
+    # context. Detailed information could be found at Jira ORC-1214
+    _ = base_arrays_class.pswf
+
+    client = set_up_dask()
+
+    prefix = "tmpdata/"
+    g_file = "G.hdf5"
+    fg_file = "FG.hdf5"
+    approx_g_file = "approx_G.hdf5"
+    approx_fg_file = "approx_FG.hdf5"
+
+    if not os.path.exists(prefix):
+        os.makedirs(prefix)
+    else:
+        shutil.rmtree(prefix)
+        os.makedirs(prefix)
+
+    (  # pylint: disable=unused-variable
+        G_2_file,
+        FG_2_file,
+        approx_G_2_file,
+        approx_FG_2_file,
+    ) = run_distributed_fft(
+        base_arrays_class,
+        TEST_PARAMS,
+        to_plot=False,
+        use_dask=True,
+        client=client,
+        use_hdf5=use_hdf5,
+        G_2_file=prefix + g_file,
+        FG_2_file=prefix + fg_file,
+        approx_G_2_file=prefix + approx_g_file,
+        approx_FG_2_file=prefix + approx_fg_file,
+    )
+    tear_down_dask(client)
+
+    # compare hdf5
+    with h5py.File(G_2_file, "r") as f:
+        G = numpy.array(f["G_data"])
+    with h5py.File(approx_G_2_file, "r") as f:
+        AG = numpy.array(f["G_data"])
+    with h5py.File(FG_2_file, "r") as f:
+        FG = numpy.array(f["FG_data"])
+    with h5py.File(approx_FG_2_file, "r") as f:
+        AFG = numpy.array(f["FG_data"])
+
+    # clean up
+    if os.path.exists(prefix):
+        shutil.rmtree(prefix)
+
+    error_G = numpy.std(numpy.abs(G - AG))
+    assert numpy.isclose(error_G, 2.3803543255644684e-08)
+
+    error_FG = numpy.std(numpy.abs(FG - AFG))
+    assert numpy.isclose(error_FG, 4.8362811108879716e-05)
 
 
 # this test does not seem to work with the gitlab-ci;
@@ -305,14 +388,11 @@ def test_facet_to_subgrid_methods(
     """
     if use_dask:
         client = set_up_dask()
-        base_arrays_submit = client.scatter(base_arrays)
-    else:
-        base_arrays_submit = base_arrays
 
     subgrid, facet = subgrid_and_facet[0], subgrid_and_facet[1]
 
     result = tested_function(
-        facet, target_distr_fft, base_arrays_submit, use_dask=use_dask
+        facet, target_distr_fft, base_arrays, use_dask=use_dask
     )
     if use_dask:
         result = dask.compute(result, sync=True)[0]
@@ -357,14 +437,11 @@ def test_subgrid_to_facet(
     """
     if use_dask:
         client = set_up_dask()
-        base_arrays_submit = client.scatter(base_arrays)
-    else:
-        base_arrays_submit = base_arrays
 
     subgrid, facet = subgrid_and_facet[0], subgrid_and_facet[1]
 
     result = tested_function(
-        subgrid, target_distr_fft, base_arrays_submit, use_dask=use_dask
+        subgrid, target_distr_fft, base_arrays, use_dask=use_dask
     )
 
     if use_dask:
