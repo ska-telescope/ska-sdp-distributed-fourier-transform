@@ -690,8 +690,6 @@ def run_distributed_fft(
 
     # make data
     if use_hdf5 and use_dask:
-        if use_dask and client is not None:
-            base_arrays_submit = client.scatter(base_arrays)
 
         # there are two path of hdf5 file
         G_2, FG_2 = make_G_2_FG_2_hdf5(
@@ -701,7 +699,7 @@ def run_distributed_fft(
             G_2,
             FG_2,
             distr_fft,
-            base_arrays_submit,
+            base_arrays,
             use_dask=use_dask,
         )
     else:
@@ -710,7 +708,6 @@ def run_distributed_fft(
         if use_dask and client is not None:
             G_2 = client.scatter(G_2)
             FG_2 = client.scatter(FG_2)
-            base_arrays_submit = client.scatter(base_arrays)
 
         subgrid_2, facet_2 = make_subgrid_and_facet(
             G_2,
@@ -726,7 +723,7 @@ def run_distributed_fft(
             subgrid_2,
             facet_2,
             distr_fft,
-            base_arrays_submit,
+            base_arrays,
             use_dask=True,
         )
 
@@ -748,7 +745,7 @@ def run_distributed_fft(
             approx_G_2_file,
             approx_FG_2_file,
             distr_fft,
-            base_arrays_submit,
+            base_arrays,
         )
 
         (
@@ -789,7 +786,7 @@ def run_distributed_fft(
                 subgrid_2,
                 facet_2,
                 distr_fft,
-                base_arrays_submit,
+                base_arrays,
                 use_dask=True,
             )
 
@@ -921,11 +918,10 @@ def main(args):
     for config_key in swift_config_keys:
         log.info("Running for swift-config: %s", config_key)
         base_arrays_class = BaseArrays(**SWIFT_CONFIGS[config_key])
-        # We need to call scipy.special.pro_ang1 function before setting up Dask
-        # context. Detailed information could be found at Jira ORC-1214
+        # We need to call scipy.special.pro_ang1 function before setting up
+        # Dask context. Detailed information could be found at Jira ORC-1214
         _ = base_arrays_class.pswf
 
-        
         with performance_report(filename="dask-report-2d.html"):
             run_distributed_fft(
                 base_arrays_class,

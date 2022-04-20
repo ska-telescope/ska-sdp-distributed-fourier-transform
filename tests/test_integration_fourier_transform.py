@@ -5,12 +5,9 @@ End-to-end and integration tests.
 
 import itertools
 import logging
-<<<<<<< HEAD
 import os
 import shutil
 from unittest.mock import call, patch
-=======
->>>>>>> a416ae2ae9680cb7e10a061d6e0405105fae136f
 
 import dask
 import h5py
