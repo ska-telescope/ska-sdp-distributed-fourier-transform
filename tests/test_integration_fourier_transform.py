@@ -61,14 +61,14 @@ def _check_difference(calculated, original, size):
     err_mean_img = 0
     for i0, i1 in itertools.product(range(size), range(size)):
         err_mean += (
-            numpy.abs(calculated[i0, i1] - original[i0, i1]) ** 2 / size ** 2
+            numpy.abs(calculated[i0, i1] - original[i0, i1]) ** 2 / size**2
         )
         err_mean_img += (
             numpy.abs(
                 fft(fft(calculated[i0, i1] - original[i0, i1], axis=0), axis=1)
             )
             ** 2
-            / size ** 2
+            / size**2
         )
     return err_mean, err_mean_img
 
