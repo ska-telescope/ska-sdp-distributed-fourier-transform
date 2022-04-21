@@ -1,4 +1,4 @@
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name, unused-variable
 """
 End-to-end and integration tests.
 """
@@ -234,12 +234,6 @@ def test_end_to_end_2d_dask_hdf5(use_hdf5):
     # Fixing seed of numpy random
     numpy.random.seed(123456789)
 
-    base_arrays_class = BaseArrays(**TEST_PARAMS)
-
-    # We need to call scipy.special.pro_ang1 function before setting up Dask
-    # context. Detailed information could be found at Jira ORC-1214
-    _ = base_arrays_class.pswf
-
     client = set_up_dask()
 
     prefix = "tmpdata/"
@@ -254,7 +248,7 @@ def test_end_to_end_2d_dask_hdf5(use_hdf5):
         shutil.rmtree(prefix)
         os.makedirs(prefix)
 
-    (  # pylint: disable=unused-variable
+    (
         G_2_file,
         FG_2_file,
         approx_G_2_file,
