@@ -61,14 +61,14 @@ def _check_difference(calculated, original, size):
     err_mean_img = 0
     for i0, i1 in itertools.product(range(size), range(size)):
         err_mean += (
-            numpy.abs(calculated[i0, i1] - original[i0, i1]) ** 2 / size ** 2
+            numpy.abs(calculated[i0, i1] - original[i0, i1]) ** 2 / size**2
         )
         err_mean_img += (
             numpy.abs(
                 fft(fft(calculated[i0, i1] - original[i0, i1], axis=0), axis=1)
             )
             ** 2
-            / size ** 2
+            / size**2
         )
     return err_mean, err_mean_img
 
@@ -180,7 +180,6 @@ def test_end_to_end_2d_dask(use_dask):
         result_approx_subgrid,
         result_approx_facet,
     ) = run_distributed_fft(
-        base_arrays_class,
         TEST_PARAMS,
         to_plot=False,
         use_dask=use_dask,
@@ -261,7 +260,6 @@ def test_end_to_end_2d_dask_hdf5(use_hdf5):
         approx_G_2_file,
         approx_FG_2_file,
     ) = run_distributed_fft(
-        base_arrays_class,
         TEST_PARAMS,
         to_plot=False,
         use_dask=True,
@@ -348,7 +346,6 @@ def test_end_to_end_2d_dask_logging(use_dask):
 
     with patch("logging.Logger.info") as mock_log:
         run_distributed_fft(
-            base_arrays_class,
             TEST_PARAMS,
             to_plot=False,
             use_dask=use_dask,

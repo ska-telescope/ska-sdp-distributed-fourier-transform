@@ -1,3 +1,4 @@
+# pylint: disable=chained-comparison
 """
 Distributed Fourier Transform Module.
 Included are a list of base functions that are used across the code.
@@ -299,27 +300,23 @@ def make_subgrid_and_facet(
     return subgrid, facet
 
 
-def roll_and_extract_mid(shape, offsetx, true_usable_size):
+def roll_and_extract_mid(shape, offset, true_usable_size):
     """Calculate the slice of the roll + extract mid method
 
     :param shape: shape full size data G/FG
-    :param offsetx: ith offset (subgrid or facet)
+    :param offset: ith offset (subgrid or facet)
     :param true_usable_size: xA_size for subgrid, and yB_size for facet
 
     :return: slice list
     """
 
-    cx = shape // 2
-    x_start = cx + offsetx - true_usable_size // 2
+    centre_x = shape // 2
+    x_start = centre_x + offset - true_usable_size // 2
 
     if true_usable_size % 2 != 0:
-        x_end = cx + offsetx + true_usable_size // 2 + 1
+        x_end = centre_x + offset + true_usable_size // 2 + 1
     else:
-        x_end = cx + offsetx + true_usable_size // 2
-
-    assert x_end > x_start
-    assert x_end < 2 * shape
-    assert x_start < 2 * shape
+        x_end = centre_x + offset + true_usable_size // 2
 
     if x_end <= 0:
         slicex = [slice(x_start + shape, x_end + shape)]
@@ -329,7 +326,6 @@ def roll_and_extract_mid(shape, offsetx, true_usable_size):
 
     elif x_end <= shape and x_start >= 0:
         slicex = [slice(x_start, x_end)]
-    # pylint: disable=chained-comparison
     elif x_start < shape and x_end > shape:
         slicex = [slice(x_start, shape), slice(0, x_end - shape)]
 
@@ -337,7 +333,7 @@ def roll_and_extract_mid(shape, offsetx, true_usable_size):
         slicex = [slice(x_start - shape, x_end - shape)]
 
     else:
-        raise ValueError("unsupport slice")
+        raise ValueError("unsupported slice")
 
     return slicex
 
@@ -345,15 +341,7 @@ def roll_and_extract_mid(shape, offsetx, true_usable_size):
 # pylint: disable=too-many-locals,unused-argument
 @dask_wrapper
 def _ith_subgrid_facet_element_from_hdf5(
-    hdf5_file,
-    dataset_name,
-    N,
-    offset_i,
-    true_usable_size,
-    base_arrays,
-    idx0,
-    idx1,
-    **kwargs
+    hdf5_file, dataset_name, offset_i, base_arrays, idx0, idx1, **kwargs
 ):
     """
     Calculate a single facet or subgrid element from hdf5 with minimal memory.
@@ -361,21 +349,23 @@ def _ith_subgrid_facet_element_from_hdf5(
     :param hdf5_file: the file path of G/FG hdf5 file
     :param dataset_name: G/FG hdf5 file dataset name
     :param offset_i: ith offset (subgrid or facet)
-    :param true_usable_size: xA_size for subgrid, and yB_size for facet
     :param base_arrays: base_arrays Graph or object
+    :param idx0: index in the axis 0
+    :param idx1: index in the axis 1
     :param kwargs: needs to contain the following if dask is used:
             use_dask: True
             nout: <number of function outputs> --> 1
 
     return subgrid or facets element graph
     """
-    # process in task not in Construction graphs
     if dataset_name == "G_data":
         mask_element_in = base_arrays.subgrid_A
+        true_usable_size = base_arrays.xA_size
     elif dataset_name == "FG_data":
         mask_element_in = base_arrays.facet_B
+        true_usable_size = base_arrays.yB_size
     else:
-        raise ValueError("unsupport dataset_name")
+        raise ValueError("unsupported dataset_name")
     mask_element = numpy.outer(
         mask_element_in[idx0],
         mask_element_in[idx1],
@@ -384,8 +374,8 @@ def _ith_subgrid_facet_element_from_hdf5(
     true_image_dataset = f[dataset_name]
 
     slicex, slicey = roll_and_extract_mid(
-        N, -offset_i[0], true_usable_size
-    ), roll_and_extract_mid(N, -offset_i[1], true_usable_size)
+        base_arrays.N, -offset_i[0], true_usable_size
+    ), roll_and_extract_mid(base_arrays.N, -offset_i[1], true_usable_size)
 
     if len(slicex) <= len(slicey):
         iter_what1 = slicex
@@ -410,15 +400,15 @@ def _ith_subgrid_facet_element_from_hdf5(
     for i0 in range(len(iter_what1)):
         for i1 in range(len(iter_what2)):
             if len(slicex) <= len(slicey):
-                sltestx = slice(pointx[i0], pointx[i0 + 1])
-                sltesty = slice(pointy[i1], pointy[i1 + 1])
-                block_data[sltestx, sltesty] = true_image_dataset[
+                slice_block_x = slice(pointx[i0], pointx[i0 + 1])
+                slice_block_y = slice(pointy[i1], pointy[i1 + 1])
+                block_data[slice_block_x, slice_block_y] = true_image_dataset[
                     slicex[i0], slicey[i1]
-                ]  # write it
+                ]
             else:
-                sltestx = slice(pointx[i1], pointx[i1 + 1])
-                sltesty = slice(pointy[i0], pointy[i0 + 1])
-                block_data[sltestx, sltesty] = true_image_dataset[
+                slice_block_x = slice(pointx[i1], pointx[i1 + 1])
+                slice_block_y = slice(pointy[i0], pointy[i0 + 1])
+                block_data[slice_block_x, slice_block_y] = true_image_dataset[
                     slicex[i1], slicey[i0]
                 ]
 
@@ -432,7 +422,7 @@ def make_subgrid_and_facet_from_hdf5(
     FG,
     constants_class,
     base_arrays,
-    use_dask=False,
+    use_dask=True,
 ):
     """
     Calculate the actual subgrids and facets. Hdf5 & Dask.delayed
@@ -465,12 +455,10 @@ def make_subgrid_and_facet_from_hdf5(
         subgrid[i0][i1] = _ith_subgrid_facet_element_from_hdf5(
             G,
             "G_data",
-            constants_class.N,
             (
                 -constants_class.subgrid_off[i0],
                 -constants_class.subgrid_off[i1],
             ),
-            constants_class.xA_size,
             base_arrays,
             i0,
             i1,
@@ -484,12 +472,10 @@ def make_subgrid_and_facet_from_hdf5(
         facet[j0][j1] = _ith_subgrid_facet_element_from_hdf5(
             FG,
             "FG_data",
-            constants_class.N,
             (
                 -constants_class.facet_off[j0],
                 -constants_class.facet_off[j1],
             ),
-            constants_class.yB_size,
             base_arrays,
             j0,
             j1,

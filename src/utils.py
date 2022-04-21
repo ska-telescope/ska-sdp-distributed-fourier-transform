@@ -76,7 +76,7 @@ def mark_range(
         lbl_y = (y0 * 7 + y1) / 8
     else:
         # Some type of log scale
-        lbl_y = (y0 ** 7 * y1) ** (1 / 8)
+        lbl_y = (y0**7 * y1) ** (1 / 8)
     ax.annotate(lbl, (x1 + x_offset * wdt, lbl_y))
 
 
@@ -251,11 +251,11 @@ def errors_facet_to_subgrid_2d(
 
         err_mean += (
             numpy.abs(approx - subgrid_2[i0, i1]) ** 2
-            / constants_class.nsubgrid ** 2
+            / constants_class.nsubgrid**2
         )
         err_mean_img += numpy.abs(
             fft(fft(approx - subgrid_2[i0, i1], axis=0), axis=1) ** 2
-            / constants_class.nsubgrid ** 2
+            / constants_class.nsubgrid**2
         )
 
     log.info(
@@ -296,11 +296,11 @@ def errors_subgrid_to_facet_2d(
         err_mean += (
             numpy.abs(ifft(ifft(approx - facet_2[j0, j1], axis=0), axis=1))
             ** 2
-            / constants_class.nfacet ** 2
+            / constants_class.nfacet**2
         )
         err_mean_img += (
             numpy.abs(approx - facet_2[j0, j1]) ** 2
-            / constants_class.nfacet ** 2
+            / constants_class.nfacet**2
         )
 
     log.info(
@@ -517,9 +517,9 @@ def error_task_subgrid_to_facet_2d(approx, true_image, num_true, **kwargs):
     approx_img = numpy.zeros_like(approx) + approx
     err_mean = (
         numpy.abs(ifft(ifft(approx_img - true_image, axis=0), axis=1)) ** 2
-        / num_true ** 2
+        / num_true**2
     )
-    err_mean_img = numpy.abs(approx_img - true_image) ** 2 / num_true ** 2
+    err_mean_img = numpy.abs(approx_img - true_image) ** 2 / num_true**2
     return err_mean, err_mean_img
 
 
@@ -535,9 +535,9 @@ def error_task_facet_to_subgrid_2d(approx, true_image, num_true, **kwargs):
     :returns: err_mean, err_mean_img
     """
     approx_img = numpy.zeros_like(approx) + approx
-    err_mean = numpy.abs(approx_img - true_image) ** 2 / num_true ** 2
+    err_mean = numpy.abs(approx_img - true_image) ** 2 / num_true**2
     err_mean_img = numpy.abs(
-        fft(fft(approx_img - true_image, axis=0), axis=1) ** 2 / num_true ** 2
+        fft(fft(approx_img - true_image, axis=0), axis=1) ** 2 / num_true**2
     )
     return err_mean, err_mean_img
 
