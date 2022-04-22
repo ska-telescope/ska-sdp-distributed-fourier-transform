@@ -1,5 +1,5 @@
 # pylint: disable=too-many-locals, too-many-arguments, unused-argument
-# pylint: disable=too-many-lines
+# pylint: disable=too-many-lines, too-many-branches
 """
 Utility Functions
 
@@ -329,7 +329,7 @@ def add_two(one, two, **kwargs):
     return one + two
 
 
-def make_G_2_FG_2(sparse_ft_class):
+def generate_input_data(sparse_ft_class):
     """Generate standard data G and FG
         Memory may not be enough at larger
         scales
@@ -338,11 +338,7 @@ def make_G_2_FG_2(sparse_ft_class):
 
     :returns: G,FG
     """
-    log.info("\n== Generate A/B masks and subgrid/facet offsets")
-    # Determine subgrid/facet offsets and the appropriate
-    # A/B masks for cutting them out.
-    # We are aiming for full coverage here:
-    #   Every pixel is part of exactly one subgrid / facet.
+    log.info("\n== Generate input data")
 
     # adding sources
     add_sources = True
@@ -386,12 +382,12 @@ def make_G_2_FG_2(sparse_ft_class):
 
 
 @dask_wrapper
-def DFT_chunk_work(G_2_path, chunk_slice, sources, chunksize, N, **kwargs):
+def dft_chunk_work(G_2_path, chunk_slice, sources, chunksize, N, **kwargs):
     """
     Calculate the value of a chunk of the DFT and write to hdf5
 
     :param G_2_path: the hdf5 file path of G
-    :param chunk_slice: chunk slice
+    :param chunk_slice: slice of hdf5 chunk
     :param sources: sources array
     :param chunksize: size of chunk
     :param N: whole data size
@@ -420,14 +416,13 @@ def DFT_chunk_work(G_2_path, chunk_slice, sources, chunksize, N, **kwargs):
         dataset = f["G_data"]
         dataset[chunk_slice[0], chunk_slice[1]] = chunk_G / (N * N)
     lock.release()
-    return 0
 
 
-def make_G_2_FG_2_hdf5(
+def generate_input_data_hdf5(
     sparse_ft_class, G_2_path, FG_2_path, chunksize, client
 ):
-    """Generate standard data G and FG
-        with hdf5
+    """
+    Generate standard data G and FG with hdf5
 
     :param sparse_ft_class: sparse_ft_class
     :param G_2_path: the hdf5 file path of G
@@ -435,7 +430,7 @@ def make_G_2_FG_2_hdf5(
     :param chunksize: size of chunk
     :param client: dask client
 
-    :returns: G,FG
+    :returns: G_2_path, FG_2_path
     """
     if chunksize is None:
         chunksize = sparse_ft_class.N // 8
@@ -485,7 +480,7 @@ def make_G_2_FG_2_hdf5(
         chunk_list = []
         for chunk_slice in G_dataset.iter_chunks():
             chunk_list.append(
-                DFT_chunk_work(
+                dft_chunk_work(
                     G_2_path,
                     chunk_slice,
                     sources,
@@ -506,7 +501,7 @@ def make_G_2_FG_2_hdf5(
 @dask_wrapper
 def error_task_subgrid_to_facet_2d(approx, true_image, num_true, **kwargs):
     """
-    Calculate the error terms for the a single 2D subgrid to facet algorithm.
+    Calculate the error terms for a single 2D subgrid to facet algorithm.
 
     :param approx: array of individual facets
     :param true_image: true_image of facets
@@ -526,7 +521,7 @@ def error_task_subgrid_to_facet_2d(approx, true_image, num_true, **kwargs):
 @dask_wrapper
 def error_task_facet_to_subgrid_2d(approx, true_image, num_true, **kwargs):
     """
-    Calculate the error terms for the a single 2D subgrid to facet algorithm.
+    Calculate the error terms for a single facet to subgrid algorithm.
 
     :param approx: array of individual subgrid
     :param true_image: true_image of subgrid
@@ -574,7 +569,9 @@ def mean_img_task(err_img, **kwargs):
     )
 
 
-def fund_errors(approx_what, number_what, true_what, error_task):
+def fundenmental_errors(
+    approx_what, number_what, true_what, error_task, use_dask
+):
     """
     Functions for calculating the error common to facet or subgrid
 
@@ -591,17 +588,17 @@ def fund_errors(approx_what, number_what, true_what, error_task):
             approx_what[i0][i1],
             true_what[i0][i1],
             number_what,
-            use_dask=True,
+            use_dask=use_dask,
             nout=1,
         )
         error_task_list.append(tmp_error)
 
-    error_sum_map = sum_error_task(error_task_list, use_dask=True, nout=1)
+    error_sum_map = sum_error_task(error_task_list, use_dask=use_dask, nout=1)
     return error_sum_map
 
 
 def errors_facet_to_subgrid_2d_dask(
-    approx_subgrid, sparse_ft_class, subgrid_2
+    approx_subgrid, sparse_ft_class, subgrid_2, use_dask
 ):
     """
     Functions for calculating the error of approx subgrid
@@ -611,15 +608,18 @@ def errors_facet_to_subgrid_2d_dask(
     :param subgrid_2: true subgrid
     :returns: mean of err_mean and err_mean_img
     """
-    return fund_errors(
+    return fundenmental_errors(
         approx_subgrid,
         sparse_ft_class.nsubgrid,
         subgrid_2,
         error_task_facet_to_subgrid_2d,
+        use_dask,
     )
 
 
-def errors_subgrid_to_facet_2d_dask(approx_facet, facet_2, sparse_ft_class):
+def errors_subgrid_to_facet_2d_dask(
+    approx_facet, facet_2, sparse_ft_class, use_dask
+):
     """
     Functions for calculating the error of approx facets
 
@@ -628,11 +628,12 @@ def errors_subgrid_to_facet_2d_dask(approx_facet, facet_2, sparse_ft_class):
     :param facet_2: true facets
     :returns: mean of err_mean and err_mean_img
     """
-    return fund_errors(
+    return fundenmental_errors(
         approx_facet,
         sparse_ft_class.nfacet,
         facet_2,
         error_task_subgrid_to_facet_2d,
+        use_dask,
     )
 
 
@@ -640,13 +641,11 @@ def errors_subgrid_to_facet_2d_dask(approx_facet, facet_2, sparse_ft_class):
 def single_write_hdf5_task(
     hdf5_path,
     dataset_name,
-    N,
-    offset_i,
-    block_size,
     base_arrays,
     idx0,
     idx1,
     block_data,
+    use_dask,
     **kwargs,
 ):
     """
@@ -654,8 +653,6 @@ def single_write_hdf5_task(
 
     :param hdf5_path: approx facets
     :param dataset_name: sparse_ft_class
-    :param N: full G or FG size
-    :param offset_i: subgrid or facets offset
     :param block_size: subgrid or facets size
     :param base_arrays: base_arrays
     :param idx0: idx0
@@ -663,10 +660,18 @@ def single_write_hdf5_task(
     :param block_data: subgrid or facets data
     :returns: hdf5 of approx subgrid or facets
     """
+    N = base_arrays.N
     if dataset_name == "G_data":
         mask_element_in = base_arrays.subgrid_A
+        offset_i = (
+            -base_arrays.subgrid_off[idx0],
+            -base_arrays.subgrid_off[idx1],
+        )
+        block_size = base_arrays.xA_size
     elif dataset_name == "FG_data":
         mask_element_in = base_arrays.facet_B
+        offset_i = -base_arrays.facet_off[idx0], -base_arrays.facet_off[idx1]
+        block_size = base_arrays.yB_size
     else:
         raise ValueError("unsupport dataset_name")
     mask_element = numpy.outer(
@@ -696,26 +701,28 @@ def single_write_hdf5_task(
         pointy.append(dt + pointy[-1])
 
     # write with Lock
-    lock = Lock(hdf5_path)
-    lock.acquire()
+    if use_dask:
+        lock = Lock(hdf5_path)
+        lock.acquire()
     with h5py.File(hdf5_path, "r+") as f:
         approx_image_dataset = f[dataset_name]
 
         for i0 in range(len(iter_what1)):
             for i1 in range(len(iter_what2)):
                 if len(slicex) <= len(slicey):
-                    sltestx = slice(pointx[i0], pointx[i0 + 1])
-                    sltesty = slice(pointy[i1], pointy[i1 + 1])
+                    slice_block_x = slice(pointx[i0], pointx[i0 + 1])
+                    slice_block_y = slice(pointy[i1], pointy[i1 + 1])
                     approx_image_dataset[slicex[i0], slicey[i1]] += block_data[
-                        sltestx, sltesty
+                        slice_block_x, slice_block_y
                     ]  # write it
                 else:
-                    sltestx = slice(pointx[i1], pointx[i1 + 1])
-                    sltesty = slice(pointy[i0], pointy[i0 + 1])
+                    slice_block_x = slice(pointx[i1], pointx[i1 + 1])
+                    slice_block_y = slice(pointy[i0], pointy[i0 + 1])
                     approx_image_dataset[slicex[i1], slicey[i0]] += block_data[
-                        sltestx, sltesty
+                        slice_block_x, slice_block_y
                     ]
-    lock.release()
+    if use_dask:
+        lock.release()
     return hdf5_path
 
 
@@ -734,8 +741,8 @@ def write_hdf5(
     approx_facet,
     approx_subgrid_path,
     approx_facet_path,
-    sparse_ft_class,
-    base_arrays_submit,
+    base_arrays,
+    use_dask=True,
 ):
     """
     Write approx subgrid and facet to hdf5
@@ -744,7 +751,6 @@ def write_hdf5(
     :param approx_facet: approx facet list
     :param approx_subgrid_path: approx subgrid path
     :param approx_facet_path: approx facet path
-    :param sparse_ft_class: SparseFourierTransform class object
     :param base_arrays_submit: base_arrays_submit
 
     :returns: hdf5 path of approx subgrid and facets
@@ -754,27 +760,21 @@ def write_hdf5(
     with h5py.File(approx_subgrid_path, "w") as f:
         f.create_dataset(
             "G_data",
-            (sparse_ft_class.N, sparse_ft_class.N),
+            (base_arrays.N, base_arrays.N),
             dtype="complex128",
         )
     subgrid_res_list = []
     for i0, i1 in itertools.product(
-        range(sparse_ft_class.nsubgrid), range(sparse_ft_class.nsubgrid)
+        range(base_arrays.nsubgrid), range(base_arrays.nsubgrid)
     ):
         res = single_write_hdf5_task(
             approx_subgrid_path,
             "G_data",
-            sparse_ft_class.N,
-            (
-                -sparse_ft_class.subgrid_off[i0],
-                -sparse_ft_class.subgrid_off[i1],
-            ),
-            sparse_ft_class.xA_size,
-            base_arrays_submit,
+            base_arrays,
             i0,
             i1,
             approx_subgrid[i0][i1],
-            use_dask=True,
+            use_dask=use_dask,
             nout=1,
         )
         subgrid_res_list.append(res)
@@ -783,27 +783,21 @@ def write_hdf5(
     with h5py.File(approx_facet_path, "w") as f:
         f.create_dataset(
             "FG_data",
-            (sparse_ft_class.N, sparse_ft_class.N),
+            (base_arrays.N, base_arrays.N),
             dtype="complex128",
         )
     facet_res_list = []
     for j0, j1 in itertools.product(
-        range(sparse_ft_class.nfacet), range(sparse_ft_class.nfacet)
+        range(base_arrays.nfacet), range(base_arrays.nfacet)
     ):
         res = single_write_hdf5_task(
             approx_facet_path,
             "FG_data",
-            sparse_ft_class.N,
-            (
-                -sparse_ft_class.facet_off[j0],
-                -sparse_ft_class.facet_off[j1],
-            ),
-            sparse_ft_class.yB_size,
-            base_arrays_submit,
+            base_arrays,
             j0,
             j1,
             approx_facet[j0][j1],
-            use_dask=True,
+            use_dask=use_dask,
             nout=1,
         )
         facet_res_list.append(res)

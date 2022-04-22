@@ -7,7 +7,6 @@ import itertools
 import logging
 import os
 import shutil
-from unittest.mock import call, patch
 
 import dask
 import h5py
@@ -163,12 +162,6 @@ def test_end_to_end_2d_dask(use_dask):
     # Fixing seed of numpy random
     numpy.random.seed(123456789)
 
-    base_arrays_class = BaseArrays(**TEST_PARAMS)
-
-    # We need to call scipy.special.pro_ang1 function before setting up Dask
-    # context. Detailed information could be found at Jira ORC-1214
-    _ = base_arrays_class.pswf
-
     if use_dask:
         client = set_up_dask()
     else:
@@ -217,9 +210,6 @@ def test_end_to_end_2d_dask(use_dask):
         EXPECTED_NONZERO_APPROX_FACET_2D,
         decimal=4,
     )
-
-    # TODO: we need to finish this test
-    #  (implement the approx_subgrid tests of it)
 
     if use_dask:
         tear_down_dask(client)
@@ -285,71 +275,6 @@ def test_end_to_end_2d_dask_hdf5(use_hdf5):
 
     error_FG = numpy.std(numpy.abs(FG - AFG))
     assert numpy.isclose(error_FG, 4.8362811108879716e-05)
-
-
-# this test does not seem to work with the gitlab-ci;
-@pytest.mark.skip
-@pytest.mark.parametrize("use_dask", [False, True])
-def test_end_to_end_2d_dask_logging(use_dask):
-    """
-    Test that the logged information matches the
-    expected listed in test_reference_data/reference_data/README.md
-
-    Reference/expected values generated with numpy.random.seed(123456789)
-    """
-    # Fixing seed of numpy random
-    numpy.random.seed(123456789)
-
-    base_arrays_class = BaseArrays(**TEST_PARAMS)
-    _ = base_arrays_class.pswf
-
-    if use_dask:
-        client = set_up_dask()
-    else:
-        client = None
-
-    # the values in this test slightly changed (10-5 - 10-10)
-    # could this be because originally numpy.fft2 was used for the 2d version?
-    expected_log_calls = [
-        call("6 subgrids, 4 facets needed to cover"),
-        call("%s x %s subgrids %s x %s facets", 6, 6, 4, 4),
-        call("Mean grid absolute: %s", 0.25238145108445126),
-        # facet to subgrid
-        call(
-            "RMSE: %s (image: %s)",
-            3.635118091200949e-08,
-            6.834022011457784e-06,
-        ),
-        call(
-            "RMSE: %s (image: %s)",
-            1.8993993540584405e-17,
-            3.5708707856298686e-15,
-        ),
-        # subgrid to facet - not yet added to tested code
-        call(
-            "RMSE: %s (image: %s)",
-            1.906652955419094e-07,
-            4.881031565872881e-05,
-        ),
-        call(
-            "RMSE: %s (image: %s)",
-            3.1048926297115777e-13,
-            7.948525132061639e-11,
-        ),
-    ]
-
-    with patch("logging.Logger.info") as mock_log:
-        run_distributed_fft(
-            TEST_PARAMS,
-            to_plot=False,
-            use_dask=use_dask,
-            client=client,
-        )
-        for log_call in expected_log_calls:
-            assert log_call in mock_log.call_args_list
-
-    if use_dask:
-        tear_down_dask(client)
 
 
 @pytest.mark.parametrize(

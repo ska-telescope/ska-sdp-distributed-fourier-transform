@@ -310,32 +310,31 @@ def roll_and_extract_mid(shape, offset, true_usable_size):
     :return: slice list
     """
 
-    centre_x = shape // 2
-    x_start = centre_x + offset - true_usable_size // 2
+    centre = shape // 2
+    start = centre + offset - true_usable_size // 2
 
     if true_usable_size % 2 != 0:
-        x_end = centre_x + offset + true_usable_size // 2 + 1
+        end = centre + offset + true_usable_size // 2 + 1
     else:
-        x_end = centre_x + offset + true_usable_size // 2
+        end = centre + offset + true_usable_size // 2
 
-    if x_end <= 0:
-        slicex = [slice(x_start + shape, x_end + shape)]
-    # pylint: disable=chained-comparison
-    elif x_start < 0 and x_end > 0:
-        slicex = [slice(0, x_end), slice(x_start + shape, shape)]
+    if end <= 0:
+        slice_data = [slice(start + shape, end + shape)]
+    elif start < 0 and end > 0:
+        slice_data = [slice(0, end), slice(start + shape, shape)]
 
-    elif x_end <= shape and x_start >= 0:
-        slicex = [slice(x_start, x_end)]
-    elif x_start < shape and x_end > shape:
-        slicex = [slice(x_start, shape), slice(0, x_end - shape)]
+    elif end <= shape and start >= 0:
+        slice_data = [slice(start, end)]
+    elif start < shape and end > shape:
+        slice_data = [slice(start, shape), slice(0, end - shape)]
 
-    elif x_start >= shape:
-        slicex = [slice(x_start - shape, x_end - shape)]
+    elif start >= shape:
+        slice_data = [slice(start - shape, end - shape)]
 
     else:
         raise ValueError("unsupported slice")
 
-    return slicex
+    return slice_data
 
 
 # pylint: disable=too-many-locals,unused-argument
@@ -420,7 +419,6 @@ def _ith_subgrid_facet_element_from_hdf5(
 def make_subgrid_and_facet_from_hdf5(
     G,
     FG,
-    constants_class,
     base_arrays,
     use_dask=True,
 ):
@@ -430,56 +428,55 @@ def make_subgrid_and_facet_from_hdf5(
 
     :param G: the path of G hdf5 file
     :param FG: the path of FG hdf5 file
-    :param constants_class: constants_class object
-    :param base_arrays: base_arrays object or future if use_dask = True
+    :param base_arrays: base_arrays object
     :param use_dask: run function with dask.delayed or not?
     :return: subgrid and facet graph list
     """
 
     subgrid = numpy.empty(
         (
-            constants_class.nsubgrid,
-            constants_class.nsubgrid,
+            base_arrays.nsubgrid,
+            base_arrays.nsubgrid,
         ),
     ).tolist()
     facet = numpy.empty(
         (
-            constants_class.nfacet,
-            constants_class.nfacet,
+            base_arrays.nfacet,
+            base_arrays.nfacet,
         ),
     ).tolist()
 
     for i0, i1 in itertools.product(
-        range(constants_class.nsubgrid), range(constants_class.nsubgrid)
+        range(base_arrays.nsubgrid), range(base_arrays.nsubgrid)
     ):
         subgrid[i0][i1] = _ith_subgrid_facet_element_from_hdf5(
             G,
             "G_data",
             (
-                -constants_class.subgrid_off[i0],
-                -constants_class.subgrid_off[i1],
+                -base_arrays.subgrid_off[i0],
+                -base_arrays.subgrid_off[i1],
             ),
             base_arrays,
             i0,
             i1,
-            use_dask=True,
+            use_dask=use_dask,
             nout=1,
         )
 
     for j0, j1 in itertools.product(
-        range(constants_class.nfacet), range(constants_class.nfacet)
+        range(base_arrays.nfacet), range(base_arrays.nfacet)
     ):
         facet[j0][j1] = _ith_subgrid_facet_element_from_hdf5(
             FG,
             "FG_data",
             (
-                -constants_class.facet_off[j0],
-                -constants_class.facet_off[j1],
+                -base_arrays.facet_off[j0],
+                -base_arrays.facet_off[j1],
             ),
             base_arrays,
             j0,
             j1,
-            use_dask=True,
+            use_dask=use_dask,
             nout=1,
         )
     return subgrid, facet

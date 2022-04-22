@@ -37,8 +37,8 @@ from src.utils import (
     errors_facet_to_subgrid_2d_dask,
     errors_subgrid_to_facet_2d,
     errors_subgrid_to_facet_2d_dask,
-    make_G_2_FG_2,
-    make_G_2_FG_2_hdf5,
+    generate_input_data,
+    generate_input_data_hdf5,
     plot_pswf,
     plot_work_terms,
     write_hdf5,
@@ -578,8 +578,8 @@ def _run_algorithm(
 
     Subgrid-to-facet only has a single version.
 
-    :param G: 2D "ground truth" array; to be split into subgrids
-    :param FG: FFT of G; to be split into facets
+    :param subgrid_2: 2D numpy array of subgrids
+    :param facet_2: 2D numpy array of facets
     :param distr_fft_class: StreamingDistributedFFT class object
     :param base_arrays: BaseArrays class object
     :param use_dask: use dask.delayed or not
@@ -641,7 +641,7 @@ def _run_algorithm(
     )
     log.info("%s s", time.time() - t)
 
-    return subgrid_2, facet_2, approx_subgrid, approx_facet
+    return approx_subgrid, approx_facet
 
 
 # pylint: disable=too-many-arguments
@@ -670,6 +670,14 @@ def run_distributed_fft(
                      fig_name doesn't have an effect.
     :param use_dask: boolean; use Dask?
     :param client: Dask client or None
+    :param use_hdf5: use Hdf5?
+    :param G_2_file: filename of G_2
+    :param FG_2_file: filename of FG_2
+    :param approx_G_2_file: filename of Approx G_2
+    :param approx_FG_2_file: filename of Approx FG_2
+    :param hdf5_chunksize: hdf5 chunk size
+
+    :return: subgrid_2, facet_2, approx_subgrid, approx_facet
     """
     base_arrays = BaseArrays(**fundamental_params)
     distr_fft = StreamingDistributedFFT(**fundamental_params)
@@ -691,19 +699,17 @@ def run_distributed_fft(
     # make data
     if use_hdf5 and use_dask:
 
-        # there are two path of hdf5 file
-        G_2, FG_2 = make_G_2_FG_2_hdf5(
+        G_2, FG_2 = generate_input_data_hdf5(
             distr_fft, G_2_file, FG_2_file, hdf5_chunksize, client
         )
         subgrid_2, facet_2 = make_subgrid_and_facet_from_hdf5(
             G_2,
             FG_2,
-            distr_fft,
             base_arrays,
             use_dask=use_dask,
         )
     else:
-        G_2, FG_2 = make_G_2_FG_2(distr_fft)
+        G_2, FG_2 = generate_input_data(distr_fft)
 
         if use_dask and client is not None:
             G_2 = client.scatter(G_2)
@@ -719,24 +725,26 @@ def run_distributed_fft(
 
     # run algorithm
     if use_hdf5 and use_dask:
-        subgrid_2, facet_2, approx_subgrid, approx_facet = _run_algorithm(
+        approx_subgrid, approx_facet = _run_algorithm(
             subgrid_2,
             facet_2,
             distr_fft,
             base_arrays,
-            use_dask=True,
+            use_dask=use_dask,
         )
 
         errors_facet_to_subgrid = errors_facet_to_subgrid_2d_dask(
             approx_subgrid,
             distr_fft,
             subgrid_2,
+            use_dask=use_dask,
         )
 
         errors_subgrid_to_facet = errors_subgrid_to_facet_2d_dask(
             approx_facet,
             facet_2,
             distr_fft,
+            use_dask=use_dask,
         )
 
         approx_G_2_file, approx_FG_2_file = write_hdf5(
@@ -744,22 +752,23 @@ def run_distributed_fft(
             approx_facet,
             approx_G_2_file,
             approx_FG_2_file,
-            distr_fft,
             base_arrays,
+            use_dask=use_dask,
         )
 
-        (
-            errors_facet_to_subgrid,
-            errors_subgrid_to_facet,
-            approx_G_2_file,
-            approx_FG_2_file,
-        ) = dask.compute(
-            errors_facet_to_subgrid,
-            errors_subgrid_to_facet,
-            approx_G_2_file,
-            approx_FG_2_file,
-            sync=True,
-        )
+        if use_dask:
+            (
+                errors_facet_to_subgrid,
+                errors_subgrid_to_facet,
+                approx_G_2_file,
+                approx_FG_2_file,
+            ) = dask.compute(
+                errors_facet_to_subgrid,
+                errors_subgrid_to_facet,
+                approx_G_2_file,
+                approx_FG_2_file,
+                sync=True,
+            )
 
         log.info(
             "errors_facet_to_subgrid RMSE: %s (image: %s)",
@@ -782,7 +791,7 @@ def run_distributed_fft(
 
     else:
         if use_dask:
-            subgrid_2, facet_2, approx_subgrid, approx_facet = _run_algorithm(
+            approx_subgrid, approx_facet = _run_algorithm(
                 subgrid_2,
                 facet_2,
                 distr_fft,
@@ -800,7 +809,7 @@ def run_distributed_fft(
             approx_facet = numpy.array(approx_facet)
 
         else:
-            subgrid_2, facet_2, approx_subgrid, approx_facet = _run_algorithm(
+            approx_subgrid, approx_facet = _run_algorithm(
                 subgrid_2,
                 facet_2,
                 distr_fft,
@@ -863,28 +872,6 @@ def cli_parser():
         "--hdf5_prefix", type=str, default="./", help="hdf5 path prefix"
     )
 
-    parser.add_argument(
-        "--g_file", type=str, default="1k_G.hdf5", help="hdf5 G path"
-    )
-
-    parser.add_argument(
-        "--fg_file", type=str, default="1k_FG.hdf5", help="hdf5 FG path"
-    )
-
-    parser.add_argument(
-        "--approx_g_file",
-        type=str,
-        default="1k_approx_G.hdf5",
-        help="hdf5 approx_G path",
-    )
-
-    parser.add_argument(
-        "--approx_fg_file",
-        type=str,
-        default="1k_approx_FG.hdf5",
-        help="hdf5 approx_FG path",
-    )
-
     return parser
 
 
@@ -913,25 +900,31 @@ def main(args):
                 f"for available options."
             ) from error
 
-    client_dask = set_up_dask(scheduler_address=scheduler)
+    dask_client = set_up_dask(scheduler_address=scheduler)
 
     for config_key in swift_config_keys:
         log.info("Running for swift-config: %s", config_key)
 
-        with performance_report(filename="dask-report-2d.html"):
+        with performance_report(filename=f"dask-report-{config_key}.html"):
             run_distributed_fft(
                 SWIFT_CONFIGS[config_key],
                 to_plot=False,
                 use_dask=True,
-                client=client_dask,
+                client=dask_client,
                 use_hdf5=args.use_hdf5 == "True",
-                G_2_file=args.hdf5_prefix + args.g_file,
-                FG_2_file=args.hdf5_prefix + args.fg_file,
-                approx_G_2_file=args.hdf5_prefix + args.approx_g_file,
-                approx_FG_2_file=args.hdf5_prefix + args.approx_fg_file,
+                G_2_file=args.hdf5_prefix + "/" + config_key + "_g.h5",
+                FG_2_file=args.hdf5_prefix + "/" + config_key + "_fg.h5",
+                approx_G_2_file=args.hdf5_prefix
+                + "/"
+                + config_key
+                + "_g_approx.h5",
+                approx_FG_2_file=args.hdf5_prefix
+                + "/"
+                + config_key
+                + "_fg_approx.h5",
                 hdf5_chunksize=args.hdf5_chunksize,
             )
-    tear_down_dask(client_dask)
+    tear_down_dask(dask_client)
 
 
 if __name__ == "__main__":
