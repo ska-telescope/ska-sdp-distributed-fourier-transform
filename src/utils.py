@@ -594,7 +594,7 @@ def fundenmental_errors(
         error_task_list.append(tmp_error)
 
     error_sum_map = sum_error_task(error_task_list, use_dask=use_dask, nout=1)
-    return error_sum_map
+    return mean_img_task(error_sum_map, use_dask=use_dask, nout=1)
 
 
 def errors_facet_to_subgrid_2d_dask(
