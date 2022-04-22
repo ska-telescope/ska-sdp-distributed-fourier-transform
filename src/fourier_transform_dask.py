@@ -697,8 +697,7 @@ def run_distributed_fft(
     )
 
     # make data
-    if use_hdf5 and use_dask:
-
+    if use_hdf5:
         G_2, FG_2 = generate_input_data_hdf5(
             distr_fft, G_2_file, FG_2_file, hdf5_chunksize, client
         )
@@ -724,7 +723,7 @@ def run_distributed_fft(
         )
 
     # run algorithm
-    if use_hdf5 and use_dask:
+    if use_hdf5:
         approx_subgrid, approx_facet = _run_algorithm(
             subgrid_2,
             facet_2,
@@ -909,18 +908,13 @@ def main(args):
                 use_dask=True,
                 client=dask_client,
                 use_hdf5=args.use_hdf5 == "True",
-                G_2_file=args.hdf5_prefix + "/" + config_key + "_g.h5",
-                FG_2_file=args.hdf5_prefix + "/" + config_key + "_fg.h5",
-                approx_G_2_file=args.hdf5_prefix
-                + "/"
-                + config_key
-                + "_g_approx.h5",
-                approx_FG_2_file=args.hdf5_prefix
-                + "/"
-                + config_key
-                + "_fg_approx.h5",
+                G_2_file=f"{args.hdf5_prefix}/{config_key}_g.h5",
+                FG_2_file=f"{args.hdf5_prefix}/{config_key}_fg.h5",
+                approx_G_2_file=f"{args.hdf5_prefix}/{config_key}_g_approx.h5",
+                approx_FG_2_file=f"{args.hdf5_prefix}/{config_key}_fg_approx.h5",
                 hdf5_chunksize=args.hdf5_chunksize,
             )
+            dask_client.restart()
     tear_down_dask(dask_client)
 
 

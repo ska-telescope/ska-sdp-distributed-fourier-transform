@@ -382,20 +382,21 @@ def generate_input_data(sparse_ft_class):
 
 
 @dask_wrapper
-def dft_chunk_work(G_2_path, chunk_slice, sources, chunksize, N, **kwargs):
+def direct_ft_chunk_work(
+    G_2_path, chunk_slice, sources, chunksize, N, **kwargs
+):
     """
-    Calculate the value of a chunk of the DFT and write to hdf5
+    Calculate the value of a chunk of direct fourier transform and write to hdf5
 
     :param G_2_path: the hdf5 file path of G
     :param chunk_slice: slice of hdf5 chunk
     :param sources: sources array
     :param chunksize: size of chunk
     :param N: whole data size
-    :return: 0
+
     """
     chunk_G = numpy.zeros((chunksize, chunksize), dtype=complex)
     for x, y, i in sources:
-        # calulate chunk DFT
         u_chunk, v_chunk = (
             numpy.mgrid[
                 -N // 2
@@ -480,7 +481,7 @@ def generate_input_data_hdf5(
         chunk_list = []
         for chunk_slice in G_dataset.iter_chunks():
             chunk_list.append(
-                dft_chunk_work(
+                direct_ft_chunk_work(
                     G_2_path,
                     chunk_slice,
                     sources,
