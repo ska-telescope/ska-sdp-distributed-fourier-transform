@@ -885,9 +885,6 @@ def main(args):
     scheduler = os.environ.get("DASK_SCHEDULER", None)
     log.info("Scheduler: %s", scheduler)
 
-    # all above needs commenting and this uncommenting if
-    # want to run it without dask
-    # main(to_plot=False)
     swift_config_keys = args.swift_config.split(",")
     # check that all the keys are valid
     for c in swift_config_keys:
