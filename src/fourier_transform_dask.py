@@ -38,7 +38,6 @@ from src.utils import (
     errors_subgrid_to_facet_2d,
     errors_subgrid_to_facet_2d_dask,
     generate_input_data,
-    generate_input_data_hdf5,
     plot_pswf,
     plot_work_terms,
     write_hdf5,
@@ -652,11 +651,9 @@ def run_distributed_fft(
     use_dask=False,
     client=None,
     use_hdf5=False,
-    G_2_file=None,
-    FG_2_file=None,
-    approx_G_2_file=None,
-    approx_FG_2_file=None,
-    hdf5_chunksize=None,
+    hdf5_prefix=None,
+    hdf5_chunksize_G=None,
+    hdf5_chunksize_FG=None,
 ):
     """
     Main execution function that reads in the configuration,
@@ -671,11 +668,9 @@ def run_distributed_fft(
     :param use_dask: boolean; use Dask?
     :param client: Dask client or None
     :param use_hdf5: use Hdf5?
-    :param G_2_file: filename of G_2
-    :param FG_2_file: filename of FG_2
-    :param approx_G_2_file: filename of Approx G_2
-    :param approx_FG_2_file: filename of Approx FG_2
-    :param hdf5_chunksize: hdf5 chunk size
+    :param hdf5_prefix: hdf5 path prefix
+    :param hdf5_chunksize_G: hdf5 chunk size for G data
+    :param hdf5_chunksize_G: hdf5 chunk size for FG data
 
     :return: subgrid_2, facet_2, approx_subgrid, approx_facet
     """
@@ -698,12 +693,26 @@ def run_distributed_fft(
 
     # make data
     if use_hdf5:
-        G_2, FG_2 = generate_input_data_hdf5(
-            distr_fft, G_2_file, FG_2_file, hdf5_chunksize, client
+        G_2_file = f"{hdf5_prefix}/G_{base_arrays.N}_{hdf5_chunksize_G}.h5"
+        FG_2_file = f"{hdf5_prefix}/FG_{base_arrays.N}_{hdf5_chunksize_FG}.h5"
+        approx_G_2_file = (
+            f"{hdf5_prefix}/approx_G_{base_arrays.N}_{hdf5_chunksize_G}.h5"
         )
+        approx_FG_2_file = (
+            f"{hdf5_prefix}/approx_FG_{base_arrays.N}_{hdf5_chunksize_FG}.h5"
+        )
+
+        for hdf5_file in [G_2_file, FG_2_file]:
+            if os.path.exists(hdf5_file):
+                log.info("Using hdf5 file: %s", hdf5_file)
+            else:
+                raise FileNotFoundError(
+                    f"Please check if the hdf5 data is in the {hdf5_file}"
+                )
+
         subgrid_2, facet_2 = make_subgrid_and_facet_from_hdf5(
-            G_2,
-            FG_2,
+            G_2_file,
+            FG_2_file,
             base_arrays,
             use_dask=use_dask,
         )
@@ -752,6 +761,8 @@ def run_distributed_fft(
             approx_G_2_file,
             approx_FG_2_file,
             base_arrays,
+            hdf5_chunksize_G,
+            hdf5_chunksize_FG,
             use_dask=use_dask,
         )
 
@@ -864,7 +875,17 @@ def cli_parser():
     )
 
     parser.add_argument(
-        "--hdf5_chunksize", type=int, default=256, help="hdf5 chunksize"
+        "--hdf5_chunksize_G",
+        type=int,
+        default=256,
+        help="hdf5 chunksize for G",
+    )
+
+    parser.add_argument(
+        "--hdf5_chunksize_FG",
+        type=int,
+        default=256,
+        help="hdf5 chunksize for FG",
     )
 
     parser.add_argument(
@@ -908,11 +929,9 @@ def main(args):
                 use_dask=True,
                 client=dask_client,
                 use_hdf5=args.use_hdf5 == "True",
-                G_2_file=f"{args.hdf5_prefix}/{config_key}_g.h5",
-                FG_2_file=f"{args.hdf5_prefix}/{config_key}_fg.h5",
-                approx_G_2_file=f"{args.hdf5_prefix}/{config_key}_g_approx.h5",
-                approx_FG_2_file=f"{args.hdf5_prefix}/{config_key}_fg_approx.h5",
-                hdf5_chunksize=args.hdf5_chunksize,
+                hdf5_prefix=args.hdf5_prefix,
+                hdf5_chunksize_G=args.hdf5_chunksize_G,
+                hdf5_chunksize_FG=args.hdf5_chunksize_FG,
             )
             dask_client.restart()
     tear_down_dask(dask_client)

@@ -33,6 +33,7 @@ from src.fourier_transform_dask import (
     run_distributed_fft,
     subgrid_to_facet_algorithm,
 )
+from src.generate_hdf5 import generate_data_hdf5
 from tests.test_reference_data.ref_data_2d import (
     EXPECTED_FACET_2D,
     EXPECTED_NONZERO_APPROX_FACET_2D,
@@ -216,8 +217,8 @@ def test_end_to_end_2d_dask(use_dask):
 
 
 # pylint: disable=too-many-locals
-@pytest.mark.parametrize("use_hdf5", [True])
-def test_end_to_end_2d_dask_hdf5(use_hdf5):
+@pytest.mark.parametrize("use_dask", [True, False])
+def test_end_to_end_2d_dask_hdf5(use_dask):
     """
     Test that the 2d algorithm produces the same results with dask and hdf5.
     """
@@ -226,17 +227,25 @@ def test_end_to_end_2d_dask_hdf5(use_hdf5):
 
     client = set_up_dask()
 
-    prefix = "tmpdata/"
-    g_file = "G.hdf5"
-    fg_file = "FG.hdf5"
-    approx_g_file = "approx_G.hdf5"
-    approx_fg_file = "approx_FG.hdf5"
+    prefix = "tmpdata"
+    chunksize = 128
+    g_file = f"{prefix}/G_{TEST_PARAMS['N']}_{chunksize}.h5"
+    fg_file = f"{prefix}/FG_{TEST_PARAMS['N']}_{chunksize}.h5"
 
     if not os.path.exists(prefix):
         os.makedirs(prefix)
     else:
         shutil.rmtree(prefix)
         os.makedirs(prefix)
+
+    generate_data_hdf5(
+        TEST_PARAMS["N"],
+        G_2_path=g_file,
+        FG_2_path=fg_file,
+        chunksize_G=chunksize,
+        chunksize_FG=chunksize,
+        client=client,
+    )
 
     (
         G_2_file,
@@ -246,14 +255,14 @@ def test_end_to_end_2d_dask_hdf5(use_hdf5):
     ) = run_distributed_fft(
         TEST_PARAMS,
         to_plot=False,
-        use_dask=True,
+        use_dask=use_dask,
         client=client,
-        use_hdf5=use_hdf5,
-        G_2_file=prefix + g_file,
-        FG_2_file=prefix + fg_file,
-        approx_G_2_file=prefix + approx_g_file,
-        approx_FG_2_file=prefix + approx_fg_file,
+        use_hdf5=True,
+        hdf5_prefix=prefix,
+        hdf5_chunksize_G=chunksize,
+        hdf5_chunksize_FG=chunksize,
     )
+
     tear_down_dask(client)
 
     # compare hdf5

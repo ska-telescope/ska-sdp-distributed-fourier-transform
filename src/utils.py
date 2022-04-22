@@ -9,7 +9,6 @@ basic validation of the algorithm.
 
 import itertools
 import logging
-import os
 
 import h5py
 import numpy
@@ -382,124 +381,6 @@ def generate_input_data(sparse_ft_class):
 
 
 @dask_wrapper
-def direct_ft_chunk_work(
-    G_2_path, chunk_slice, sources, chunksize, N, **kwargs
-):
-    """
-    Calculate the value of a chunk of direct fourier transform and write to hdf5
-
-    :param G_2_path: the hdf5 file path of G
-    :param chunk_slice: slice of hdf5 chunk
-    :param sources: sources array
-    :param chunksize: size of chunk
-    :param N: whole data size
-
-    """
-    chunk_G = numpy.zeros((chunksize, chunksize), dtype=complex)
-    for x, y, i in sources:
-        u_chunk, v_chunk = (
-            numpy.mgrid[
-                -N // 2
-                + chunk_slice[0].start : N // 2
-                - (N - chunk_slice[0].stop),
-                -N // 2
-                + chunk_slice[1].start : N // 2
-                - (N - chunk_slice[1].stop),
-            ][::-1]
-            / N
-        )
-        chunk_G += i * numpy.exp(2j * numpy.pi * (x * u_chunk + y * v_chunk))
-
-    # lock
-    lock = Lock(G_2_path)
-    lock.acquire()
-    with h5py.File(G_2_path, "r+") as f:
-        dataset = f["G_data"]
-        dataset[chunk_slice[0], chunk_slice[1]] = chunk_G / (N * N)
-    lock.release()
-
-
-def generate_input_data_hdf5(
-    sparse_ft_class, G_2_path, FG_2_path, chunksize, client
-):
-    """
-    Generate standard data G and FG with hdf5
-
-    :param sparse_ft_class: sparse_ft_class
-    :param G_2_path: the hdf5 file path of G
-    :param FG_2_path: the hdf5 file path of FG
-    :param chunksize: size of chunk
-    :param client: dask client
-
-    :returns: G_2_path, FG_2_path
-    """
-    if chunksize is None:
-        chunksize = sparse_ft_class.N // 8
-    if not os.path.exists(FG_2_path):
-        source_count = 1000
-        sources = numpy.array(
-            [
-                (
-                    numpy.random.randint(
-                        -sparse_ft_class.N // 2, sparse_ft_class.N // 2 - 1
-                    ),
-                    numpy.random.randint(
-                        -sparse_ft_class.N // 2, sparse_ft_class.N // 2 - 1
-                    ),
-                    numpy.random.rand()
-                    * sparse_ft_class.N
-                    * sparse_ft_class.N
-                    / numpy.sqrt(source_count)
-                    / 2,
-                )
-                for _ in range(source_count)
-            ]
-        )
-        f = h5py.File(FG_2_path, "w")
-        FG_dataset = f.create_dataset(
-            "FG_data",
-            (sparse_ft_class.N, sparse_ft_class.N),
-            dtype="complex128",
-        )
-        # write data point by point
-        for x, y, i in sources:
-            FG_dataset[
-                int(y) + sparse_ft_class.N // 2,
-                int(x) + sparse_ft_class.N // 2,
-            ] += i
-        f.close()
-
-    if not os.path.exists(G_2_path):
-        # create a empty hdf5 file
-        f = h5py.File(G_2_path, "w")
-        G_dataset = f.create_dataset(
-            "G_data",
-            (sparse_ft_class.N, sparse_ft_class.N),
-            dtype="complex128",
-            chunks=(chunksize, chunksize),
-        )
-        chunk_list = []
-        for chunk_slice in G_dataset.iter_chunks():
-            chunk_list.append(
-                direct_ft_chunk_work(
-                    G_2_path,
-                    chunk_slice,
-                    sources,
-                    chunksize,
-                    sparse_ft_class.N,
-                    use_dask=True,
-                    nout=1,
-                )
-            )
-        f.close()
-
-        # compute
-        chunk_list = client.compute(chunk_list, sync=True)
-
-    return G_2_path, FG_2_path
-
-
-@dask_wrapper
 def error_task_subgrid_to_facet_2d(approx, true_image, num_true, **kwargs):
     """
     Calculate the error terms for a single 2D subgrid to facet algorithm.
@@ -743,6 +624,8 @@ def write_hdf5(
     approx_subgrid_path,
     approx_facet_path,
     base_arrays,
+    hdf5_chunksize_G,
+    hdf5_chunksize_FG,
     use_dask=True,
 ):
     """
@@ -752,7 +635,9 @@ def write_hdf5(
     :param approx_facet: approx facet list
     :param approx_subgrid_path: approx subgrid path
     :param approx_facet_path: approx facet path
-    :param base_arrays_submit: base_arrays_submit
+    :param base_arrays: base_arrays
+    :param hdf5_chunksize_G: hdf5 chunk size for G data
+    :param hdf5_chunksize_G: hdf5 chunk size for FG data
 
     :returns: hdf5 path of approx subgrid and facets
     """
@@ -763,6 +648,7 @@ def write_hdf5(
             "G_data",
             (base_arrays.N, base_arrays.N),
             dtype="complex128",
+            chunks=(hdf5_chunksize_G, hdf5_chunksize_G),
         )
     subgrid_res_list = []
     for i0, i1 in itertools.product(
@@ -786,6 +672,7 @@ def write_hdf5(
             "FG_data",
             (base_arrays.N, base_arrays.N),
             dtype="complex128",
+            chunks=(hdf5_chunksize_FG, hdf5_chunksize_FG),
         )
     facet_res_list = []
     for j0, j1 in itertools.product(
@@ -803,6 +690,6 @@ def write_hdf5(
         )
         facet_res_list.append(res)
 
-    return trim(subgrid_res_list, use_dask=True, nout=1), trim(
-        facet_res_list, use_dask=True, nout=1
+    return trim(subgrid_res_list, use_dask=use_dask, nout=1), trim(
+        facet_res_list, use_dask=use_dask, nout=1
     )
