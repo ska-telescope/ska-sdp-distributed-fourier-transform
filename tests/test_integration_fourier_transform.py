@@ -225,7 +225,10 @@ def test_end_to_end_2d_dask_hdf5(use_dask):
     # Fixing seed of numpy random
     numpy.random.seed(123456789)
 
-    client = set_up_dask()
+    if use_dask:
+        client = set_up_dask()
+    else:
+        client = None
 
     prefix = "tmpdata"
     chunksize = 128
@@ -263,7 +266,8 @@ def test_end_to_end_2d_dask_hdf5(use_dask):
         hdf5_chunksize_FG=chunksize,
     )
 
-    tear_down_dask(client)
+    if use_dask:
+        tear_down_dask(client)
 
     # compare hdf5
     with h5py.File(G_2_file, "r") as f:

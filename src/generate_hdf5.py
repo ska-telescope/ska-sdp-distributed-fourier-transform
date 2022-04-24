@@ -26,7 +26,7 @@ log.addHandler(logging.StreamHandler(sys.stdout))
 
 @dask_wrapper
 def direct_ft_chunk_work(
-    G_2_path, chunk_slice, sources, chunksize, N, **kwargs
+    G_2_path, chunk_slice, sources, chunksize, N, use_dask=False, **kwargs
 ):
     """
     Calculate the value of a chunk of direct fourier transform and
@@ -55,21 +55,25 @@ def direct_ft_chunk_work(
         chunk_G += i * numpy.exp(2j * numpy.pi * (x * u_chunk + y * v_chunk))
 
     # lock
-    lock = Lock(G_2_path)
-    lock.acquire()
+    if use_dask:
+        lock = Lock(G_2_path)
+        lock.acquire()
+
     with h5py.File(G_2_path, "r+") as f:
         dataset = f["G_data"]
         dataset[chunk_slice[0], chunk_slice[1]] = chunk_G / (N * N)
-    lock.release()
+
+    if use_dask:
+        lock.release()
 
 
 def generate_data_hdf5(
-    npixel, G_2_path, FG_2_path, chunksize_G, chunksize_FG, client
+    npixel, G_2_path, FG_2_path, chunksize_G, chunksize_FG, client=None
 ):
     """
     Generate standard data G and FG with hdf5
 
-    :param sparse_ft_class: sparse_ft_class
+    :param sparse_ft_class: StreamingDistributedFFT class object
     :param G_2_path: the hdf5 file path of G
     :param FG_2_path: the hdf5 file path of FG
     :param chunksize: size of chunk
@@ -109,6 +113,10 @@ def generate_data_hdf5(
             ] += i
         f.close()
 
+    if client is None:
+        use_dask = False
+    else:
+        use_dask = True
     if not os.path.exists(G_2_path):
         # create a empty hdf5 file
         f = h5py.File(G_2_path, "w")
@@ -127,14 +135,14 @@ def generate_data_hdf5(
                     sources,
                     chunksize_G,
                     npixel,
-                    use_dask=True,
+                    use_dask=use_dask,
                     nout=1,
                 )
             )
         f.close()
 
-        # compute
-        chunk_list = client.compute(chunk_list, sync=True)
+        if use_dask:
+            chunk_list = client.compute(chunk_list, sync=True)
 
     return G_2_path, FG_2_path
 

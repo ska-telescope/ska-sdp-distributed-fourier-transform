@@ -348,7 +348,7 @@ def _ith_subgrid_facet_element_from_hdf5(
     :param hdf5_file: the file path of G/FG hdf5 file
     :param dataset_name: G/FG hdf5 file dataset name
     :param offset_i: ith offset (subgrid or facet)
-    :param base_arrays: base_arrays Graph or object
+    :param base_arrays: BaseArrays class object
     :param idx0: index in the axis 0
     :param idx1: index in the axis 1
     :param kwargs: needs to contain the following if dask is used:
@@ -428,7 +428,7 @@ def make_subgrid_and_facet_from_hdf5(
 
     :param G: the path of G hdf5 file
     :param FG: the path of FG hdf5 file
-    :param base_arrays: base_arrays object
+    :param base_arrays: BaseArrays class object
     :param use_dask: run function with dask.delayed or not?
     :return: subgrid and facet graph list
     """

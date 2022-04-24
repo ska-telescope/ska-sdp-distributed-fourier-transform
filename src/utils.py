@@ -266,6 +266,11 @@ def errors_facet_to_subgrid_2d(
     if to_plot:
         _plot_error(err_mean, err_mean_img, fig_name, "facet_to_subgrid")
 
+    return (
+        numpy.sqrt(numpy.mean(err_mean)),
+        numpy.sqrt(numpy.mean(err_mean_img)),
+    )
+
 
 def errors_subgrid_to_facet_2d(
     BMNAF_BMNAF, facet_2, constants_class, to_plot=True, fig_name=None
@@ -310,6 +315,11 @@ def errors_subgrid_to_facet_2d(
 
     if to_plot:
         _plot_error(err_mean, err_mean_img, fig_name, "subgrid_to_facet")
+
+    return (
+        numpy.sqrt(numpy.mean(err_mean)),
+        numpy.sqrt(numpy.mean(err_mean_img)),
+    )
 
 
 @dask_wrapper
@@ -486,7 +496,7 @@ def errors_facet_to_subgrid_2d_dask(
     Functions for calculating the error of approx subgrid
 
     :param approx_subgrid: approx subgrid
-    :param sparse_ft_class: sparse_ft_class
+    :param sparse_ft_class: StreamingDistributedFFT class object
     :param subgrid_2: true subgrid
     :returns: mean of err_mean and err_mean_img
     """
@@ -506,7 +516,7 @@ def errors_subgrid_to_facet_2d_dask(
     Functions for calculating the error of approx facets
 
     :param approx_facet: approx facets
-    :param sparse_ft_class: sparse_ft_class
+    :param sparse_ft_class: StreamingDistributedFFT class object
     :param facet_2: true facets
     :returns: mean of err_mean and err_mean_img
     """
@@ -534,9 +544,9 @@ def single_write_hdf5_task(
     Single subgrid or facet write hdf5 file task
 
     :param hdf5_path: approx facets
-    :param dataset_name: sparse_ft_class
+    :param dataset_name: HDF5 data set name
     :param block_size: subgrid or facets size
-    :param base_arrays: base_arrays
+    :param base_arrays: BaseArray class object
     :param idx0: idx0
     :param idx1: idx1
     :param block_data: subgrid or facets data
@@ -555,7 +565,7 @@ def single_write_hdf5_task(
         offset_i = -base_arrays.facet_off[idx0], -base_arrays.facet_off[idx1]
         block_size = base_arrays.yB_size
     else:
-        raise ValueError("unsupport dataset_name")
+        raise ValueError("unsupported dataset_name")
     mask_element = numpy.outer(
         mask_element_in[idx0],
         mask_element_in[idx1],
@@ -635,7 +645,7 @@ def write_hdf5(
     :param approx_facet: approx facet list
     :param approx_subgrid_path: approx subgrid path
     :param approx_facet_path: approx facet path
-    :param base_arrays: base_arrays
+    :param base_arrays: BaseArrays class object
     :param hdf5_chunksize_G: hdf5 chunk size for G data
     :param hdf5_chunksize_G: hdf5 chunk size for FG data
 
