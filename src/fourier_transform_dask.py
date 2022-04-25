@@ -672,7 +672,9 @@ def run_distributed_fft(
     :param hdf5_chunksize_G: hdf5 chunk size for G data
     :param hdf5_chunksize_G: hdf5 chunk size for FG data
 
-    :return: subgrid_2, facet_2, approx_subgrid, approx_facet
+    :return: subgrid_2, facet_2, approx_subgrid, approx_facet if not using hdf5
+             subgrid_2_file, facet_2_file, approx_subgrid_2_file, approx_facet_2_file
+             when using hdf5
     """
     base_arrays = BaseArrays(**fundamental_params)
     distr_fft = StreamingDistributedFFT(**fundamental_params)
@@ -691,7 +693,7 @@ def run_distributed_fft(
         distr_fft.nfacet,
     )
 
-    # make data
+    # The branch of using HDF5
     if use_hdf5:
         G_2_file = f"{hdf5_prefix}/G_{base_arrays.N}_{hdf5_chunksize_G}.h5"
         FG_2_file = f"{hdf5_prefix}/FG_{base_arrays.N}_{hdf5_chunksize_FG}.h5"
@@ -716,23 +718,6 @@ def run_distributed_fft(
             base_arrays,
             use_dask=use_dask,
         )
-    else:
-        G_2, FG_2 = generate_input_data(distr_fft)
-
-        if use_dask and client is not None:
-            G_2 = client.scatter(G_2)
-            FG_2 = client.scatter(FG_2)
-
-        subgrid_2, facet_2 = make_subgrid_and_facet(
-            G_2,
-            FG_2,
-            base_arrays,  # still use object，
-            dims=2,
-            use_dask=use_dask,
-        )
-
-    # run algorithm
-    if use_hdf5:
         approx_subgrid, approx_facet = _run_algorithm(
             subgrid_2,
             facet_2,
@@ -792,56 +777,64 @@ def run_distributed_fft(
             errors_subgrid_to_facet[1],
         )
 
-        subgrid_2, facet_2, approx_subgrid, approx_facet = (
-            G_2_file,
-            FG_2_file,
-            approx_G_2_file,
-            approx_FG_2_file,
-        )
+        return G_2_file, FG_2_file, approx_G_2_file, approx_FG_2_file
 
-    else:
-        if use_dask:
-            approx_subgrid, approx_facet = _run_algorithm(
-                subgrid_2,
-                facet_2,
-                distr_fft,
-                base_arrays,
-                use_dask=True,
-            )
+    G_2, FG_2 = generate_input_data(distr_fft)
 
-            subgrid_2, facet_2, approx_subgrid, approx_facet = dask.compute(
-                subgrid_2, facet_2, approx_subgrid, approx_facet, sync=True
-            )
+    if use_dask and client is not None:
+        G_2 = client.scatter(G_2)
+        FG_2 = client.scatter(FG_2)
 
-            subgrid_2 = numpy.array(subgrid_2)
-            facet_2 = numpy.array(facet_2)
-            approx_subgrid = numpy.array(approx_subgrid)
-            approx_facet = numpy.array(approx_facet)
+    subgrid_2, facet_2 = make_subgrid_and_facet(
+        G_2,
+        FG_2,
+        base_arrays,  # still use object，
+        dims=2,
+        use_dask=use_dask,
+    )
 
-        else:
-            approx_subgrid, approx_facet = _run_algorithm(
-                subgrid_2,
-                facet_2,
-                distr_fft,
-                base_arrays,
-                use_dask=False,
-            )
-
-        errors_facet_to_subgrid_2d(
-            approx_subgrid,
-            distr_fft,
+    if use_dask:
+        approx_subgrid, approx_facet = _run_algorithm(
             subgrid_2,
-            to_plot=to_plot,
-            fig_name=fig_name,
-        )
-
-        errors_subgrid_to_facet_2d(
-            approx_facet,
             facet_2,
             distr_fft,
-            to_plot=to_plot,
-            fig_name=fig_name,
+            base_arrays,
+            use_dask=True,
         )
+
+        subgrid_2, facet_2, approx_subgrid, approx_facet = dask.compute(
+            subgrid_2, facet_2, approx_subgrid, approx_facet, sync=True
+        )
+
+        subgrid_2 = numpy.array(subgrid_2)
+        facet_2 = numpy.array(facet_2)
+        approx_subgrid = numpy.array(approx_subgrid)
+        approx_facet = numpy.array(approx_facet)
+
+    else:
+        approx_subgrid, approx_facet = _run_algorithm(
+            subgrid_2,
+            facet_2,
+            distr_fft,
+            base_arrays,
+            use_dask=False,
+        )
+
+    errors_facet_to_subgrid_2d(
+        approx_subgrid,
+        distr_fft,
+        subgrid_2,
+        to_plot=to_plot,
+        fig_name=fig_name,
+    )
+
+    errors_subgrid_to_facet_2d(
+        approx_facet,
+        facet_2,
+        distr_fft,
+        to_plot=to_plot,
+        fig_name=fig_name,
+    )
 
     return subgrid_2, facet_2, approx_subgrid, approx_facet
 

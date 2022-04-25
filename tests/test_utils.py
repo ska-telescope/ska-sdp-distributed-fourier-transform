@@ -68,7 +68,7 @@ def _generate_test_data_hdf5(prefix, use_dask=True):
     )
 
     if use_dask:
-        client.shutdown()
+        tear_down_dask(client)
     return prefix, g_file, fg_file, base_arrays
 
 
@@ -165,7 +165,7 @@ def test_write_hdf5(use_dask):
     assert (FG == approx_FG).all()
 
     if use_dask:
-        client.shutdown()
+        tear_down_dask(client)
     # clean up
     if os.path.exists(prefix):
         shutil.rmtree(prefix)
