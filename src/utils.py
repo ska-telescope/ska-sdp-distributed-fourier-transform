@@ -266,11 +266,6 @@ def errors_facet_to_subgrid_2d(
     if to_plot:
         _plot_error(err_mean, err_mean_img, fig_name, "facet_to_subgrid")
 
-    return (
-        numpy.sqrt(numpy.mean(err_mean)),
-        numpy.sqrt(numpy.mean(err_mean_img)),
-    )
-
 
 def errors_subgrid_to_facet_2d(
     BMNAF_BMNAF, facet_2, constants_class, to_plot=True, fig_name=None
@@ -315,11 +310,6 @@ def errors_subgrid_to_facet_2d(
 
     if to_plot:
         _plot_error(err_mean, err_mean_img, fig_name, "subgrid_to_facet")
-
-    return (
-        numpy.sqrt(numpy.mean(err_mean)),
-        numpy.sqrt(numpy.mean(err_mean_img)),
-    )
 
 
 @dask_wrapper
@@ -461,7 +451,7 @@ def mean_img_task(err_img, **kwargs):
     )
 
 
-def fundenmental_errors(
+def fundamental_errors(
     approx_what, number_what, true_what, error_task, use_dask
 ):
     """
@@ -500,7 +490,7 @@ def errors_facet_to_subgrid_2d_dask(
     :param subgrid_2: true subgrid
     :returns: mean of err_mean and err_mean_img
     """
-    return fundenmental_errors(
+    return fundamental_errors(
         approx_subgrid,
         sparse_ft_class.nsubgrid,
         subgrid_2,
@@ -520,7 +510,7 @@ def errors_subgrid_to_facet_2d_dask(
     :param facet_2: true facets
     :returns: mean of err_mean and err_mean_img
     """
-    return fundenmental_errors(
+    return fundamental_errors(
         approx_facet,
         sparse_ft_class.nfacet,
         facet_2,
@@ -544,11 +534,11 @@ def single_write_hdf5_task(
     Single subgrid or facet write hdf5 file task
 
     :param hdf5_path: approx facets
-    :param dataset_name: HDF5 data set name
+    :param dataset_name: HDF5 data set name, i.e., G_data, FG_data
     :param block_size: subgrid or facets size
     :param base_arrays: BaseArray class object
-    :param idx0: idx0
-    :param idx1: idx1
+    :param idx0: index 0, i.e., i0 or j0
+    :param idx1: index 1, i.e., i1 or j1
     :param block_data: subgrid or facets data
     :returns: hdf5 of approx subgrid or facets
     """

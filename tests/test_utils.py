@@ -20,9 +20,7 @@ from src.generate_hdf5 import generate_data_hdf5
 from src.utils import (
     error_task_facet_to_subgrid_2d,
     error_task_subgrid_to_facet_2d,
-    errors_facet_to_subgrid_2d,
-    errors_subgrid_to_facet_2d,
-    fundenmental_errors,
+    fundamental_errors,
     write_hdf5,
 )
 
@@ -207,22 +205,8 @@ def test_erros_task(use_dask):
      terms using dask and serial
     """
 
-    # pylint: disable=too-few-public-methods
-    class TEST_constants:
-        """
-        A simple class for taking on nsubgrid,xA_size,nfacet,yB_size
-        """
-
-        def __init__(self, nsubgrid, xA_size, nfacet, yB_size):
-            self.nsubgrid = nsubgrid
-            self.nfacet = nfacet
-            self.xA_size = xA_size
-            self.yB_size = yB_size
-
     nsubgrid = 3
-    nfacet = 3
     xA_size = 256
-    yB_size = 256
 
     numpy.random.seed(123456789)
     approx_data = [
@@ -237,14 +221,14 @@ def test_erros_task(use_dask):
     if use_dask:
         client = set_up_dask()
 
-    res1 = fundenmental_errors(
+    res1 = fundamental_errors(
         approx_data,
         nsubgrid,
         true_data,
         error_task_facet_to_subgrid_2d,
         use_dask=use_dask,
     )
-    res2 = fundenmental_errors(
+    res2 = fundamental_errors(
         approx_data,
         nsubgrid,
         true_data,
@@ -256,19 +240,8 @@ def test_erros_task(use_dask):
         res1, res2 = dask.compute(res1, res2)
         tear_down_dask(client)
 
-    constants_class = TEST_constants(nsubgrid, xA_size, nfacet, yB_size)
-    true_res1 = errors_facet_to_subgrid_2d(
-        numpy.array(approx_data),
-        constants_class,
-        numpy.array(true_data),
-        to_plot=False,
-    )
-    true_res2 = errors_subgrid_to_facet_2d(
-        numpy.array(approx_data),
-        numpy.array(true_data),
-        constants_class,
-        to_plot=False,
-    )
+    true_res1 = (0.40801243491030215, 104.45118333703734)
+    true_res2 = (0.0015937985738683678, 0.40801243491030215)
 
     assert numpy.isclose(res1[0], true_res1[0])
     assert numpy.isclose(res1[1], true_res1[1])

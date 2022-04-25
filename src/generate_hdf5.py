@@ -39,7 +39,7 @@ def direct_ft_chunk_work(
     :param N: whole data size
 
     """
-    chunk_G = numpy.zeros((chunksize, chunksize), dtype=complex)
+    chunk_G = numpy.zeros((chunksize, chunksize), dtype="complex128")
     for x, y, i in sources:
         u_chunk, v_chunk = (
             numpy.mgrid[
