@@ -1,6 +1,7 @@
 """
 Unit tests for fourier_algorithm.py functions
 """
+
 import dask
 import numpy
 import pytest
@@ -14,6 +15,7 @@ from src.fourier_transform.fourier_algorithm import (
     fft,
     ifft,
     pad_mid,
+    roll_and_extract_mid,
 )
 
 
@@ -553,3 +555,58 @@ def test_ith_subgrid_facet_element_axis_tuple(use_dask):
         result = dask.compute(result, sync=True)
 
     assert (result == numpy.array([[0, 0], [0, 33]])).all()
+
+
+# pylint: disable=too-many-locals
+def test_roll_and_extract_mid():
+    """
+    For testing the roll+extract mid slice method
+    """
+    N = 1 * 1024
+    yB_size = 118
+    test_data = numpy.arange(0, N * N).reshape(N, N)
+    ch = yB_size
+    offset_i = yB_size * numpy.arange(int(numpy.ceil(N / yB_size)))
+
+    res = []
+    for offx in offset_i:
+        for offy in offset_i:
+            test_roll = numpy.roll(test_data, (-offx, -offy), axis=(0, 1))
+            true = extract_mid(extract_mid(test_roll, ch, 0), ch, 1)
+            slicex, slicey = roll_and_extract_mid(
+                N, offx, ch
+            ), roll_and_extract_mid(N, offy, ch)
+            test = numpy.empty((ch, ch), dtype=test_data.dtype)
+            if len(slicex) <= len(slicey):
+                iter_what1 = slicex
+                iter_what2 = slicey
+            else:
+                iter_what1 = slicey
+                iter_what2 = slicex
+
+            pointx = [0]
+            for sl in slicex:
+                dt = sl.stop - sl.start
+                pointx.append(dt + pointx[-1])
+
+            pointy = [0]
+            for sl in slicey:
+                dt = sl.stop - sl.start
+                pointy.append(dt + pointy[-1])
+
+            for i0 in range(len(iter_what1)):
+                for i1 in range(len(iter_what2)):
+                    if len(slicex) <= len(slicey):
+                        slice_block_x = slice(pointx[i0], pointx[i0 + 1])
+                        slice_block_y = slice(pointy[i1], pointy[i1 + 1])
+                        test[slice_block_x, slice_block_y] = test_data[
+                            slicex[i0], slicey[i1]
+                        ]
+                    else:
+                        slice_block_x = slice(pointx[i1], pointx[i1 + 1])
+                        slice_block_y = slice(pointy[i0], pointy[i0 + 1])
+                        test[slice_block_x, slice_block_y] = test_data[
+                            slicex[i1], slicey[i0]
+                        ]
+            res.append((test == true).all())
+    assert numpy.array(res).all()

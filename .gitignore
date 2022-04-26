@@ -53,3 +53,6 @@ test_reports.xml
 **/.pytest_cache
 
 **/.eggs
+
+dask-worker-space
+tmpdata

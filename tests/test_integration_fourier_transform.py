@@ -1,12 +1,15 @@
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name, unused-variable
 """
 End-to-end and integration tests.
 """
 
 import itertools
 import logging
+import os
+import shutil
 
 import dask
+import h5py
 import numpy
 import pytest
 from numpy.testing import assert_array_almost_equal
@@ -30,6 +33,7 @@ from src.fourier_transform_dask import (
     run_distributed_fft,
     subgrid_to_facet_algorithm,
 )
+from src.generate_hdf5 import generate_data_hdf5
 from tests.test_reference_data.ref_data_2d import (
     EXPECTED_FACET_2D,
     EXPECTED_NONZERO_APPROX_FACET_2D,
@@ -210,6 +214,80 @@ def test_end_to_end_2d_dask(use_dask):
 
     if use_dask:
         tear_down_dask(client)
+
+
+# pylint: disable=too-many-locals
+@pytest.mark.parametrize("use_dask", [True, False])
+def test_end_to_end_2d_dask_hdf5(use_dask):
+    """
+    Test that the 2d algorithm produces the same results with dask and hdf5.
+    """
+    # Fixing seed of numpy random
+    numpy.random.seed(123456789)
+
+    if use_dask:
+        client = set_up_dask()
+    else:
+        client = None
+
+    prefix = "tmpdata"
+    chunksize = 128
+    g_file = f"{prefix}/G_{TEST_PARAMS['N']}_{chunksize}.h5"
+    fg_file = f"{prefix}/FG_{TEST_PARAMS['N']}_{chunksize}.h5"
+
+    if not os.path.exists(prefix):
+        os.makedirs(prefix)
+    else:
+        shutil.rmtree(prefix)
+        os.makedirs(prefix)
+
+    generate_data_hdf5(
+        TEST_PARAMS["N"],
+        G_2_path=g_file,
+        FG_2_path=fg_file,
+        chunksize_G=chunksize,
+        chunksize_FG=chunksize,
+        client=client,
+    )
+
+    (
+        G_2_file,
+        FG_2_file,
+        approx_G_2_file,
+        approx_FG_2_file,
+    ) = run_distributed_fft(
+        TEST_PARAMS,
+        to_plot=False,
+        use_dask=use_dask,
+        client=client,
+        use_hdf5=True,
+        hdf5_prefix=prefix,
+        hdf5_chunksize_G=chunksize,
+        hdf5_chunksize_FG=chunksize,
+    )
+
+    if use_dask:
+        tear_down_dask(client)
+
+    # compare hdf5
+    with h5py.File(G_2_file, "r") as f:
+        G = numpy.array(f["G_data"])
+    with h5py.File(approx_G_2_file, "r") as f:
+        AG = numpy.array(f["G_data"])
+    with h5py.File(FG_2_file, "r") as f:
+        FG = numpy.array(f["FG_data"])
+    with h5py.File(approx_FG_2_file, "r") as f:
+        AFG = numpy.array(f["FG_data"])
+
+    # clean up
+    if os.path.exists(prefix):
+        shutil.rmtree(prefix)
+
+    error_G = numpy.std(numpy.abs(G - AG))
+    assert numpy.isclose(error_G, 2.3803543255644684e-08)
+
+    error_FG = numpy.std(numpy.abs(FG - AFG))
+    assert numpy.isclose(error_FG, 4.8362811108879716e-05)
 
 
 @pytest.mark.parametrize(
