@@ -672,9 +672,10 @@ def run_distributed_fft(
     :param hdf5_chunksize_G: hdf5 chunk size for G data
     :param hdf5_chunksize_G: hdf5 chunk size for FG data
 
-    :return: subgrid_2, facet_2, approx_subgrid, approx_facet if not using hdf5
-             subgrid_2_file, facet_2_file, approx_subgrid_2_file, approx_facet_2_file
-             when using hdf5
+    :return: subgrid_2, facet_2, approx_subgrid, approx_facet
+                when use_hdf5=False
+             subgrid_2_file, facet_2_file, approx_subgrid_2_file,
+                approx_facet_2_file when use_hdf5=True
     """
     base_arrays = BaseArrays(**fundamental_params)
     distr_fft = StreamingDistributedFFT(**fundamental_params)
