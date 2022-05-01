@@ -59,4 +59,4 @@ def tear_down_dask(client):
     """
     Close the Dask Client
     """
-    client.close()
+    client.shutdown()
