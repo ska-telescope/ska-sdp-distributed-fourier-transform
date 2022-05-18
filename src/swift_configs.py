@@ -27,6 +27,28 @@ equivalent configuration / same efficiency).
 """
 
 SWIFT_CONFIGS = {
+    "128k[1]-n32k-512": dict(
+        W=11.0,
+        fov=1,
+        N=131072,
+        Nx=64,
+        yB_size=45056,
+        yN_size=65536,
+        yP_size=65536,
+        xA_size=448,
+        xM_size=512,
+    ),  # nfacet=3², eff 58.3%
+    "16k[1]-n8k-512": dict(
+        W=11.0,
+        fov=1,
+        N=114688,
+        Nx=64,
+        yB_size=39424,
+        yN_size=57344,
+        yP_size=57344,
+        xA_size=448,
+        xM_size=512,
+    ),  # nfacet=3², eff 58.3%
     "96k[1]-n48k-512": dict(
         W=11.0,
         fov=1,
@@ -35,6 +57,17 @@ SWIFT_CONFIGS = {
         yB_size=33792,
         yN_size=49152,
         yP_size=49152,
+        xA_size=448,
+        xM_size=512,
+    ),  # nfacet=3², eff 58.3%
+    "72k[1]-n36k-512": dict(
+        W=11.0,
+        fov=1,
+        N=73728,
+        Nx=64,
+        yB_size=25344,
+        yN_size=36864,
+        yP_size=36864,
         xA_size=448,
         xM_size=512,
     ),  # nfacet=3², eff 58.3%
