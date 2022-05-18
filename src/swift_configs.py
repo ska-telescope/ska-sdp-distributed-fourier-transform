@@ -38,7 +38,7 @@ SWIFT_CONFIGS = {
         xA_size=448,
         xM_size=512,
     ),  # nfacet=3², eff 58.3%
-    "16k[1]-n8k-512": dict(
+    "112k[1]-n56k-512": dict(
         W=11.0,
         fov=1,
         N=114688,
