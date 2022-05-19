@@ -27,6 +27,61 @@ equivalent configuration / same efficiency).
 """
 
 SWIFT_CONFIGS = {
+    "128k[1]-n32k-512": dict(
+        W=11.0,
+        fov=1,
+        N=131072,
+        Nx=64,
+        yB_size=45056,
+        yN_size=65536,
+        yP_size=65536,
+        xA_size=448,
+        xM_size=512,
+    ),  # nfacet=3², eff 58.3%
+    "112k[1]-n56k-512": dict(
+        W=11.0,
+        fov=1,
+        N=114688,
+        Nx=64,
+        yB_size=39424,
+        yN_size=57344,
+        yP_size=57344,
+        xA_size=448,
+        xM_size=512,
+    ),  # nfacet=3², eff 58.3%
+    "96k[1]-n48k-512": dict(
+        W=11.0,
+        fov=1,
+        N=98304,
+        Nx=64,
+        yB_size=33792,
+        yN_size=49152,
+        yP_size=49152,
+        xA_size=448,
+        xM_size=512,
+    ),  # nfacet=3², eff 58.3%
+    "72k[1]-n36k-512": dict(
+        W=11.0,
+        fov=1,
+        N=73728,
+        Nx=64,
+        yB_size=25344,
+        yN_size=36864,
+        yP_size=36864,
+        xA_size=448,
+        xM_size=512,
+    ),  # nfacet=3², eff 58.3%
+    "64k[1]-n32k-512": dict(
+        W=11.0,
+        fov=1,
+        N=65536,
+        Nx=64,
+        yB_size=22528,
+        yN_size=32768,
+        yP_size=32768,
+        xA_size=448,
+        xM_size=512,
+    ),  # nfacet=3², eff 58.3%
     "32k[1]-n16k-512": dict(
         W=11.0,
         fov=1,
@@ -1974,6 +2029,28 @@ SWIFT_CONFIGS = {
         xA_size=220,
         xM_size=256,
     ),  # nfacet=2², eff 68.8%
+    "96k[1]-n24k-512": dict(
+        W=13.625,
+        fov=1,
+        N=98304,
+        Nx=64,
+        yB_size=19968,
+        yN_size=32768,
+        yP_size=32768,
+        xA_size=320,
+        xM_size=512,
+    ),  # nfacet=5², eff 50.0%
+    "64k[1]-n16k-512": dict(
+        W=13.625,
+        fov=1,
+        N=65536,
+        Nx=64,
+        yB_size=13312,
+        yN_size=16384,
+        yP_size=16384,
+        xA_size=320,
+        xM_size=512,
+    ),  # nfacet=5², eff 50.0%
     "32k[1]-n8k-512": dict(
         W=13.625,
         fov=1,
