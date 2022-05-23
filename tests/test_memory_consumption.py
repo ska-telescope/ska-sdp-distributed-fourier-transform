@@ -9,9 +9,9 @@ import os
 import sys
 import time
 
-import pytest
 import dask
 import numpy
+import pytest
 from distributed.diagnostics import MemorySampler
 from numpy.testing import assert_almost_equal
 
@@ -20,13 +20,9 @@ from src.fourier_transform.algorithm_parameters import (
     StreamingDistributedFFT,
 )
 from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
-from src.fourier_transform.fourier_algorithm import (
-    make_subgrid_and_facet,
-)
+from src.fourier_transform.fourier_algorithm import make_subgrid_and_facet
 from src.swift_configs import SWIFT_CONFIGS
-from src.utils import (
-    generate_input_data,
-)
+from src.utils import generate_input_data
 
 log = logging.getLogger("fourier-logger")
 log.setLevel(logging.INFO)
@@ -34,7 +30,9 @@ log.addHandler(logging.StreamHandler(sys.stdout))
 
 
 def sleep_and_cut(x):
-
+    """
+    Function to let Dask sleep
+    """
     time.sleep(5)
     return x.shape
 
@@ -73,7 +71,9 @@ def run_distributed_fft(fundamental_params, use_dask=False, client=None):
     )
 
     BF_F_list = []
-    for j0, j1 in itertools.product(range(distr_fft.nfacet), range(distr_fft.nfacet)):
+    for j0, j1 in itertools.product(
+        range(distr_fft.nfacet), range(distr_fft.nfacet)
+    ):
         BF_F = distr_fft.prepare_facet(
             facet_2[j0][j1],
             0,
