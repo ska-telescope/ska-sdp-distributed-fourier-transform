@@ -1,6 +1,7 @@
 """
     Test script for memory consumption
     Created by Feng Wang
+    Currently it only tests Step 1
 """
 import itertools
 import logging
@@ -42,7 +43,7 @@ def run_distributed_fft(fundamental_params, use_dask=False, client=None):
     """
     A variation of the execution function that reads in the configuration,
     generates the source data, and runs the algorithm.
-    For simplification, we don't use HDF5 here.
+    Do not use HDF5 for simplification.
 
     :param fundamental_params: dictionary of fundamental parmeters
                                chosen from swift_configs.py
@@ -82,12 +83,13 @@ def run_distributed_fft(fundamental_params, use_dask=False, client=None):
         )
         BF_F_list.append(BF_F)
 
-    sleep_task = [dask.delayed(sleep_and_cut(bf)) for bf in BF_F_list]
     ms = MemorySampler()
     with ms.sample("BF_F"):
+        BF_F_list = dask.persist(BF_F_list)[0]
+        sleep_task = [dask.delayed(sleep_and_cut)(bf) for bf in BF_F_list]
         sleep_task = dask.compute(sleep_task, sync=True)
     for i in sleep_task:
-        print(sleep_task)
+        print(i)
     ms_df = ms.to_pandas()
     return ms_df
 
@@ -116,11 +118,15 @@ def main(args):
 
     dask_client = set_up_dask(scheduler_address=scheduler)
 
+    log.info("Dask client setup %s", dask_client)
     for config_key in swift_config_keys:
-        log.info("Running for swift-config: %s", config_key)
-        ms_df = run_distributed_fft(SWIFT_CONFIGS[config_key], use_dask=True, client=dask_client)
+        log.info("Actually running for swift-config: %s", config_key)
+        ms_df = run_distributed_fft(
+            SWIFT_CONFIGS[config_key], use_dask=True, client=dask_client
+        )
         ms_df.to_csv(f"ms_{config_key}.csv")
         dask_client.restart()
+
     tear_down_dask(dask_client)
 
 
