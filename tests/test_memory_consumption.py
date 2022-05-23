@@ -9,10 +9,11 @@ import os
 import sys
 import time
 
+import pytest
 import dask
-import dask.array
 import numpy
 from distributed.diagnostics import MemorySampler
+from numpy.testing import assert_almost_equal
 
 from src.fourier_transform.algorithm_parameters import (
     BaseArrays,
@@ -26,7 +27,6 @@ from src.swift_configs import SWIFT_CONFIGS
 from src.utils import (
     generate_input_data,
 )
-from src.fourier_transform_dask import cli_parser
 
 log = logging.getLogger("fourier-logger")
 log.setLevel(logging.INFO)
@@ -94,7 +94,11 @@ def run_distributed_fft(fundamental_params, use_dask=False, client=None):
     return ms_df
 
 
-def main(args):
+@pytest.mark.parametrize(
+    "test_config, expected_result",
+    [("1k[1]-n512-512", 2.5952e-2), ("4k[1]-n2k-512", 4.1524e-1)],
+)
+def test_memory_consumption(test_config, expected_result, save_data=False):
     """
     Main function to run the Distributed FFT
     """
@@ -104,33 +108,34 @@ def main(args):
     scheduler = os.environ.get("DASK_SCHEDULER", None)
     log.info("Scheduler: %s", scheduler)
 
-    swift_config_keys = args.swift_config.split(",")
     # check that all the keys are valid
-    for c in swift_config_keys:
-        try:
-            SWIFT_CONFIGS[c]
-        except KeyError as error:
-            raise KeyError(
-                f"Provided argument ({c}) does not match any swift "
-                f"configuration keys. Please consult src/swift_configs.py "
-                f"for available options."
-            ) from error
+    try:
+        SWIFT_CONFIGS[test_config]
+    except KeyError:
+        pytest.fail(
+            f"Provided argument ({test_config}) does not match any swift "
+            f"configuration keys. Please consult src/swift_configs.py "
+            f"for available options."
+        )
 
     dask_client = set_up_dask(scheduler_address=scheduler)
 
     log.info("Dask client setup %s", dask_client)
-    for config_key in swift_config_keys:
-        log.info("Actually running for swift-config: %s", config_key)
-        ms_df = run_distributed_fft(
-            SWIFT_CONFIGS[config_key], use_dask=True, client=dask_client
-        )
-        ms_df.to_csv(f"ms_{config_key}.csv")
-        dask_client.restart()
+    log.info("Running for swift-config: %s", test_config)
+    ms_df = run_distributed_fft(
+        SWIFT_CONFIGS[test_config], use_dask=True, client=dask_client
+    )
+    if save_data:
+        ms_df.to_csv(f"ms_{test_config}.csv")
 
+    # turn pandas DataFrame into numpy array
+    data_array = ms_df["BF_F"].to_numpy()
+    data_array = data_array / 1.0e9
+    max_mem = numpy.max(data_array)
+    avg_mem = numpy.mean(data_array)
+
+    log.info("%s, %s", max_mem, avg_mem)
+
+    # BF_F size should have 16 bytes * nfacet * nfacet * yP_size * yB_size
+    assert_almost_equal(avg_mem, expected_result)
     tear_down_dask(dask_client)
-
-
-if __name__ == "__main__":
-    dfft_parser = cli_parser()
-    parsed_args = dfft_parser.parse_args()
-    main(parsed_args)
