@@ -86,7 +86,7 @@ def run_distributed_fft(fundamental_params, client):
         BF_F_list.append(BF_F)
 
     ms = MemorySampler()
-    with ms.sample("BF_F"):
+    with ms.sample("BF_F", measure="managed"):
         BF_F_list = dask.persist(BF_F_list)[0]
         sleep_task = [dask.delayed(sleep_and_cut)(bf) for bf in BF_F_list]
         sleep_task = dask.compute(sleep_task, sync=True)
