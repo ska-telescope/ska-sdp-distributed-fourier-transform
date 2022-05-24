@@ -54,7 +54,8 @@ def run_distributed_fft(fundamental_params, use_dask=False, client=None):
     base_arrays = BaseArrays(**fundamental_params)
     distr_fft = StreamingDistributedFFT(**fundamental_params)
 
-    G_2, FG_2 = generate_input_data(distr_fft)
+    # Generate the simplest input data
+    G_2, FG_2 = generate_input_data(distr_fft, add_sources=False)
 
     log.info("------------------------------------------")
 
@@ -71,9 +72,7 @@ def run_distributed_fft(fundamental_params, use_dask=False, client=None):
     )
 
     BF_F_list = []
-    for j0, j1 in itertools.product(
-        range(distr_fft.nfacet), range(distr_fft.nfacet)
-    ):
+    for j0, j1 in itertools.product(range(distr_fft.nfacet), range(distr_fft.nfacet)):
         BF_F = distr_fft.prepare_facet(
             facet_2[j0][j1],
             0,
@@ -133,9 +132,10 @@ def test_memory_consumption(test_config, expected_result, save_data=False):
     data_array = data_array / 1.0e9
     max_mem = numpy.max(data_array)
     avg_mem = numpy.mean(data_array)
-
+    last_mem = data_array[-1]
     log.info("%s, %s", max_mem, avg_mem)
 
     # BF_F size should have 16 bytes * nfacet * nfacet * yP_size * yB_size
-    assert_almost_equal(avg_mem, expected_result)
+    # Note: should assert the last value used
+    assert_almost_equal(last_mem, expected_result)
     tear_down_dask(dask_client)
