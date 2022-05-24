@@ -1,7 +1,8 @@
 """
-    Test script for memory consumption
+    Test script for memory consumption (ORC-1247)
     Created by Feng Wang
-    Currently it only tests Step 1
+    Currently it only tests the prepare facet step
+
 """
 import itertools
 import logging
@@ -37,18 +38,17 @@ def sleep_and_cut(x):
     return x.shape
 
 
-def run_distributed_fft(fundamental_params, use_dask=False, client=None):
+def run_distributed_fft(fundamental_params, client):
     """
     A variation of the execution function that reads in the configuration,
     generates the source data, and runs the algorithm.
-    Do not use HDF5 for simplification.
+    Do not use HDF5 for simplification, and always uses Dask.
 
     :param fundamental_params: dictionary of fundamental parmeters
                                chosen from swift_configs.py
-    :param use_dask: boolean; use Dask?
-    :param client: Dask client or None
+    :param client: Dask client
 
-    :return: subgrid_2, facet_2, approx_subgrid, approx_facet
+    :return: ms_df: memory information
     """
 
     base_arrays = BaseArrays(**fundamental_params)
@@ -59,9 +59,8 @@ def run_distributed_fft(fundamental_params, use_dask=False, client=None):
 
     log.info("------------------------------------------")
 
-    if use_dask and client is not None:
-        G_2 = client.scatter(G_2)
-        FG_2 = client.scatter(FG_2)
+    G_2 = client.scatter(G_2)
+    FG_2 = client.scatter(FG_2)
 
     _, facet_2 = make_subgrid_and_facet(
         G_2,
@@ -88,7 +87,7 @@ def run_distributed_fft(fundamental_params, use_dask=False, client=None):
         sleep_task = [dask.delayed(sleep_and_cut)(bf) for bf in BF_F_list]
         sleep_task = dask.compute(sleep_task, sync=True)
     for i in sleep_task:
-        print(i)
+        log.info("%s \n", i)
     ms_df = ms.to_pandas()
     return ms_df
 
@@ -100,22 +99,15 @@ def run_distributed_fft(fundamental_params, use_dask=False, client=None):
 def test_memory_consumption(test_config, expected_result, save_data=False):
     """
     Main function to run the Distributed FFT
+    For pipeline it does not save the data.
+    If you'd like to examine the data independently, set save_data=True
+
     """
     # Fixing seed of numpy random
     numpy.random.seed(123456789)
 
     scheduler = os.environ.get("DASK_SCHEDULER", None)
     log.info("Scheduler: %s", scheduler)
-
-    # check that all the keys are valid
-    try:
-        SWIFT_CONFIGS[test_config]
-    except KeyError:
-        pytest.fail(
-            f"Provided argument ({test_config}) does not match any swift "
-            f"configuration keys. Please consult src/swift_configs.py "
-            f"for available options."
-        )
 
     dask_client = set_up_dask(scheduler_address=scheduler)
 
