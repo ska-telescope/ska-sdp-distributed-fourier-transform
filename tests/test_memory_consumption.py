@@ -14,6 +14,7 @@ import dask
 import numpy
 import pytest
 from distributed.diagnostics import MemorySampler
+from dask.distributed import wait
 from numpy.testing import assert_almost_equal
 
 from src.fourier_transform.algorithm_parameters import (
@@ -67,8 +68,11 @@ def run_distributed_fft(fundamental_params, client):
         FG_2,
         base_arrays,
         dims=2,
-        use_dask=use_dask,
+        use_dask=True,
     )
+
+    facet_2 = dask.persist(facet_2)[0]
+    wait(facet_2)
 
     BF_F_list = []
     for j0, j1 in itertools.product(range(distr_fft.nfacet), range(distr_fft.nfacet)):
@@ -76,7 +80,7 @@ def run_distributed_fft(fundamental_params, client):
             facet_2[j0][j1],
             0,
             base_arrays.Fb,
-            use_dask=use_dask,
+            use_dask=True,
             nout=1,
         )
         BF_F_list.append(BF_F)
@@ -94,7 +98,7 @@ def run_distributed_fft(fundamental_params, client):
 
 @pytest.mark.parametrize(
     "test_config, expected_result",
-    [("1k[1]-n512-512", 2.5952e-2), ("4k[1]-n2k-512", 4.1524e-1)],
+    [("8k[1]-n4k-512", 1.546875), ("4k[1]-n2k-512", 4.1524e-1)],
 )
 def test_memory_consumption(test_config, expected_result, save_data=False):
     """
@@ -113,9 +117,7 @@ def test_memory_consumption(test_config, expected_result, save_data=False):
 
     log.info("Dask client setup %s", dask_client)
     log.info("Running for swift-config: %s", test_config)
-    ms_df = run_distributed_fft(
-        SWIFT_CONFIGS[test_config], use_dask=True, client=dask_client
-    )
+    ms_df = run_distributed_fft(SWIFT_CONFIGS[test_config], client=dask_client)
     if save_data:
         ms_df.to_csv(f"ms_{test_config}.csv")
 
