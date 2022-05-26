@@ -96,6 +96,39 @@ def run_distributed_fft(fundamental_params, client):
     return ms_df
 
 
+def calculate_expected_memory(fundamental_params, max_work_tasks=1):
+
+    """
+    Calculate the theoretical upper limit on memory usage
+
+    :param fundamental_params: dictionary of fundamental parmeters
+                               chosen from swift_configs.py
+    :param max_work_tasks: maximum number of work tasks
+    :return BF_F_size, NMBF_BF_size, NMBF_NMBF_size:
+    """
+
+    base_arrays = BaseArrays(**fundamental_params)
+    distr_fft = StreamingDistributedFFT(**fundamental_params)
+
+    cpx_size = numpy.dtype(complex).itemsize
+    N = fundamental_params["N"]
+    yB_size = fundamental_params["yB_size"]
+    yN_size = fundamental_params["yN_size"]
+    yP_size = fundamental_params["yP_size"]
+    xM_size = fundamental_params["xM_size"]
+    xM_yN_size = xM_size * yN_size // N
+
+    nfacet2 = distr_fft.nfacet**2
+    max_work_columns = (
+        1 + (max_work_tasks + distr_fft.nsubgrid - 1) // distr_fft.nsubgrid
+    )
+    BF_F_size = cpx_size * nfacet2 * yB_size * yP_size / 1e9
+    NMBF_BF_size = max_work_columns * cpx_size * nfacet2 * yP_size * xM_yN_size / 1e9
+    NMBF_NMBF_size = max_work_tasks * cpx_size * nfacet2 * xM_yN_size * xM_yN_size / 1e9
+
+    return BF_F_size, NMBF_BF_size, NMBF_NMBF_size
+
+
 @pytest.mark.parametrize(
     "test_config, expected_result",
     [("8k[1]-n4k-512", 1.546875), ("4k[1]-n2k-512", 4.1524e-1)],
@@ -126,10 +159,13 @@ def test_memory_consumption(test_config, expected_result, save_data=False):
     data_array = data_array / 1.0e9
     max_mem = numpy.max(data_array)
     avg_mem = numpy.mean(data_array)
-    last_mem = data_array[-1]
     log.info("%s, %s", max_mem, avg_mem)
 
     # BF_F size should have 16 bytes * nfacet * nfacet * yP_size * yB_size
-    # Note: should assert the last value used
-    assert_almost_equal(last_mem, expected_result)
+    # We also calculate the upper limit of the memory
+    max_memory_expected, _, _ = calculate_expected_memory(
+        SWIFT_CONFIGS[test_config], max_work_tasks=8
+    )
+
+    assert max_mem < mam_memory_expected
     tear_down_dask(dask_client)
