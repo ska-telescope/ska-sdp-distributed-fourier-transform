@@ -32,9 +32,7 @@ log.addHandler(logging.StreamHandler(sys.stdout))
 
 def sum_and_finish_subgrid(distr_fft, base_arrays, i0, i1, facet_ixs, NMBF_NMBFs):
     # Initialise facet sum
-    summed_facet = numpy.zeros(
-        (distr_fft.xM_size, distr_fft.xM_size), dtype=complex
-    )
+    summed_facet = numpy.zeros((distr_fft.xM_size, distr_fft.xM_size), dtype=complex)
     # Add contributions
     for (j0, j1), NMBF_NMBF in zip(facet_ixs, NMBF_NMBFs):
         summed_facet += distr_fft.add_facet_contribution(
@@ -62,7 +60,7 @@ def sum_and_finish_subgrid(distr_fft, base_arrays, i0, i1, facet_ixs, NMBF_NMBFs
     return i0, i1, approx_subgrid.shape
 
 
-def wait_for_tasks(work_tasks, timeout=None, return_when='ALL_COMPLETED'):
+def wait_for_tasks(work_tasks, timeout=None, return_when="ALL_COMPLETED"):
     """
     Simple function for waiting for tasks to finish.
     Logs completed tasks, and returns list of still-waiting tasks.
@@ -121,42 +119,50 @@ def run_distributed_fft(fundamental_params, base_arrays, client, use_dask=True):
     # Calculate expected memory usage
     MAX_WORK_TASKS = 9
     cpx_size = numpy.dtype(complex).itemsize
-    N = fundamental_params['N']
-    yB_size = fundamental_params['yB_size']
-    yN_size = fundamental_params['yN_size']
-    yP_size = fundamental_params['yP_size']
-    xM_size = fundamental_params['xM_size']
+    N = fundamental_params["N"]
+    yB_size = fundamental_params["yB_size"]
+    yN_size = fundamental_params["yN_size"]
+    yP_size = fundamental_params["yP_size"]
+    xM_size = fundamental_params["xM_size"]
     xM_yN_size = xM_size * yN_size // N
 
     print(" == Expected memory usage:")
-    nfacet2 = distr_fft.nfacet ** 2
-    MAX_WORK_COLUMNS = 1 + (MAX_WORK_TASKS + distr_fft.nsubgrid - 1) // distr_fft.nsubgrid
+    nfacet2 = distr_fft.nfacet**2
+    MAX_WORK_COLUMNS = (
+        1 + (MAX_WORK_TASKS + distr_fft.nsubgrid - 1) // distr_fft.nsubgrid
+    )
     BF_F_size = cpx_size * nfacet2 * yB_size * yP_size
     NMBF_BF_size = MAX_WORK_COLUMNS * cpx_size * nfacet2 * yP_size * xM_yN_size
     NMBF_NMBF_size = MAX_WORK_TASKS * cpx_size * nfacet2 * xM_yN_size * xM_yN_size
     print(f"BF_F (facets):                     {BF_F_size / 1e9:.03} GB")
     print(f"NMBF_BF (subgrid columns):         {NMBF_BF_size / 1e9:.03} GB")
     print(f"NMBF_NMBF (subgrid contributions): {NMBF_NMBF_size / 1e9:.03} GB")
-    print(f"Sum:                               {(BF_F_size + NMBF_BF_size + NMBF_NMBF_size) / 1e9:.02} GB")
+    print(
+        f"Sum:                               {(BF_F_size + NMBF_BF_size + NMBF_NMBF_size) / 1e9:.02} GB"
+    )
     # List of all facet indices
-    facet_ixs = list(itertools.product(range(distr_fft.nfacet), range(distr_fft.nfacet)))
+    facet_ixs = list(
+        itertools.product(range(distr_fft.nfacet), range(distr_fft.nfacet))
+    )
     ms = MemorySampler()
-    with ms.sample("NMBF_NMBF.process", measure='process'):
-        with ms.sample("NMBF_NMBF.managed", measure='managed'):
+    with ms.sample("NMBF_NMBF.process", measure="process"):
+        with ms.sample("NMBF_NMBF.managed", measure="managed"):
 
             # ** Step 1: Facet preparation first axis
 
             # Generate BF_F terms (parallel over all facets)
-            BF_F_tasks = dask.persist([
-                distr_fft.prepare_facet(
-                    facet_2[j0][j1],
-                    0,
-                    base_arrays.Fb,
-                    use_dask=use_dask,
-                    nout=1,
-                )
-                for j0, j1 in facet_ixs
-            ])[0]
+            BF_F_tasks = dask.persist(
+                [
+                    distr_fft.prepare_facet(
+                        facet_2[j0][j1],
+                        0,
+                        base_arrays.Fb,
+                        use_dask=use_dask,
+                        nout=1,
+                    )
+                    for j0, j1 in facet_ixs
+                ]
+            )[0]
             # ** Step 2: Extraction first axis, preparation second axis
             # Job queue
             work_tasks = []
@@ -164,31 +170,35 @@ def run_distributed_fft(fundamental_params, base_arrays, client, use_dask=True):
             for i0 in list(range(distr_fft.nsubgrid)):
 
                 # Generate NMBF_BF terms (parallel over all facets)
-                NMBF_BF_tasks = dask.persist([
-                    distr_fft.prepare_facet(
-                        distr_fft.extract_facet_contrib_to_subgrid(
-                            BF_F,
-                            0,
-                            distr_fft.subgrid_off[i0],
-                            base_arrays.facet_m0_trunc,
-                            base_arrays.Fn,
+                NMBF_BF_tasks = dask.persist(
+                    [
+                        distr_fft.prepare_facet(
+                            distr_fft.extract_facet_contrib_to_subgrid(
+                                BF_F,
+                                0,
+                                distr_fft.subgrid_off[i0],
+                                base_arrays.facet_m0_trunc,
+                                base_arrays.Fn,
+                                use_dask=use_dask,
+                                nout=1,
+                            ),
+                            1,
+                            base_arrays.Fb,
                             use_dask=use_dask,
                             nout=1,
-                        ),
-                        1,
-                        base_arrays.Fb,
-                        use_dask=use_dask,
-                        nout=1,
-                    )
-                    for (j0, j1), BF_F in zip(facet_ixs, BF_F_tasks)
-                ])[0]
+                        )
+                        for (j0, j1), BF_F in zip(facet_ixs, BF_F_tasks)
+                    ]
+                )[0]
                 # ** Step 3: Extraction second axis
                 # Sequential go over individual subgrids
                 sleep_tasks = []
                 for i1 in list(range(distr_fft.nsubgrid)):
                     # No space in work queue?
                     while len(work_tasks) >= MAX_WORK_TASKS:
-                        work_tasks = wait_for_tasks(work_tasks, return_when='FIRST_COMPLETED')
+                        work_tasks = wait_for_tasks(
+                            work_tasks, return_when="FIRST_COMPLETED"
+                        )
                     # Generate NMBF_NMBF tasks (parallel over all facets)
                     NMBF_NMBF_tasks = [
                         distr_fft.extract_facet_contrib_to_subgrid(
@@ -205,9 +215,11 @@ def run_distributed_fft(fundamental_params, base_arrays, client, use_dask=True):
                     # ** Step 4: Generate subgrids
                     # As a single Dask task - no point in splitting this
                     work_tasks += dask.compute(
-                        dask.delayed(sum_and_finish_subgrid)(distr_fft, base_arrays,
-                                                             i0, i1, facet_ixs, NMBF_NMBF_tasks),
-                        sync=False)
+                        dask.delayed(sum_and_finish_subgrid)(
+                            distr_fft, base_arrays, i0, i1, facet_ixs, NMBF_NMBF_tasks
+                        ),
+                        sync=False,
+                    )
             # Finish tasks
             wait_for_tasks(work_tasks)
 
@@ -237,7 +249,9 @@ def test_memory_consumption(test_config, expected_result, save_data=False):
 
     log.info("Dask client setup %s", dask_client)
     log.info("Running for swift-config: %s", test_config)
-    ms_df = run_distributed_fft(SWIFT_CONFIGS[test_config], base_arrays, client=dask_client)
+    ms_df = run_distributed_fft(
+        SWIFT_CONFIGS[test_config], base_arrays, client=dask_client
+    )
     if save_data:
         ms_df.to_csv(f"ms_{test_config}.csv")
 
@@ -248,6 +262,6 @@ def test_memory_consumption(test_config, expected_result, save_data=False):
     last_mem = data_array[-1]
 
     # BF_F size should have 16 bytes * nfacet * nfacet * yP_size * yB_size
-    # Note: should assert the last value used
+    # Note: should assert the larst value used
     assert numpy.abs(last_mem - expected_result) / expected_result < 3
     tear_down_dask(dask_client)
