@@ -1,3 +1,5 @@
+# pylint: disable=too-many-arguments, unused-argument
+
 """
     Test script for memory consumption (ORC-1247)
     Created by Feng Wang
@@ -12,9 +14,8 @@ import sys
 import dask
 import numpy
 import pytest
-from distributed.diagnostics import MemorySampler
 from dask.distributed import wait
-from numpy.testing import assert_almost_equal
+from distributed.diagnostics import MemorySampler
 
 from src.fourier_transform.algorithm_parameters import (
     BaseArrays,
@@ -25,14 +26,24 @@ from src.fourier_transform.fourier_algorithm import make_subgrid_and_facet
 from src.swift_configs import SWIFT_CONFIGS
 from src.utils import generate_input_data
 
+# from numpy.testing import assert_almost_equal
+
+
 log = logging.getLogger("fourier-logger")
 log.setLevel(logging.INFO)
 log.addHandler(logging.StreamHandler(sys.stdout))
 
 
-def sum_and_finish_subgrid(distr_fft, base_arrays, i0, i1, facet_ixs, NMBF_NMBFs):
+def sum_and_finish_subgrid(
+    distr_fft, base_arrays, i0, i1, facet_ixs, NMBF_NMBFs
+):
+    """
+    Combined function with Sum and Generate Subgrid
+    """
     # Initialise facet sum
-    summed_facet = numpy.zeros((distr_fft.xM_size, distr_fft.xM_size), dtype=complex)
+    summed_facet = numpy.zeros(
+        (distr_fft.xM_size, distr_fft.xM_size), dtype=complex
+    )
     # Add contributions
     for (j0, j1), NMBF_NMBF in zip(facet_ixs, NMBF_NMBFs):
         summed_facet += distr_fft.add_facet_contribution(
@@ -81,7 +92,9 @@ def wait_for_tasks(work_tasks, timeout=None, return_when="ALL_COMPLETED"):
     return new_work_tasks
 
 
-def run_distributed_fft(fundamental_params, base_arrays, client, use_dask=True):
+def run_distributed_fft(
+    fundamental_params, base_arrays, client, use_dask=True
+):
     """
     A variation of the execution function that reads in the configuration,
     generates the source data, and runs the algorithm.
@@ -133,12 +146,15 @@ def run_distributed_fft(fundamental_params, base_arrays, client, use_dask=True):
     )
     BF_F_size = cpx_size * nfacet2 * yB_size * yP_size
     NMBF_BF_size = MAX_WORK_COLUMNS * cpx_size * nfacet2 * yP_size * xM_yN_size
-    NMBF_NMBF_size = MAX_WORK_TASKS * cpx_size * nfacet2 * xM_yN_size * xM_yN_size
+    NMBF_NMBF_size = (
+        MAX_WORK_TASKS * cpx_size * nfacet2 * xM_yN_size * xM_yN_size
+    )
     print(f"BF_F (facets):                     {BF_F_size / 1e9:.03} GB")
     print(f"NMBF_BF (subgrid columns):         {NMBF_BF_size / 1e9:.03} GB")
     print(f"NMBF_NMBF (subgrid contributions): {NMBF_NMBF_size / 1e9:.03} GB")
     print(
-        f"Sum:                               {(BF_F_size + NMBF_BF_size + NMBF_NMBF_size) / 1e9:.02} GB"
+        "Sum:                                 "
+        + +f"{(BF_F_size + NMBF_BF_size + NMBF_NMBF_size) / 1e9:.02} GB"
     )
     # List of all facet indices
     facet_ixs = list(
@@ -192,7 +208,7 @@ def run_distributed_fft(fundamental_params, base_arrays, client, use_dask=True):
                 )[0]
                 # ** Step 3: Extraction second axis
                 # Sequential go over individual subgrids
-                sleep_tasks = []
+                # sleep_tasks = []
                 for i1 in list(range(distr_fft.nsubgrid)):
                     # No space in work queue?
                     while len(work_tasks) >= MAX_WORK_TASKS:
@@ -216,7 +232,12 @@ def run_distributed_fft(fundamental_params, base_arrays, client, use_dask=True):
                     # As a single Dask task - no point in splitting this
                     work_tasks += dask.compute(
                         dask.delayed(sum_and_finish_subgrid)(
-                            distr_fft, base_arrays, i0, i1, facet_ixs, NMBF_NMBF_tasks
+                            distr_fft,
+                            base_arrays,
+                            i0,
+                            i1,
+                            facet_ixs,
+                            NMBF_NMBF_tasks,
                         ),
                         sync=False,
                     )

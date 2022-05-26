@@ -59,11 +59,15 @@ def mark_range(
         y1 = ax.get_ylim()[0]
     wdt = ax.get_xlim()[1] - ax.get_xlim()[0]
     ax.add_patch(
-        patches.PathPatch(patches.Path([(x0, y0), (x0, y1)]), linestyle=linestyle)
+        patches.PathPatch(
+            patches.Path([(x0, y0), (x0, y1)]), linestyle=linestyle
+        )
     )
     if x1 is not None:
         ax.add_patch(
-            patches.PathPatch(patches.Path([(x1, y0), (x1, y1)]), linestyle=linestyle)
+            patches.PathPatch(
+                patches.Path([(x1, y0), (x1, y1)]), linestyle=linestyle
+            )
         )
     else:
         x1 = x0
@@ -245,7 +249,8 @@ def errors_facet_to_subgrid_2d(
         approx += NMBF_NMBF[i0, i1]
 
         err_mean += (
-            numpy.abs(approx - subgrid_2[i0, i1]) ** 2 / constants_class.nsubgrid**2
+            numpy.abs(approx - subgrid_2[i0, i1]) ** 2
+            / constants_class.nsubgrid**2
         )
         err_mean_img += numpy.abs(
             fft(fft(approx - subgrid_2[i0, i1], axis=0), axis=1) ** 2
@@ -288,11 +293,13 @@ def errors_subgrid_to_facet_2d(
         approx += BMNAF_BMNAF[j0, j1]
 
         err_mean += (
-            numpy.abs(ifft(ifft(approx - facet_2[j0, j1], axis=0), axis=1)) ** 2
+            numpy.abs(ifft(ifft(approx - facet_2[j0, j1], axis=0), axis=1))
+            ** 2
             / constants_class.nfacet**2
         )
         err_mean_img += (
-            numpy.abs(approx - facet_2[j0, j1]) ** 2 / constants_class.nfacet**2
+            numpy.abs(approx - facet_2[j0, j1]) ** 2
+            / constants_class.nfacet**2
         )
 
     log.info(
@@ -360,7 +367,9 @@ def generate_input_data(sparse_ft_class, add_sources=True):
         # without sources
         G_2 = (
             numpy.exp(
-                2j * numpy.pi * numpy.random.rand(sparse_ft_class.N, sparse_ft_class.N)
+                2j
+                * numpy.pi
+                * numpy.random.rand(sparse_ft_class.N, sparse_ft_class.N)
             )
             * numpy.random.rand(sparse_ft_class.N, sparse_ft_class.N)
             / 2
@@ -437,10 +446,14 @@ def mean_img_task(err_img, **kwargs):
     :param err_img: err_mean, err_mean_img
     :returns: mean of err_mean and err_mean_img
     """
-    return numpy.sqrt(numpy.mean(err_img[0])), numpy.sqrt(numpy.mean(err_img[1]))
+    return numpy.sqrt(numpy.mean(err_img[0])), numpy.sqrt(
+        numpy.mean(err_img[1])
+    )
 
 
-def fundamental_errors(approx_what, number_what, true_what, error_task, use_dask):
+def fundamental_errors(
+    approx_what, number_what, true_what, error_task, use_dask
+):
     """
     Functions for calculating the error common to facet or subgrid
 
@@ -486,7 +499,9 @@ def errors_facet_to_subgrid_2d_dask(
     )
 
 
-def errors_subgrid_to_facet_2d_dask(approx_facet, facet_2, sparse_ft_class, use_dask):
+def errors_subgrid_to_facet_2d_dask(
+    approx_facet, facet_2, sparse_ft_class, use_dask
+):
     """
     Functions for calculating the error of approx facets
 
