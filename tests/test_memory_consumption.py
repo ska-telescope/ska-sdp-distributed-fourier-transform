@@ -34,16 +34,12 @@ log.setLevel(logging.INFO)
 log.addHandler(logging.StreamHandler(sys.stdout))
 
 
-def sum_and_finish_subgrid(
-    distr_fft, base_arrays, i0, i1, facet_ixs, NMBF_NMBFs
-):
+def sum_and_finish_subgrid(distr_fft, base_arrays, i0, i1, facet_ixs, NMBF_NMBFs):
     """
     Combined function with Sum and Generate Subgrid
     """
     # Initialise facet sum
-    summed_facet = numpy.zeros(
-        (distr_fft.xM_size, distr_fft.xM_size), dtype=complex
-    )
+    summed_facet = numpy.zeros((distr_fft.xM_size, distr_fft.xM_size), dtype=complex)
     # Add contributions
     for (j0, j1), NMBF_NMBF in zip(facet_ixs, NMBF_NMBFs):
         summed_facet += distr_fft.add_facet_contribution(
@@ -92,9 +88,7 @@ def wait_for_tasks(work_tasks, timeout=None, return_when="ALL_COMPLETED"):
     return new_work_tasks
 
 
-def run_distributed_fft(
-    fundamental_params, base_arrays, client, use_dask=True
-):
+def run_distributed_fft(fundamental_params, base_arrays, client, use_dask=True):
     """
     A variation of the execution function that reads in the configuration,
     generates the source data, and runs the algorithm.
@@ -139,23 +133,20 @@ def run_distributed_fft(
     xM_size = fundamental_params["xM_size"]
     xM_yN_size = xM_size * yN_size // N
 
-    print(" == Expected memory usage:")
+    log.info(" == Expected memory usage:")
     nfacet2 = distr_fft.nfacet**2
     MAX_WORK_COLUMNS = (
         1 + (MAX_WORK_TASKS + distr_fft.nsubgrid - 1) // distr_fft.nsubgrid
     )
     BF_F_size = cpx_size * nfacet2 * yB_size * yP_size
     NMBF_BF_size = MAX_WORK_COLUMNS * cpx_size * nfacet2 * yP_size * xM_yN_size
-    NMBF_NMBF_size = (
-        MAX_WORK_TASKS * cpx_size * nfacet2 * xM_yN_size * xM_yN_size
-    )
-    print(f"BF_F (facets):                     {BF_F_size / 1e9:.03} GB")
-    print(f"NMBF_BF (subgrid columns):         {NMBF_BF_size / 1e9:.03} GB")
-    print(f"NMBF_NMBF (subgrid contributions): {NMBF_NMBF_size / 1e9:.03} GB")
-    print(
-        "Sum:                                 "
-        + +f"{(BF_F_size + NMBF_BF_size + NMBF_NMBF_size) / 1e9:.02} GB"
-    )
+    NMBF_NMBF_size = MAX_WORK_TASKS * cpx_size * nfacet2 * xM_yN_size * xM_yN_size
+    sum_size = BF_F_size + NMBF_BF_size + NMBF_NMBF_size
+    log.info(f"BF_F (facets):                     {BF_F_size / 1e9:.03} GB")
+    log.info(f"NMBF_BF (subgrid columns):         {NMBF_BF_size / 1e9:.03} GB")
+    log.info(f"NMBF_NMBF (subgrid contributions): {NMBF_NMBF_size / 1e9:.03} GB")
+    log.info(f"Sum:                                {sum_size / 1e9:.02} GB")
+
     # List of all facet indices
     facet_ixs = list(
         itertools.product(range(distr_fft.nfacet), range(distr_fft.nfacet))
