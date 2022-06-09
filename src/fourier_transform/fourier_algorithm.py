@@ -348,16 +348,14 @@ def roll_and_extract_mid_axis(data, offset, true_usable_size, axis):
 
     :return: slice list
     """
-    assert len(data.shape) == 2
-
     slice_list = roll_and_extract_mid(
         data.shape[axis], offset, true_usable_size
     )
 
     point = [0]
-    for sl in slice_list:
-        dt = sl.stop - sl.start
-        point.append(dt + point[-1])
+    for slice_item in slice_list:
+        delta_slice = slice_item.stop - slice_item.start
+        point.append(delta_slice + point[-1])
     if axis == 0:
         block_data = numpy.empty(
             (true_usable_size, data.shape[1]), dtype=data.dtype

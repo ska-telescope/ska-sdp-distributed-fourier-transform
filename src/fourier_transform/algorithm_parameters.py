@@ -368,12 +368,7 @@ class StreamingDistributedFFT(BaseParameters):
         :return: contribution of facet to subgrid
         """
         dims = len(BF.shape)
-        # The original method:
-        # BF_mid = extract_mid(
-        #     numpy.roll(BF, -subgrid_off_elem * self.yP_size // self.N, axis),
-        #     self.xMxN_yP_size,
-        #     axis,
-        # )
+
         BF_mid = roll_and_extract_mid_axis(
             BF,
             -(-subgrid_off_elem * self.yP_size // self.N),

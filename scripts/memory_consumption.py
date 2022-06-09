@@ -16,97 +16,27 @@ import dask
 import numpy
 from dask.distributed import wait
 from distributed.diagnostics import MemorySampler
+from distributed import performance_report
 
 from src.fourier_transform.algorithm_parameters import (
     BaseArrays,
     StreamingDistributedFFT,
 )
+from src.fourier_transform_dask import cli_parser
 from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
 from src.fourier_transform.fourier_algorithm import make_subgrid_and_facet
 from src.swift_configs import SWIFT_CONFIGS
 from src.utils import generate_input_data
+
+from scripts.utils import batch_NMBF_NMBF_sum_finish_subgrid, wait_for_tasks,  sum_and_finish_subgrid
 
 log = logging.getLogger("fourier-logger")
 log.setLevel(logging.INFO)
 log.addHandler(logging.StreamHandler(sys.stdout))
 
 
-def sum_and_finish_subgrid(
-    distr_fft, base_arrays, i0, i1, facet_ixs, NMBF_NMBFs
-):
-    """
-    Combined function with Sum and Generate Subgrid
-
-    :param distr_fft: StreamingDistributedFFT class object
-    :param base_arrays: BaseArrays class object
-    :param facet_ixs: facet index list
-    :param i0: i0 index
-    :param i1: i1 index
-    :param facet_ixs: facet index list
-    :param NMBF_NMBFs: list of NMBF_NMBF graph
-
-    :return: i0,i1 index, the shape of approx_subgrid
-    """
-    # Initialise facet sum
-    summed_facet = numpy.zeros(
-        (distr_fft.xM_size, distr_fft.xM_size), dtype=complex
-    )
-    # Add contributions
-    for (j0, j1), NMBF_NMBF in zip(facet_ixs, NMBF_NMBFs):
-        summed_facet += distr_fft.add_facet_contribution(
-            distr_fft.add_facet_contribution(
-                NMBF_NMBF,
-                distr_fft.facet_off[j0],
-                axis=0,
-                use_dask=False,
-                nout=1,
-            ),
-            distr_fft.facet_off[j1],
-            axis=1,
-            use_dask=False,
-        )
-
-    # Finish
-    approx_subgrid = distr_fft.finish_subgrid(
-        summed_facet,
-        base_arrays.subgrid_A[i0],
-        base_arrays.subgrid_A[i1],
-        use_dask=False,
-        nout=1,
-    )
-
-    return i0, i1, approx_subgrid.shape
-
-
-def wait_for_tasks(work_tasks, timeout=None, return_when="ALL_COMPLETED"):
-    """
-    Simple function for waiting for tasks to finish.
-    Logs completed tasks, and returns list of still-waiting tasks.
-
-    :param work_tasks: task list
-    :param timeout: timeout for waiting a task finshed
-    :param return_when: return string
-
-    :return: unfinshed task
-    """
-
-    # Wait for any task to finish
-    dask.distributed.wait(work_tasks, timeout, return_when)
-
-    # Remove finished tasks from work queue, return
-    new_work_tasks = []
-    for task in work_tasks:
-        if task.done():
-            log.info(f"Finished:{task.result()}")
-        elif task.cancelled():
-            log.info("Cancelled?")
-        else:
-            new_work_tasks.append(task)
-    return new_work_tasks
-
-
 def run_distributed_fft(
-    fundamental_params, base_arrays, client, use_dask=True
+    fundamental_params, use_dask=True
 ):
     """
     A variation of the execution function that reads in the configuration,
@@ -121,6 +51,8 @@ def run_distributed_fft(
     """
 
     distr_fft = StreamingDistributedFFT(**fundamental_params)
+
+    base_arrays = BaseArrays(**fundamental_params)
 
     # Generate the simplest input data
     G_2, FG_2 = generate_input_data(distr_fft, add_sources=False)
@@ -145,22 +77,26 @@ def run_distributed_fft(
     # Calculate expected memory usage
     max_work_tasks = 9
     cpx_size = numpy.dtype(complex).itemsize
-    N = distr_fft.N
-    yB_size = distr_fft.yB_size
-    yN_size = distr_fft.yN_size
-    yP_size = distr_fft.yP_size
-    xM_size = distr_fft.xM_size
-    xM_yN_size = xM_size * yN_size // N
 
     log.info(" == Expected memory usage:")
     nfacet2 = distr_fft.nfacet**2
     max_work_columns = (
         1 + (max_work_tasks + distr_fft.nsubgrid - 1) // distr_fft.nsubgrid
     )
-    BF_F_size = cpx_size * nfacet2 * yB_size * yP_size
-    NMBF_BF_size = max_work_columns * cpx_size * nfacet2 * yP_size * xM_yN_size
+    BF_F_size = cpx_size * nfacet2 * distr_fft.yB_size * distr_fft.yP_size
+    NMBF_BF_size = (
+        max_work_columns
+        * cpx_size
+        * nfacet2
+        * distr_fft.yP_size
+        * distr_fft.xM_yN_size
+    )
     NMBF_NMBF_size = (
-        max_work_tasks * cpx_size * nfacet2 * xM_yN_size * xM_yN_size
+        max_work_tasks
+        * cpx_size
+        * nfacet2
+        * distr_fft.xM_yN_size
+        * distr_fft.xM_yN_size
     )
     sum_size = BF_F_size + NMBF_BF_size + NMBF_NMBF_size
     log.info("BF_F (facets): %.3f GB", BF_F_size / 1e9)
@@ -262,10 +198,6 @@ def run_distributed_fft(
     return ms_df
 
 
-# @pytest.mark.parametrize(
-#     "test_config, expected_result",
-#     [("8k[1]-n4k-512", 1.546875), ("4k[1]-n2k-512", 4.1524e-1)],
-# )
 def memory_consumption(test_config, expected_result, save_data=False):
     """
     Main function to run the Distributed FFT
@@ -285,7 +217,7 @@ def memory_consumption(test_config, expected_result, save_data=False):
     log.info("Dask client setup %s", dask_client)
     log.info("Running for swift-config: %s", test_config)
     ms_df = run_distributed_fft(
-        SWIFT_CONFIGS[test_config], base_arrays, client=dask_client
+        SWIFT_CONFIGS[test_config],
     )
     if save_data:
         ms_df.to_csv(f"ms_{test_config}.csv")
@@ -300,3 +232,45 @@ def memory_consumption(test_config, expected_result, save_data=False):
     # Note: should assert the larst value used
     assert numpy.abs(last_mem - expected_result) / expected_result < 3
     tear_down_dask(dask_client)
+
+
+def main(args):
+    """
+    Main function to run the Distributed FFT
+    """
+    dask_config = dask.config.get(
+        "distributed.nanny.environ.MALLOC_TRIM_THRESHOLD_"
+    )
+    log.info(f"MALLOC_TRIM_THRESHOLD_:{dask_config}")
+    # Fixing seed of numpy random
+    numpy.random.seed(123456789)
+    scheduler = os.environ.get("DASK_SCHEDULER", None)
+    log.info("Scheduler: %s", scheduler)
+    swift_config_keys = args.swift_config.split(",")
+    # check that all the keys are valid
+    for c in swift_config_keys:
+        try:
+            SWIFT_CONFIGS[c]
+        except KeyError as error:
+            raise KeyError(
+                f"Provided argument ({c}) does not match any swift "
+                f"configuration keys. Please consult src/swift_configs.py "
+                f"for available options."
+            ) from error
+    dask_client = set_up_dask(scheduler_address=scheduler)
+    for config_key in swift_config_keys:
+        log.info("Running for swift-config: %s", config_key)
+        with performance_report(filename=f"dask-report-{config_key}.html"):
+            ms_df = run_distributed_fft(
+                SWIFT_CONFIGS[config_key]
+            )
+            ms_df.to_csv(f"seq_more_seq_{config_key}.csv")
+        dask_client.restart()
+    tear_down_dask(dask_client)
+
+if __name__ == "__main__":
+    #   "8k[1]-n4k-512",  1.546875
+    dfft_parser = cli_parser()
+    parsed_args = dfft_parser.parse_args()
+    main(parsed_args)
+
