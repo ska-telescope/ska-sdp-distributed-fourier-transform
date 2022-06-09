@@ -92,7 +92,16 @@ def batch_NMBF_NMBF_sum_finish_subgrid(
     NMBF_BF_tasks, distr_fft, base_arrays, facet_ixs, i0, i1_batch
 ):
     """
-    Compute NMBF_NMBF and subgrid for a batch of i0's in a dask task
+    Barch Compute NMBF_NMBF and subgrid of i0's in a dask task
+
+    :param NMBF_BF_tasks: NMBF_BF graph
+    :param distr_fft: StreamingDistributedFFT class object
+    :param base_arrays: BaseArrays class object
+    :param facet_ixs: facet index list
+    :param i0: i0 index
+    :param i1_batch: batch i0 index list
+
+    :return: approx subgrid index list and shape
     """
     approx_subgrid_i0_list = []
     for i1 in i1_batch:
