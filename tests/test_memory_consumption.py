@@ -266,7 +266,7 @@ def run_distributed_fft(
 #     "test_config, expected_result",
 #     [("8k[1]-n4k-512", 1.546875), ("4k[1]-n2k-512", 4.1524e-1)],
 # )
-def test_memory_consumption(test_config, expected_result, save_data=False):
+def memory_consumption(test_config, expected_result, save_data=False):
     """
     Main function to run the Distributed FFT
     For pipeline it does not save the data.
@@ -300,3 +300,4 @@ def test_memory_consumption(test_config, expected_result, save_data=False):
     # Note: should assert the larst value used
     assert numpy.abs(last_mem - expected_result) / expected_result < 3
     tear_down_dask(dask_client)
+
