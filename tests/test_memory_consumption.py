@@ -300,4 +300,3 @@ def memory_consumption(test_config, expected_result, save_data=False):
     # Note: should assert the larst value used
     assert numpy.abs(last_mem - expected_result) / expected_result < 3
     tear_down_dask(dask_client)
-
