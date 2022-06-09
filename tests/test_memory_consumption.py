@@ -1,4 +1,5 @@
 # pylint: disable=too-many-arguments, unused-argument
+# pylint: disable=logging-fstring-interpolation
 
 """
     Test script for memory consumption (ORC-1247)
@@ -13,7 +14,6 @@ import sys
 
 import dask
 import numpy
-import pytest
 from dask.distributed import wait
 from distributed.diagnostics import MemorySampler
 
@@ -26,9 +26,6 @@ from src.fourier_transform.fourier_algorithm import make_subgrid_and_facet
 from src.swift_configs import SWIFT_CONFIGS
 from src.utils import generate_input_data
 
-# from numpy.testing import assert_almost_equal
-
-
 log = logging.getLogger("fourier-logger")
 log.setLevel(logging.INFO)
 log.addHandler(logging.StreamHandler(sys.stdout))
@@ -39,6 +36,16 @@ def sum_and_finish_subgrid(
 ):
     """
     Combined function with Sum and Generate Subgrid
+
+    :param distr_fft: StreamingDistributedFFT class object
+    :param base_arrays: BaseArrays class object
+    :param facet_ixs: facet index list
+    :param i0: i0 index
+    :param i1: i1 index
+    :param facet_ixs: facet index list
+    :param NMBF_NMBFs: list of NMBF_NMBF graph
+
+    :return: i0,i1 index, the shape of approx_subgrid
     """
     # Initialise facet sum
     summed_facet = numpy.zeros(
@@ -75,6 +82,12 @@ def wait_for_tasks(work_tasks, timeout=None, return_when="ALL_COMPLETED"):
     """
     Simple function for waiting for tasks to finish.
     Logs completed tasks, and returns list of still-waiting tasks.
+
+    :param work_tasks: task list
+    :param timeout: timeout for waiting a task finshed
+    :param return_when: return string
+
+    :return: unfinshed task
     """
 
     # Wait for any task to finish
@@ -84,9 +97,9 @@ def wait_for_tasks(work_tasks, timeout=None, return_when="ALL_COMPLETED"):
     new_work_tasks = []
     for task in work_tasks:
         if task.done():
-            print("Finished:", task.result())
+            log.info(f"Finished:{task.result()}")
         elif task.cancelled():
-            print("Cancelled?")
+            log.info("Cancelled?")
         else:
             new_work_tasks.append(task)
     return new_work_tasks
@@ -107,7 +120,6 @@ def run_distributed_fft(
     :return: ms_df: memory information
     """
 
-    # base_arrays = BaseArrays(**fundamental_params)
     distr_fft = StreamingDistributedFFT(**fundamental_params)
 
     # Generate the simplest input data
@@ -123,31 +135,32 @@ def run_distributed_fft(
         FG_2,
         base_arrays,
         dims=2,
-        use_dask=True,
+        use_dask=use_dask,
     )
 
     facet_2 = dask.persist(facet_2)[0]
+    # Wait for all tasks of facet_2 to finish, then continue
     wait(facet_2)
 
     # Calculate expected memory usage
-    MAX_WORK_TASKS = 9
+    max_work_tasks = 9
     cpx_size = numpy.dtype(complex).itemsize
-    N = fundamental_params["N"]
-    yB_size = fundamental_params["yB_size"]
-    yN_size = fundamental_params["yN_size"]
-    yP_size = fundamental_params["yP_size"]
-    xM_size = fundamental_params["xM_size"]
+    N = distr_fft.N
+    yB_size = distr_fft.yB_size
+    yN_size = distr_fft.yN_size
+    yP_size = distr_fft.yP_size
+    xM_size = distr_fft.xM_size
     xM_yN_size = xM_size * yN_size // N
 
     log.info(" == Expected memory usage:")
     nfacet2 = distr_fft.nfacet**2
-    MAX_WORK_COLUMNS = (
-        1 + (MAX_WORK_TASKS + distr_fft.nsubgrid - 1) // distr_fft.nsubgrid
+    max_work_columns = (
+        1 + (max_work_tasks + distr_fft.nsubgrid - 1) // distr_fft.nsubgrid
     )
     BF_F_size = cpx_size * nfacet2 * yB_size * yP_size
-    NMBF_BF_size = MAX_WORK_COLUMNS * cpx_size * nfacet2 * yP_size * xM_yN_size
+    NMBF_BF_size = max_work_columns * cpx_size * nfacet2 * yP_size * xM_yN_size
     NMBF_NMBF_size = (
-        MAX_WORK_TASKS * cpx_size * nfacet2 * xM_yN_size * xM_yN_size
+        max_work_tasks * cpx_size * nfacet2 * xM_yN_size * xM_yN_size
     )
     sum_size = BF_F_size + NMBF_BF_size + NMBF_NMBF_size
     log.info("BF_F (facets): %.3f GB", BF_F_size / 1e9)
@@ -212,7 +225,7 @@ def run_distributed_fft(
                 # sleep_tasks = []
                 for i1 in list(range(distr_fft.nsubgrid)):
                     # No space in work queue?
-                    while len(work_tasks) >= MAX_WORK_TASKS:
+                    while len(work_tasks) >= max_work_tasks:
                         work_tasks = wait_for_tasks(
                             work_tasks, return_when="FIRST_COMPLETED"
                         )
@@ -249,10 +262,10 @@ def run_distributed_fft(
     return ms_df
 
 
-@pytest.mark.parametrize(
-    "test_config, expected_result",
-    [("8k[1]-n4k-512", 1.546875), ("4k[1]-n2k-512", 4.1524e-1)],
-)
+# @pytest.mark.parametrize(
+#     "test_config, expected_result",
+#     [("8k[1]-n4k-512", 1.546875), ("4k[1]-n2k-512", 4.1524e-1)],
+# )
 def test_memory_consumption(test_config, expected_result, save_data=False):
     """
     Main function to run the Distributed FFT

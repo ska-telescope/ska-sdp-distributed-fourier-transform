@@ -1,5 +1,6 @@
 # pylint: disable=chained-comparison,too-many-arguments
 # pylint: disable=unused-argument,too-many-statements
+# pylint: disable=logging-fstring-interpolation
 """
 Testing Distributed Fourier Transform Testing for evaluating performance.
 """
@@ -37,7 +38,17 @@ def sum_and_finish_subgrid(
     distr_fft, base_arrays, i0, i1, facet_ixs, NMBF_NMBFs
 ):
     """
-    Sum all subgrid
+    Combined function with Sum and Generate Subgrid
+
+    :param distr_fft: StreamingDistributedFFT class object
+    :param base_arrays: BaseArrays class object
+    :param facet_ixs: facet index list
+    :param i0: i0 index
+    :param i1: i1 index
+    :param facet_ixs: facet index list
+    :param NMBF_NMBFs: list of NMBF_NMBF graph
+
+    :return: i0,i1 index, the shape of approx_subgrid
     """
     # Initialise facet sum
     summed_facet = numpy.zeros(
@@ -72,6 +83,12 @@ def wait_for_tasks(work_tasks, timeout=None, return_when="ALL_COMPLETED"):
     """
     Simple function for waiting for tasks to finish.
     Logs completed tasks, and returns list of still-waiting tasks.
+
+    :param work_tasks: task list
+    :param timeout: timeout for waiting a task finshed
+    :param return_when: return string
+
+    :return: unfinshed task
     """
     # Wait for any task to finish
     dask.distributed.wait(work_tasks, timeout, return_when)
@@ -79,9 +96,9 @@ def wait_for_tasks(work_tasks, timeout=None, return_when="ALL_COMPLETED"):
     new_work_tasks = []
     for task in work_tasks:
         if task.done():
-            print("Finished:", task.result())
+            log.info(f"Finished:{task.result()}")
         elif task.cancelled():
-            print("Cancelled?")
+            log.info("Cancelled?")
         else:
             new_work_tasks.append(task)
     return new_work_tasks
@@ -189,31 +206,31 @@ def run_distributed_fft(
         use_dask=use_dask,
     )
     # Calculate expected memory usage
-    MAX_WORK_TASKS = 9
+    max_work_tasks = 9
     cpx_size = numpy.dtype(complex).itemsize
-    N = fundamental_params["N"]
-    yB_size = fundamental_params["yB_size"]
-    yN_size = fundamental_params["yN_size"]
-    yP_size = fundamental_params["yP_size"]
-    xM_size = fundamental_params["xM_size"]
+    N = distr_fft.N
+    yB_size = distr_fft.yB_size
+    yN_size = distr_fft.yN_size
+    yP_size = distr_fft.yP_size
+    xM_size = distr_fft.xM_size
     xM_yN_size = xM_size * yN_size // N
-    print(" == Expected memory usage:")
+    log.info(" == Expected memory usage:")
     nfacet2 = distr_fft.nfacet**2
-    MAX_WORK_COLUMNS = (
-        1 + (MAX_WORK_TASKS + distr_fft.nsubgrid - 1) // distr_fft.nsubgrid
+    max_work_columns = (
+        1 + (max_work_tasks + distr_fft.nsubgrid - 1) // distr_fft.nsubgrid
     )
     BF_F_size = cpx_size * nfacet2 * yB_size * yP_size
-    NMBF_BF_size = MAX_WORK_COLUMNS * cpx_size * nfacet2 * yP_size * xM_yN_size
+    NMBF_BF_size = max_work_columns * cpx_size * nfacet2 * yP_size * xM_yN_size
     NMBF_NMBF_size = (
-        MAX_WORK_TASKS * cpx_size * nfacet2 * xM_yN_size * xM_yN_size
+        max_work_tasks * cpx_size * nfacet2 * xM_yN_size * xM_yN_size
     )
-    print(f"BF_F (facets):                     {BF_F_size / 1e9:.03} GB")
-    print(f"NMBF_BF (subgrid columns):         {NMBF_BF_size / 1e9:.03} GB")
-    print(f"NMBF_NMBF (subgrid contributions): {NMBF_NMBF_size / 1e9:.03} GB")
-    print(
-        "Sum:                               "
-        + f"{(BF_F_size + NMBF_BF_size + NMBF_NMBF_size) / 1e9:.02} GB"
+    log.info("BF_F (facets): %.3f GB", BF_F_size / 1e9)
+    log.info("NMBF_BF (subgrid columns):    %.3f     GB", NMBF_BF_size / 1e9)
+    log.info(
+        "NMBF_NMBF (subgrid contributions): %.3f GB", NMBF_NMBF_size / 1e9
     )
+    log.info("Sum: %.3f GB", (BF_F_size + NMBF_BF_size + NMBF_NMBF_size) / 1e9)
+
     # List of all facet indices
     facet_ixs = list(
         itertools.product(range(distr_fft.nfacet), range(distr_fft.nfacet))
@@ -278,7 +295,7 @@ def run_distributed_fft(
                     for i in range(0, len(all_i1_list), seq_i1_task):
                         batch_i1_list.append(all_i1_list[i : i + seq_i1_task])
                     for i1_batch in batch_i1_list:
-                        while len(work_tasks) >= MAX_WORK_TASKS:
+                        while len(work_tasks) >= max_work_tasks:
                             work_tasks = wait_for_tasks(
                                 work_tasks, return_when="FIRST_COMPLETED"
                             )
@@ -308,8 +325,10 @@ def main(args):
     """
     Main function to run the Distributed FFT
     """
-    ttt = dask.config.get("distributed.nanny.environ.MALLOC_TRIM_THRESHOLD_")
-    print("MALLOC_TRIM_THRESHOLD_:", ttt)
+    dask_config = dask.config.get(
+        "distributed.nanny.environ.MALLOC_TRIM_THRESHOLD_"
+    )
+    log.info(f"MALLOC_TRIM_THRESHOLD_:{dask_config}")
     # Fixing seed of numpy random
     numpy.random.seed(123456789)
     scheduler = os.environ.get("DASK_SCHEDULER", None)
