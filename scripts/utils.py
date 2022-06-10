@@ -8,14 +8,16 @@ We provide functions that help testing and
 basic validation of the algorithm.
 
 """
-import dask
 import logging
-import numpy
 import sys
+
+import dask
+import numpy
 
 log = logging.getLogger("fourier-logger")
 log.setLevel(logging.INFO)
 log.addHandler(logging.StreamHandler(sys.stdout))
+
 
 def sum_and_finish_subgrid(
     distr_fft, base_arrays, i0, i1, facet_ixs, NMBF_NMBFs
@@ -92,6 +94,7 @@ def wait_for_tasks(work_tasks, timeout=None, return_when="ALL_COMPLETED"):
             new_work_tasks.append(task)
     return new_work_tasks
 
+
 @dask.delayed
 def batch_NMBF_NMBF_sum_finish_subgrid(
     NMBF_BF_tasks, distr_fft, base_arrays, facet_ixs, i0, i1_batch
@@ -129,4 +132,3 @@ def batch_NMBF_NMBF_sum_finish_subgrid(
         )
         approx_subgrid_i0_list.append(approx_subgrid_fake_res)
     return approx_subgrid_i0_list
-

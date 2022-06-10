@@ -15,29 +15,26 @@ import sys
 import dask
 import numpy
 from dask.distributed import wait
-from distributed.diagnostics import MemorySampler
 from distributed import performance_report
+from distributed.diagnostics import MemorySampler
 
+from scripts.utils import sum_and_finish_subgrid, wait_for_tasks
 from src.fourier_transform.algorithm_parameters import (
     BaseArrays,
     StreamingDistributedFFT,
 )
-from src.fourier_transform_dask import cli_parser
 from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
 from src.fourier_transform.fourier_algorithm import make_subgrid_and_facet
+from src.fourier_transform_dask import cli_parser
 from src.swift_configs import SWIFT_CONFIGS
 from src.utils import generate_input_data
-
-from scripts.utils import batch_NMBF_NMBF_sum_finish_subgrid, wait_for_tasks,  sum_and_finish_subgrid
 
 log = logging.getLogger("fourier-logger")
 log.setLevel(logging.INFO)
 log.addHandler(logging.StreamHandler(sys.stdout))
 
 
-def run_facet_to_subgrid(
-    fundamental_params, use_dask=True
-):
+def run_facet_to_subgrid(fundamental_params, use_dask=True):
     """
     A variation of the execution function that reads in the configuration,
     generates the source data, and runs the algorithm.
@@ -197,6 +194,7 @@ def run_facet_to_subgrid(
     ms_df = ms.to_pandas()
     return ms_df
 
+
 def main(args):
     """
     Main function to run the Distributed FFT
@@ -224,16 +222,14 @@ def main(args):
     for config_key in swift_config_keys:
         log.info("Running for swift-config: %s", config_key)
         with performance_report(filename=f"dask-report-{config_key}.html"):
-            ms_df = run_facet_to_subgrid(
-                SWIFT_CONFIGS[config_key]
-            )
+            ms_df = run_facet_to_subgrid(SWIFT_CONFIGS[config_key])
             ms_df.to_csv(f"seq_more_seq_{config_key}.csv")
         dask_client.restart()
     tear_down_dask(dask_client)
+
 
 if __name__ == "__main__":
     #   "8k[1]-n4k-512",  1.546875
     dfft_parser = cli_parser()
     parsed_args = dfft_parser.parse_args()
     main(parsed_args)
-

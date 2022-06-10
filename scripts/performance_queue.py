@@ -17,6 +17,7 @@ import numpy
 from distributed import performance_report
 from distributed.diagnostics import MemorySampler
 
+from scripts.utils import batch_NMBF_NMBF_sum_finish_subgrid, wait_for_tasks
 from src.fourier_transform.algorithm_parameters import (
     BaseArrays,
     StreamingDistributedFFT,
@@ -29,11 +30,10 @@ from src.fourier_transform_dask import cli_parser
 from src.swift_configs import SWIFT_CONFIGS
 from src.utils import generate_input_data
 
-from scripts.utils import batch_NMBF_NMBF_sum_finish_subgrid, wait_for_tasks,  sum_and_finish_subgrid
-
 log = logging.getLogger("fourier-logger")
 log.setLevel(logging.INFO)
 log.addHandler(logging.StreamHandler(sys.stdout))
+
 
 def run_facet_to_subgrid_with_batch(
     fundamental_params,
