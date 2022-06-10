@@ -35,7 +35,7 @@ log = logging.getLogger("fourier-logger")
 log.setLevel(logging.INFO)
 log.addHandler(logging.StreamHandler(sys.stdout))
 
-def run_distributed_fft(
+def run_facet_to_subgrid_with_batch(
     fundamental_params,
     to_plot=True,
     fig_name=None,
@@ -247,7 +247,7 @@ def main(args):
     for config_key in swift_config_keys:
         log.info("Running for swift-config: %s", config_key)
         with performance_report(filename=f"dask-report-{config_key}.html"):
-            ms_df = run_distributed_fft(
+            ms_df = run_facet_to_subgrid_with_batch(
                 SWIFT_CONFIGS[config_key],
                 to_plot=False,
                 use_dask=True,

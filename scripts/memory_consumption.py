@@ -35,7 +35,7 @@ log.setLevel(logging.INFO)
 log.addHandler(logging.StreamHandler(sys.stdout))
 
 
-def run_distributed_fft(
+def run_facet_to_subgrid(
     fundamental_params, use_dask=True
 ):
     """
@@ -45,7 +45,7 @@ def run_distributed_fft(
 
     :param fundamental_params: dictionary of fundamental parmeters
                                chosen from swift_configs.py
-    :param client: Dask client
+    :param use_dask: run function with dask.delayd or not?
 
     :return: ms_df: memory information
     """
@@ -197,43 +197,6 @@ def run_distributed_fft(
     ms_df = ms.to_pandas()
     return ms_df
 
-
-def memory_consumption(test_config, expected_result, save_data=False):
-    """
-    Main function to run the Distributed FFT
-    For pipeline it does not save the data.
-    If you'd like to examine the data independently, set save_data=True
-
-    """
-    # Fixing seed of numpy random
-    numpy.random.seed(123456789)
-
-    scheduler = os.environ.get("DASK_SCHEDULER", None)
-    log.info("Scheduler: %s", scheduler)
-
-    base_arrays = BaseArrays(**SWIFT_CONFIGS[test_config])
-    dask_client = set_up_dask(scheduler_address=scheduler)
-
-    log.info("Dask client setup %s", dask_client)
-    log.info("Running for swift-config: %s", test_config)
-    ms_df = run_distributed_fft(
-        SWIFT_CONFIGS[test_config],
-    )
-    if save_data:
-        ms_df.to_csv(f"ms_{test_config}.csv")
-
-    # turn pandas DataFrame into numpy array
-    data_array = ms_df["NMBF_NMBF.managed"].to_numpy()
-    data_array = data_array / 1.0e9
-
-    last_mem = data_array[-1]
-
-    # BF_F size should have 16 bytes * nfacet * nfacet * yP_size * yB_size
-    # Note: should assert the larst value used
-    assert numpy.abs(last_mem - expected_result) / expected_result < 3
-    tear_down_dask(dask_client)
-
-
 def main(args):
     """
     Main function to run the Distributed FFT
@@ -261,7 +224,7 @@ def main(args):
     for config_key in swift_config_keys:
         log.info("Running for swift-config: %s", config_key)
         with performance_report(filename=f"dask-report-{config_key}.html"):
-            ms_df = run_distributed_fft(
+            ms_df = run_facet_to_subgrid(
                 SWIFT_CONFIGS[config_key]
             )
             ms_df.to_csv(f"seq_more_seq_{config_key}.csv")
