@@ -251,7 +251,7 @@ def main(args):
                 SWIFT_CONFIGS[config_key],
                 to_plot=False,
                 use_dask=True,
-                hdf5_prefix="../../../bigresult",
+                hdf5_prefix=args.hdf5_prefix,
                 client=dask_client,
             )
             ms_df.to_csv(f"seq_more_seq_{config_key}.csv")
