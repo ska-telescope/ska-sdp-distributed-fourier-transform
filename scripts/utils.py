@@ -112,7 +112,7 @@ def batch_NMBF_NMBF_sum_finish_subgrid(
     :return: approx subgrid index list and shape
     """
 
-    # Set use_dask with false to seriesly run function
+    # Set use_dask with false to run function in serial
     approx_subgrid_i0_list = []
     for i1 in i1_batch:
         NMBF_NMBF_list = [
