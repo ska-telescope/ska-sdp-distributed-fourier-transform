@@ -328,19 +328,19 @@ def add_two(one, two, **kwargs):
     return one + two
 
 
-def generate_input_data(sparse_ft_class):
+def generate_input_data(sparse_ft_class, add_sources=True):
     """Generate standard data G and FG
         Memory may not be enough at larger
         scales
 
     :param sparse_ft_class: sparse_ft_class
+    :param add_sources: Add sources?
 
     :returns: G,FG
     """
     log.info("\n== Generate input data")
 
     # adding sources
-    add_sources = True
     if add_sources:
         FG_2 = numpy.zeros((sparse_ft_class.N, sparse_ft_class.N))
         source_count = 1000

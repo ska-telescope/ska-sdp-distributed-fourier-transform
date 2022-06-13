@@ -29,6 +29,7 @@ from src.fourier_transform.fourier_algorithm import (
     fft,
     ifft,
     pad_mid,
+    roll_and_extract_mid_axis,
 )
 
 
@@ -367,11 +368,14 @@ class StreamingDistributedFFT(BaseParameters):
         :return: contribution of facet to subgrid
         """
         dims = len(BF.shape)
-        BF_mid = extract_mid(
-            numpy.roll(BF, -subgrid_off_elem * self.yP_size // self.N, axis),
+
+        BF_mid = roll_and_extract_mid_axis(
+            BF,
+            -(-subgrid_off_elem * self.yP_size // self.N),
             self.xMxN_yP_size,
             axis,
         )
+
         MBF = broadcast(facet_m0_trunc, dims, axis) * BF_mid
         MBF_sum = numpy.array(extract_mid(MBF, self.xM_yP_size, axis))
         xN_yP_size = self.xMxN_yP_size - self.xM_yP_size

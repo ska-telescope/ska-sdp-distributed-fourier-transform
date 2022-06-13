@@ -337,6 +337,44 @@ def roll_and_extract_mid(shape, offset, true_usable_size):
     return slice_data
 
 
+def roll_and_extract_mid_axis(data, offset, true_usable_size, axis):
+    """Calculate the slice of the roll + extract mid along
+        with axis method
+
+    :param data: 2D data
+    :param offset: ith offset (subgrid or facet)
+    :param true_usable_size: xA_size for subgrid, and yB_size for facet
+    :axis: axis (0 or 1)
+
+    :return: slice list
+    """
+    slice_list = roll_and_extract_mid(
+        data.shape[axis], offset, true_usable_size
+    )
+
+    point = [0]
+    for slice_item in slice_list:
+        delta_slice = slice_item.stop - slice_item.start
+        point.append(delta_slice + point[-1])
+    if axis == 0:
+        block_data = numpy.empty(
+            (true_usable_size, data.shape[1]), dtype=data.dtype
+        )
+        for idx0, slice_item in enumerate(slice_list):
+            slice_block = slice(point[idx0], point[idx0 + 1])
+            block_data[slice_block, :] = data[slice_item, :]
+    elif axis == 1:
+        block_data = numpy.empty(
+            (data.shape[0], true_usable_size), dtype=data.dtype
+        )
+        for idx0, slice_item in enumerate(slice_list):
+            slice_block = slice(point[idx0], point[idx0 + 1])
+            block_data[:, slice_block] = data[:, slice_item]
+    else:
+        raise ValueError("wrong axis")
+    return block_data
+
+
 # pylint: disable=too-many-locals,unused-argument
 @dask_wrapper
 def _ith_subgrid_facet_element_from_hdf5(

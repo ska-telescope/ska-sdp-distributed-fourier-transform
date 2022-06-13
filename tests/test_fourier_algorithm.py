@@ -16,6 +16,7 @@ from src.fourier_transform.fourier_algorithm import (
     ifft,
     pad_mid,
     roll_and_extract_mid,
+    roll_and_extract_mid_axis,
 )
 
 
@@ -610,3 +611,37 @@ def test_roll_and_extract_mid():
                         ]
             res.append((test == true).all())
     assert numpy.array(res).all()
+
+
+def test_roll_and_extract_mid_axis():
+    """
+    For testing the roll+extract mid slice method with a 2d data
+    """
+
+    data = numpy.array(
+        [
+            [0, 1, 2, 3, 4],
+            [5, 6, 7, 8, 9],
+            [10, 11, 12, 13, 14],
+            [15, 16, 17, 18, 19],
+            [20, 21, 22, 23, 24],
+        ]
+    )
+
+    offset = 3  # Trigger edge position
+    true_usable_size = 2
+    axis = 0
+    true_block_data = numpy.array([[20, 21, 22, 23, 24], [0, 1, 2, 3, 4]])
+    block_data = roll_and_extract_mid_axis(
+        data, offset, true_usable_size, axis
+    )
+    assert (block_data == true_block_data).all()
+
+    axis = 1  # Test 1th axis
+    block_data = roll_and_extract_mid_axis(
+        data, offset, true_usable_size, axis
+    )
+    true_block_data = numpy.array(
+        [[4, 0], [9, 5], [14, 10], [19, 15], [24, 20]]
+    )
+    assert (block_data == true_block_data).all()
