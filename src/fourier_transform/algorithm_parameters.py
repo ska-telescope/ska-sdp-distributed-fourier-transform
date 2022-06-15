@@ -369,22 +369,37 @@ class StreamingDistributedFFT(BaseParameters):
         """
         dims = len(BF.shape)
 
-        BF_mid = roll_and_extract_mid_axis(
-            BF,
-            -(-subgrid_off_elem * self.yP_size // self.N),
-            self.xMxN_yP_size,
-            axis,
-        )
+        # New-style configuration?
+        if self.yP_size == self.yN_size:
 
-        MBF = broadcast(facet_m0_trunc, dims, axis) * BF_mid
-        MBF_sum = numpy.array(extract_mid(MBF, self.xM_yP_size, axis))
-        xN_yP_size = self.xMxN_yP_size - self.xM_yP_size
-        slc1 = create_slice(slice(None), slice(xN_yP_size // 2), dims, axis)
-        slc2 = create_slice(
-            slice(None), slice(-xN_yP_size // 2, None), dims, axis
-        )
-        MBF_sum[slc1] += MBF[slc2]
-        MBF_sum[slc2] += MBF[slc1]
+            # In that case we can skip applying m, which simplifies
+            # the whole procedure quite a bit.
+            MBF_sum = roll_and_extract_mid_axis(
+                BF,
+                subgrid_off_elem * self.yP_size // self.N,
+                self.xM_yN_size,
+                axis,
+            )
+
+        else:
+            BF_mid = roll_and_extract_mid_axis(
+                BF,
+                subgrid_off_elem * self.yP_size // self.N,
+                self.xMxN_yP_size,
+                axis,
+            )
+
+            MBF = broadcast(facet_m0_trunc, dims, axis) * BF_mid
+            MBF_sum = numpy.array(extract_mid(MBF, self.xM_yP_size, axis))
+            xN_yP_size = self.xMxN_yP_size - self.xM_yP_size
+            slc1 = create_slice(
+                slice(None), slice(xN_yP_size // 2), dims, axis
+            )
+            slc2 = create_slice(
+                slice(None), slice(-xN_yP_size // 2, None), dims, axis
+            )
+            MBF_sum[slc1] += MBF[slc2]
+            MBF_sum[slc2] += MBF[slc1]
 
         return broadcast(Fn, len(BF.shape), axis) * extract_mid(
             fft(MBF_sum, axis), self.xM_yN_size, axis
@@ -524,18 +539,27 @@ class StreamingDistributedFFT(BaseParameters):
         :return summed subgrid contributions
 
         """
-        xN_yP_size = self.xMxN_yP_size - self.xM_yP_size
-        NjSi_mid = ifft(pad_mid(NjSi, self.xM_yP_size, axis), axis)
-        NjSi_temp = pad_mid(NjSi_mid, self.xMxN_yP_size, axis)
-        slc1 = create_slice(slice(None), slice(xN_yP_size // 2), dims, axis)
-        slc2 = create_slice(
-            slice(None), slice(-xN_yP_size // 2, None), dims, axis
-        )
-        NjSi_temp[slc1] = NjSi_mid[slc2]
-        NjSi_temp[slc2] = NjSi_mid[slc1]
-        NjSi_temp = NjSi_temp * broadcast(
-            facet_m0_trunc, len(NjSi.shape), axis
-        )
+
+        # New-style configuration? That again allows us to skip applying m
+        if self.yP_size == self.yN_size:
+            NjSi_temp = ifft(NjSi, axis)
+
+        else:
+
+            xN_yP_size = self.xMxN_yP_size - self.xM_yP_size
+            NjSi_mid = ifft(pad_mid(NjSi, self.xM_yP_size, axis), axis)
+            NjSi_temp = pad_mid(NjSi_mid, self.xMxN_yP_size, axis)
+            slc1 = create_slice(
+                slice(None), slice(xN_yP_size // 2), dims, axis
+            )
+            slc2 = create_slice(
+                slice(None), slice(-xN_yP_size // 2, None), dims, axis
+            )
+            NjSi_temp[slc1] = NjSi_mid[slc2]
+            NjSi_temp[slc2] = NjSi_mid[slc1]
+            NjSi_temp = NjSi_temp * broadcast(
+                facet_m0_trunc, len(NjSi.shape), axis
+            )
 
         return numpy.roll(
             pad_mid(NjSi_temp, self.yP_size, axis),
