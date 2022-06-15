@@ -376,8 +376,8 @@ def run_facet_to_subgrid_with_batch(
                             batch_subgrid_task, sync=False
                         )
 
-                # Finish tasks
-                wait_for_tasks(work_tasks)
+            # Finish tasks
+            wait_for_tasks(work_tasks)
     ms_df = ms.to_pandas()
     return ms_df
 
