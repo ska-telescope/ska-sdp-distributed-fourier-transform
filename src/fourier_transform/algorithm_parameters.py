@@ -129,7 +129,7 @@ class BaseParameters:
         """
         Calculate subgrid offset array
         """
-        subgrid_off = self.xA_size * numpy.arange(self.nsubgrid) + self.Nx
+        subgrid_off = self.xA_size * numpy.arange(self.nsubgrid)
         return subgrid_off
 
     def __str__(self):
