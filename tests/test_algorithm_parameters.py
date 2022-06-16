@@ -8,6 +8,7 @@ import pytest
 from src.fourier_transform.algorithm_parameters import (
     BaseArrays,
     BaseParameters,
+    StreamingDistributedFFT,
 )
 from tests.test_integration_fourier_transform import TEST_PARAMS
 
@@ -97,3 +98,105 @@ def test_base_arrays_pure_arrays():
     fn = array_class.Fn  # noqa: F841
     facet_m0_trunc = array_class.facet_m0_trunc  # noqa: F841
     pswf = array_class.pswf  # noqa: F841
+
+
+def test_basic_facet_to_subgrid():
+    """Test basic properties of 1D facet to subgrid DFT for cases where
+    the subgrids are expected to be a constant value.
+    """
+
+    # Basic layout parameters
+    N = TEST_PARAMS["N"]
+    Nx = TEST_PARAMS["Nx"] * 8  # allow more facet offsets
+    Ny = N // Nx
+    yB_size = TEST_PARAMS["yB_size"]
+    assert yB_size % Ny == 0
+
+    # Instantiate classes
+    array_class = BaseArrays(**TEST_PARAMS)
+    dft = StreamingDistributedFFT(**TEST_PARAMS)
+    arr_pars = {
+        "Fb": array_class.Fb,
+        "Fn": array_class.Fn,
+        "facet_m0_trunc": array_class.facet_m0_trunc,
+    }
+
+    # Test linearity with different values
+    for val in [0, 1, 0.1]:
+
+        # Check different facet offsets
+        for facet_off in numpy.arange(-yB_size // 2 + Ny, yB_size // 2, Ny):
+
+            # Set value at centre of image (might be off-centre for
+            # the facet depending on offset)
+            facet = numpy.zeros(yB_size)
+            facet[yB_size // 2 - facet_off] = val
+            prepped = dft.prepare_facet(facet, axis=0, **arr_pars)
+
+            # Now generate subgrids at different (valid) subgrid offsets.
+            for sg_off in numpy.arange(0, N, Nx):
+                subgrid_contrib = dft.extract_facet_contrib_to_subgrid(
+                    prepped, 0, sg_off, **arr_pars
+                )
+                subgrid_acc = dft.add_facet_contribution(
+                    subgrid_contrib, facet_off, 0
+                )
+                subgrid = dft.finish_subgrid(subgrid_acc)
+
+                # Now the entire subgrid should have (close to) a
+                # constant value
+                numpy.testing.assert_array_almost_equal(subgrid, val / N)
+
+
+def test_basic_subgrid_to_facet():
+    """Test basic properties of 1D subgrid to facet DFT for cases where a
+    subgrid is set to a constant value.
+    """
+
+    # Basic layout parameters
+    N = TEST_PARAMS["N"]
+    Nx = TEST_PARAMS["Nx"] * 8  # allow more facet offsets
+    Ny = N // Nx
+    xA_size = TEST_PARAMS["xA_size"]
+    xM_size = TEST_PARAMS["xM_size"]
+    yB_size = TEST_PARAMS["yB_size"]
+    assert yB_size % Ny == 0
+
+    # Instantiate classes
+    array_class = BaseArrays(**TEST_PARAMS)
+    dft = StreamingDistributedFFT(**TEST_PARAMS)
+    arr_pars = {
+        "Fb": array_class.Fb,
+        "Fn": array_class.Fn,
+        "facet_m0_trunc": array_class.facet_m0_trunc,
+    }
+
+    # Test linearity with different values
+    for val in [0, 1, 0.1]:
+
+        # Start with subgrids at different (valid) subgrid offsets.
+        for sg_off in numpy.arange(0, N, Nx):
+
+            # Constant-value subgrid
+            prepped = dft.prepare_subgrid(
+                (val / xA_size) * numpy.ones(xA_size)
+            )
+
+            # Check different facet offsets
+            for facet_off in numpy.arange(
+                -yB_size // 2 + Ny, yB_size // 2, Ny
+            ):
+                extracted = dft.extract_subgrid_contrib_to_facet(
+                    prepped, facet_off, axis=0, **arr_pars
+                )
+                accumulated = dft.add_subgrid_contribution(
+                    extracted, sg_off, axis=0, **arr_pars
+                )
+                facet = dft.finish_facet(
+                    accumulated, numpy.ones(xM_size), axis=0, **arr_pars
+                )
+
+                # Check that we have value at centre of image
+                numpy.testing.assert_array_almost_equal(
+                    facet[yB_size // 2 - facet_off], val
+                )

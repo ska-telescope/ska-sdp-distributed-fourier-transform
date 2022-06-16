@@ -348,6 +348,7 @@ def roll_and_extract_mid_axis(data, offset, true_usable_size, axis):
 
     :return: slice list
     """
+
     slice_list = roll_and_extract_mid(
         data.shape[axis], offset, true_usable_size
     )
@@ -356,22 +357,23 @@ def roll_and_extract_mid_axis(data, offset, true_usable_size, axis):
     for slice_item in slice_list:
         delta_slice = slice_item.stop - slice_item.start
         point.append(delta_slice + point[-1])
-    if axis == 0:
-        block_data = numpy.empty(
-            (true_usable_size, data.shape[1]), dtype=data.dtype
+
+    # Allocate new data array
+    new_shape = list(data.shape)
+    new_shape[axis] = true_usable_size
+    block_data = numpy.empty(new_shape, dtype=data.dtype)
+
+    # Set data
+    for idx0, slice_item in enumerate(slice_list):
+        slice_block = slice(point[idx0], point[idx0 + 1])
+        out_slices = create_slice(
+            slice(None), slice_block, len(data.shape), axis
         )
-        for idx0, slice_item in enumerate(slice_list):
-            slice_block = slice(point[idx0], point[idx0 + 1])
-            block_data[slice_block, :] = data[slice_item, :]
-    elif axis == 1:
-        block_data = numpy.empty(
-            (data.shape[0], true_usable_size), dtype=data.dtype
+        in_slices = create_slice(
+            slice(None), slice_item, len(data.shape), axis
         )
-        for idx0, slice_item in enumerate(slice_list):
-            slice_block = slice(point[idx0], point[idx0 + 1])
-            block_data[:, slice_block] = data[:, slice_item]
-    else:
-        raise ValueError("wrong axis")
+        block_data[out_slices] = data[in_slices]
+
     return block_data
 
 

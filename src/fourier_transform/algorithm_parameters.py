@@ -431,58 +431,57 @@ class StreamingDistributedFFT(BaseParameters):
     def finish_subgrid(
         self,
         summed_facets,
-        subgrid_mask1,
-        subgrid_mask2,
+        subgrid_masks=None,
         **kwargs,
     ):
         """
-        Obtain finished subgrid.
-        Operation performed for both axis
-        (only works on 2D arrays in its current form).
+        Obtain finished subgrid. Operation performed for all axes.
 
         :param summed_facets: summed facets contributing to thins subgrid
-        :param subgrid_mask1: ith subgrid mask element
-        :param subgrid_mask2: (i+1)th subgrid mask element
+        :param subgrid_masks: subgrid mask per axis (optional)
         :param kwargs: needs to contain the following if dask is used:
                 use_dask: True
                 nout: <number of function outputs> --> 1
 
         :return: approximate subgrid element
         """
-        tmp = extract_mid(
-            extract_mid(
-                ifft(ifft(summed_facets, axis=0), axis=1), self.xA_size, axis=0
-            ),
-            self.xA_size,
-            axis=1,
-        )
-        approx_subgrid = tmp * numpy.outer(
-            subgrid_mask1,
-            subgrid_mask2,
-        )
-        return approx_subgrid
+
+        tmp = summed_facets
+        dims = len(summed_facets.shape)
+
+        # Loop operation over all axes
+        for axis in range(dims):
+            tmp = extract_mid(ifft(tmp, axis=axis), self.xA_size, axis=axis)
+
+            # Apply subgrid mask if requested
+            if subgrid_masks is not None:
+                tmp *= broadcast(subgrid_masks[axis], dims, axis)
+
+        return tmp
 
     # subgrid to facet algorithm
     @dask_wrapper
     def prepare_subgrid(self, subgrid, **kwargs):
         """
         Calculate the FFT of a padded subgrid element.
-        No reason to do this per-axis, so always do it for both axis.
-        (Note: it will only work for 2D subgrid arrays)
+        No reason to do this per-axis, so always do it for all axes.
 
         :param subgrid: single subgrid array element
         :param kwargs: needs to contain the following if dask is used:
                 use_dask: True
                 nout: <number of function outputs> --> 1
 
-        :return: TODO: the FS ??? term
+        :return: Padded subgrid in image space
         """
-        padded = pad_mid(
-            pad_mid(subgrid, self.xM_size, axis=0), self.xM_size, axis=1
-        )
-        fftd = fft(fft(padded, axis=0), axis=1)
 
-        return fftd
+        tmp = subgrid
+        dims = len(subgrid.shape)
+
+        # Loop operation over all axes
+        for axis in range(dims):
+            tmp = fft(pad_mid(tmp, self.xM_size, axis=axis), axis=axis)
+
+        return tmp
 
     @dask_wrapper
     def extract_subgrid_contrib_to_facet(
@@ -491,7 +490,7 @@ class StreamingDistributedFFT(BaseParameters):
         """
         Extract contribution of subgrid to a facet.
 
-        :param Fsi: TODO???
+        :param Fsi: Padded subgrid in image space
         :param facet_off_elem: single facet offset element
         :param Fn: Fourier transform of gridding function
         :param axis: axis along which the operations are performed (0 or 1)
@@ -516,7 +515,6 @@ class StreamingDistributedFFT(BaseParameters):
     @dask_wrapper
     def add_subgrid_contribution(
         self,
-        dims,
         NjSi,
         subgrid_off_elem,
         facet_m0_trunc,
@@ -546,6 +544,7 @@ class StreamingDistributedFFT(BaseParameters):
 
         else:
 
+            dims = len(NjSi.shape)
             xN_yP_size = self.xMxN_yP_size - self.xM_yP_size
             NjSi_mid = ifft(pad_mid(NjSi, self.xM_yP_size, axis), axis)
             NjSi_temp = pad_mid(NjSi_mid, self.xMxN_yP_size, axis)

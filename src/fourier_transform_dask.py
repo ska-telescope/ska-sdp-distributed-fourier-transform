@@ -165,7 +165,6 @@ def subgrid_to_facet_algorithm(
             for i1 in range(distr_fft_class.nsubgrid):
                 if use_dask:
                     tmp_NAF_MNAF = distr_fft_class.add_subgrid_contribution(
-                        2,
                         naf_naf[i0][i1][j0][j1],
                         distr_fft_class.subgrid_off[i1],
                         base_arrays.facet_m0_trunc,
@@ -180,7 +179,6 @@ def subgrid_to_facet_algorithm(
                     NAF_MNAF = (
                         NAF_MNAF
                         + distr_fft_class.add_subgrid_contribution(
-                            len(NAF_MNAF.shape),
                             naf_naf[i0][i1][j0][j1],
                             distr_fft_class.subgrid_off[i1],
                             base_arrays.facet_m0_trunc,
@@ -199,7 +197,6 @@ def subgrid_to_facet_algorithm(
             )
             if use_dask:
                 tmp_MNAF_BMNAF = distr_fft_class.add_subgrid_contribution(
-                    2,
                     NAF_BMNAF,
                     distr_fft_class.subgrid_off[i0],
                     base_arrays.facet_m0_trunc,
@@ -214,7 +211,6 @@ def subgrid_to_facet_algorithm(
                 MNAF_BMNAF = (
                     MNAF_BMNAF
                     + distr_fft_class.add_subgrid_contribution(
-                        len(MNAF_BMNAF.shape),
                         NAF_BMNAF,
                         distr_fft_class.subgrid_off[i0],
                         base_arrays.facet_m0_trunc,
@@ -546,8 +542,7 @@ def generate_approx_subgrid(
 
         approx_subgrid[i0][i1] = distr_fft_class.finish_subgrid(
             summed_facet,
-            base_arrays.subgrid_A[i0],
-            base_arrays.subgrid_A[i1],
+            [base_arrays.subgrid_A[i0], base_arrays.subgrid_A[i1]],
             use_dask=use_dask,
             nout=1,
         )
