@@ -196,3 +196,37 @@ def write_approx_subgrid(approx_subgrid_list, base_arrays, hdf5_path):
         lock.release()
         res_list.append((i0, i1, approx_subgrid.shape))
     return res_list
+
+
+@dask.delayed
+def write_network_transfer_info(path, info):
+    """
+    write the network transfer info
+
+    :param path: file path
+    :param info: info
+
+    :return info
+    """
+    lock = Lock(path)
+    lock.acquire()
+    with open(path, "a+", encoding="utf-8") as f:
+        f.write(info + "\n")
+    lock.release()
+    return info
+
+
+def human_readable_size(size, decimal_places=3):
+    """
+    convert human readable bytes size
+
+    :param size: bytes
+    :param decimal_places: decimal_places
+
+    :return readable bytes size in str
+    """
+    for unit in ["B", "KiB", "MiB", "GiB", "TiB", "PiB"]:
+        if size < 1024.0:
+            break
+        size /= 1024.0
+    return f"{size:.{decimal_places}f}{unit}"

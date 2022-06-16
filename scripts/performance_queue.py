@@ -19,8 +19,10 @@ from distributed.diagnostics import MemorySampler
 from scripts.utils import (
     batch_all_i1_NMBF_NMBF,
     batch_NMBF_NMBF_sum_finish_subgrid,
+    human_readable_size,
     wait_for_tasks,
     write_approx_subgrid,
+    write_network_transfer_info,
 )
 from src.fourier_transform.algorithm_parameters import (
     BaseArrays,
@@ -47,13 +49,13 @@ def cli_parser_with_batch():
     parser.add_argument(
         "--max_work_tasks",
         type=int,
-        default=9,
+        default=18,
         help="Maximum number of tasks in the queue",
     )
     parser.add_argument(
         "--max_NMBF_BF_waiting_task",
         type=int,
-        default=3,
+        default=4,
         help="NMBF_BF Number of waiting tasks",
     )
     parser.add_argument(
@@ -419,6 +421,40 @@ def main(args):
                 check_results=args.check_results == "True",
             )
             ms_df.to_csv(f"seq_more_seq_{config_key}.csv")
+
+        dict_outgoing = dask_client.run(
+            lambda dask_worker: dask_worker.outgoing_transfer_log
+        )
+        dict_incoming = dask_client.run(
+            lambda dask_worker: dask_worker.incoming_transfer_log
+        )
+
+        sum_getitem_incoming = 0.0
+        for di_key in dict_incoming.keys():
+            for di_key2 in dict_incoming[di_key]:
+                if "getitem" in str(di_key2["keys"]):
+                    sum_getitem_incoming += di_key2["total"]
+        log.info(
+            f"sum_getitem_incoming transfer bytes: {sum_getitem_incoming}"
+        )
+        sum_getitem_outgoing = 0.0
+        for do_key in dict_outgoing.keys():
+            for do_key2 in dict_outgoing[do_key]:
+                if "getitem" in str(do_key2["keys"]):
+                    sum_getitem_outgoing += do_key2["total"]
+        log.info(
+            f"sum_getitem_outgoing transfer bytes: {sum_getitem_outgoing}"
+        )
+        write_task = write_network_transfer_info(
+            "transfer_info.txt",
+            "%s,%s,%s"
+            % (
+                config_key,
+                human_readable_size(sum_getitem_incoming),
+                human_readable_size(sum_getitem_outgoing),
+            ),
+        )
+        dask_client.compute(write_task, sync=True)
 
         # step: check subgrid and approx_subgrid
         if args.check_results == "True":
