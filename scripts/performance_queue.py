@@ -445,14 +445,10 @@ def main(args):
         log.info(
             f"sum_getitem_outgoing transfer bytes: {sum_getitem_outgoing}"
         )
+        tmp_size_1 = human_readable_size(sum_getitem_incoming)
+        tmp_size_2 = (human_readable_size(sum_getitem_outgoing),)
         write_task = write_network_transfer_info(
-            "transfer_info.txt",
-            "%s,%s,%s"
-            % (
-                config_key,
-                human_readable_size(sum_getitem_incoming),
-                human_readable_size(sum_getitem_outgoing),
-            ),
+            "transfer_info.txt", f"{config_key},{tmp_size_1},{tmp_size_2}"
         )
         dask_client.compute(write_task, sync=True)
 
