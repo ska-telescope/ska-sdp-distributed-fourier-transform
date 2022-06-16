@@ -38,7 +38,7 @@ def test_base_params_derived():
     }
 
     expected_facet_off = numpy.array([0, 256, 512, 768])
-    expected_subgrid_off = numpy.array([4, 192, 380, 568, 756, 944])
+    expected_subgrid_off = numpy.array([0, 188, 376, 564, 752, 940])
 
     result = BaseParameters(**TEST_PARAMS)
 

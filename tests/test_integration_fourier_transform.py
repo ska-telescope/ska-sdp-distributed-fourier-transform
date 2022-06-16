@@ -269,10 +269,10 @@ def test_end_to_end_2d_dask_hdf5(use_dask):
         shutil.rmtree(prefix)
 
     error_G = numpy.std(numpy.abs(G - AG))
-    assert numpy.isclose(error_G, 2.3803543255644684e-08)
+    assert error_G < 3e-08
 
     error_FG = numpy.std(numpy.abs(FG - AFG))
-    assert numpy.isclose(error_FG, 4.8362811108879716e-05)
+    assert error_FG < 5e-05
 
 
 @pytest.mark.parametrize(
