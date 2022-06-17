@@ -2,6 +2,8 @@
 Unit tests for fourier_algorithm.py functions
 """
 
+import itertools
+
 import dask
 import numpy
 import pytest
@@ -14,6 +16,8 @@ from src.fourier_transform.fourier_algorithm import (
     extract_mid,
     fft,
     ifft,
+    make_facet_from_sources,
+    make_subgrid_from_sources,
     pad_mid,
     roll_and_extract_mid,
     roll_and_extract_mid_axis,
@@ -645,3 +649,98 @@ def test_roll_and_extract_mid_axis():
         [[4, 0], [9, 5], [14, 10], [19, 15], [24, 20]]
     )
     assert (block_data == true_block_data).all()
+
+
+def test_make_facet_subgrid_from_sources_1d():
+    """
+    Test facet / subgrid generation from sources - thorough 1D version
+    """
+
+    source_lists = [
+        [],
+        [(1, 0)],
+        [(10, 0)],
+        [(1, 0), (2, 0)],
+        [(1, 1)],
+        [(1, -4)],
+        [(1, 10000)],
+        [(1, -10000)],
+        [(1, 10), (1, -20), (3, 2)],
+    ]
+
+    for sources, image_size, subgrid_offset, facet_offset in itertools.product(
+        source_lists, [4, 8, 16, 32], [0, 5, -7], [0, 2, -3]
+    ):
+
+        # Generate "sub" grid and facet. We choose image and subgrid
+        # size to be equal to entire image size so the results should
+        # be precisely the FFT of each other (at an offset)
+        subgrid = make_subgrid_from_sources(
+            image_size, image_size, [subgrid_offset], [], sources
+        )
+        facet = make_facet_from_sources(
+            image_size, image_size, [facet_offset], [], sources
+        )
+
+        # Sanity check
+        assert numpy.sum(facet) == pytest.approx(
+            sum(source[0] for source in sources)
+        )
+
+        # Roll to remove offsets
+        subgrid = numpy.roll(subgrid, subgrid_offset)
+        facet = numpy.roll(facet, facet_offset)
+
+        # Check equal-ness and normalisation
+        numpy.testing.assert_array_almost_equal(fft(subgrid, axis=0), facet)
+        if sources == [(1, 0)]:
+            numpy.testing.assert_array_almost_equal(subgrid, 1 / image_size)
+
+
+def test_make_facet_subgrid_from_sources_2d():
+    """
+    Test facet / subgrid generation from sources - less thorough 2D
+    version (might get expensive)
+    """
+
+    source_lists = [
+        [],
+        [(1, 0, 0)],
+        [(10, 0, 0)],
+        [(1, 0, 0), (2, 0, 0)],
+        [(1, 1, 0)],
+        [(1, -4, 0)],
+    ]
+    facet_sg_offsets = numpy.array([[0, 0], [0, 3], [0, -4], [2, 0], [1, 0]])
+
+    for sources, image_size, subgrid_offset, facet_offset in itertools.product(
+        source_lists, [4, 8, 16], facet_sg_offsets, facet_sg_offsets
+    ):
+
+        # Generate "sub" grid and facet. We choose image and subgrid
+        # size to be equal to entire image size so the results should
+        # be precisely the FFT of each other (at an offset)
+        subgrid = make_subgrid_from_sources(
+            image_size, image_size, subgrid_offset, [], sources
+        )
+        facet = make_facet_from_sources(
+            image_size, image_size, facet_offset, [], sources
+        )
+
+        # Sanity check
+        assert numpy.sum(facet) == pytest.approx(
+            sum(source[0] for source in sources)
+        )
+
+        # Roll to remove offsets
+        subgrid = numpy.roll(subgrid, subgrid_offset, axis=(0, 1))
+        facet = numpy.roll(facet, facet_offset, axis=(0, 1))
+
+        # Check equal-ness and normalisation
+        numpy.testing.assert_array_almost_equal(
+            fft(fft(subgrid, axis=0), axis=1), facet
+        )
+        if sources == [(1, 0, 0)]:
+            numpy.testing.assert_array_almost_equal(
+                subgrid, 1 / image_size / image_size
+            )

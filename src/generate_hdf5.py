@@ -18,6 +18,7 @@ from src.fourier_transform.dask_wrapper import (
     set_up_dask,
     tear_down_dask,
 )
+from src.fourier_transform.fourier_algorithm import make_subgrid_from_sources
 
 log = logging.getLogger("fourier-data-generater-logger")
 log.setLevel(logging.INFO)
@@ -39,20 +40,14 @@ def direct_ft_chunk_work(
     :param N: whole data size
 
     """
-    chunk_G = numpy.zeros((chunksize, chunksize), dtype="complex128")
-    for x, y, i in sources:
-        u_chunk, v_chunk = (
-            numpy.mgrid[
-                -N // 2
-                + chunk_slice[0].start : N // 2
-                - (N - chunk_slice[0].stop),
-                -N // 2
-                + chunk_slice[1].start : N // 2
-                - (N - chunk_slice[1].stop),
-            ][::-1]
-            / N
-        )
-        chunk_G += i * numpy.exp(2j * numpy.pi * (x * u_chunk + y * v_chunk))
+
+    chunk_G = make_subgrid_from_sources(
+        N,
+        chunksize,
+        [s.start - N // 2 + chunksize // 2 for s in chunk_slice],
+        [],
+        sources,
+    )
 
     # lock
     if use_dask:
@@ -83,17 +78,17 @@ def generate_data_hdf5(
     """
 
     if not os.path.exists(FG_2_path):
-        source_count = 1000
+        source_count = 10
         sources = numpy.array(
             [
                 (
-                    numpy.random.randint(-npixel // 2, npixel // 2 - 1),
-                    numpy.random.randint(-npixel // 2, npixel // 2 - 1),
                     numpy.random.rand()
                     * npixel
                     * npixel
                     / numpy.sqrt(source_count)
                     / 2,
+                    numpy.random.randint(-npixel // 2, npixel // 2 - 1),
+                    numpy.random.randint(-npixel // 2, npixel // 2 - 1),
                 )
                 for _ in range(source_count)
             ]
@@ -106,11 +101,10 @@ def generate_data_hdf5(
             chunks=(chunksize_FG, chunksize_FG),
         )
         # write data point by point
-        for x, y, i in sources:
-            FG_dataset[
-                int(y) + npixel // 2,
-                int(x) + npixel // 2,
-            ] += i
+        for i, y, x in sources:
+            FG_dataset[int(y) + npixel // 2, int(x) + npixel // 2] += (
+                i / npixel / npixel
+            )
         f.close()
 
     if client is None:
