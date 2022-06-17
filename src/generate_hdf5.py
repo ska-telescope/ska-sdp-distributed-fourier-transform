@@ -41,13 +41,8 @@ def direct_ft_chunk_work(
 
     """
 
-    chunk_G = make_subgrid_from_sources(
-        N,
-        chunksize,
-        [s.start - N // 2 + chunksize // 2 for s in chunk_slice],
-        [],
-        sources,
-    )
+    offs = [s.start - N // 2 + chunksize // 2 for s in chunk_slice]
+    chunk_G = make_subgrid_from_sources(sources, N, chunksize, offs)
 
     # lock
     if use_dask:

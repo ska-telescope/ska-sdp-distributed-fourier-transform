@@ -676,10 +676,10 @@ def test_make_facet_subgrid_from_sources_1d():
         # size to be equal to entire image size so the results should
         # be precisely the FFT of each other (at an offset)
         subgrid = make_subgrid_from_sources(
-            image_size, image_size, [subgrid_offset], [], sources
+            sources, image_size, image_size, [subgrid_offset]
         )
         facet = make_facet_from_sources(
-            image_size, image_size, [facet_offset], [], sources
+            sources, image_size, image_size, [facet_offset]
         )
 
         # Sanity check
@@ -721,10 +721,10 @@ def test_make_facet_subgrid_from_sources_2d():
         # size to be equal to entire image size so the results should
         # be precisely the FFT of each other (at an offset)
         subgrid = make_subgrid_from_sources(
-            image_size, image_size, subgrid_offset, [], sources
+            sources, image_size, image_size, subgrid_offset
         )
         facet = make_facet_from_sources(
-            image_size, image_size, facet_offset, [], sources
+            sources, image_size, image_size, facet_offset
         )
 
         # Sanity check

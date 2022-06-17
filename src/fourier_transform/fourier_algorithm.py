@@ -523,7 +523,11 @@ def make_subgrid_and_facet_from_hdf5(
 
 
 def make_facet_from_sources(
-    image_size, facet_size, facet_offsets, facet_masks, sources
+    sources: list[tuple[float, int]],
+    image_size: int,
+    facet_size: int,
+    facet_offsets: list[int],
+    facet_masks: list[numpy.ndarray] = None,
 ):
     """
     Generates a facet from a source list
@@ -532,13 +536,13 @@ def make_facet_from_sources(
     that coordinates might wrap around. Length of facet_offsets tuple decides
     how many dimensions the result has.
 
+    :param sources: List of (intensity, *coords) tuples, all image
+        coordinates integer and relative to image centre
     :param image_size: All coordinates and offset are
         interpreted as modulo this size
     :param facet_size: Desired size of facet
     :param facet_offsets: Offset tuple of facet mid-point
     :param facet_masks: Mask expressions (optional)
-    :param sources: List of (intensity, *coords) tuples, all
-        coordinates must be integer
     :returns: Numpy array with facet data
     """
 
@@ -561,14 +565,18 @@ def make_facet_from_sources(
         facet[tuple(coord)] += intensity
 
     # Apply facet mask
-    for axis, mask in enumerate(facet_masks):
+    for axis, mask in enumerate(facet_masks or []):
         facet *= broadcast(mask, dims, axis)
 
     return facet
 
 
 def make_subgrid_from_sources(
-    image_size, subgrid_size, subgrid_offsets, subgrid_masks, sources
+    sources: list[tuple[float, int]],
+    image_size: int,
+    subgrid_size: int,
+    subgrid_offsets: list[int],
+    subgrid_masks: list[numpy.ndarray] = None,
 ):
     """
     Generates a subgrid from a source list
@@ -578,13 +586,13 @@ def make_subgrid_from_sources(
     expensive. Length of subgrid_offsets tuple decides how many dimensions
     the result has.
 
+    :param sources: List of (intensity, *coords) tuples, all image
+        coordinates integer and relative to image centre
     :param image_size: Image size. Determines grid resolution and
         normalisation.
     :param subgrid_size: Desired size of subgrid
     :param subgrid_offsets: Offset tuple of subgrid mid-point
     :param subgrid_masks: Mask expressions (optional)
-    :param sources: List of (intensity, *coords) tuples, all coordinates
-       must be integer
     :returns: Numpy array with subgrid data
     """
 
@@ -608,7 +616,7 @@ def make_subgrid_from_sources(
         )
 
     # Apply subgrid masks
-    for axis, mask in enumerate(subgrid_masks):
+    for axis, mask in enumerate(subgrid_masks or []):
         subgrid *= broadcast(mask, dims, axis)
 
     return subgrid

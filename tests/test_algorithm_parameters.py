@@ -190,7 +190,7 @@ def test_facet_to_subgrid_dft_1d():
     ):
 
         # Set sources in facet
-        facet = make_facet_from_sources(N, yB_size, [facet_off], [], sources)
+        facet = make_facet_from_sources(sources, N, yB_size, [facet_off])
 
         # We assume all sources are on the facet
         assert numpy.sum(facet) == sum(src[0] for src in sources)
@@ -207,9 +207,7 @@ def test_facet_to_subgrid_dft_1d():
             subgrid = dft.finish_subgrid(subgrid_acc)
 
             # Now check against DFT
-            expected = make_subgrid_from_sources(
-                N, xA_size, [sg_off], [], sources
-            )
+            expected = make_subgrid_from_sources(sources, N, xA_size, [sg_off])
             numpy.testing.assert_array_almost_equal(subgrid, expected)
 
 
@@ -245,7 +243,7 @@ def test_facet_to_subgrid_dft_2d():
     ):
 
         # Set sources in facet
-        facet = make_facet_from_sources(N, yB_size, facet_offs, [], sources)
+        facet = make_facet_from_sources(sources, N, yB_size, facet_offs)
 
         # We assume all sources are on the facet
         assert numpy.sum(facet) == sum(src[0] for src in sources)
@@ -269,9 +267,7 @@ def test_facet_to_subgrid_dft_2d():
             subgrid = dft.finish_subgrid(subgrid_acc)
 
             # Now check against DFT
-            expected = make_subgrid_from_sources(
-                N, xA_size, sg_offs, [], sources
-            )
+            expected = make_subgrid_from_sources(sources, N, xA_size, sg_offs)
             numpy.testing.assert_array_almost_equal(subgrid, expected)
 
 
@@ -361,7 +357,7 @@ def test_subgrid_to_facet_dft():
         # Generate subgrid. As we are only filling the grid partially
         # here, we have to scale it.
         subgrid = (
-            make_subgrid_from_sources(N, xA_size, [sg_off], [], sources)
+            make_subgrid_from_sources(sources, N, xA_size, [sg_off])
             / xA_size
             * N
         )
@@ -384,7 +380,7 @@ def test_subgrid_to_facet_dft():
             # value we can really check is the (singular) one we set
             # previously.
             expected = make_facet_from_sources(
-                N, yB_size, [facet_off], [], sources
+                sources, N, yB_size, [facet_off]
             )
             numpy.testing.assert_array_almost_equal(
                 facet[expected != 0], expected[expected != 0]
