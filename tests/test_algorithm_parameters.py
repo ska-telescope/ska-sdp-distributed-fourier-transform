@@ -136,10 +136,10 @@ def test_basic_facet_to_subgrid():
             # Now generate subgrids at different (valid) subgrid offsets.
             for sg_off in numpy.arange(0, N, Nx):
                 subgrid_contrib = dft.extract_facet_contrib_to_subgrid(
-                    prepped, 0, sg_off, **arr_pars
+                    prepped, sg_off, axis=0, **arr_pars
                 )
                 subgrid_acc = dft.add_facet_contribution(
-                    subgrid_contrib, facet_off, 0
+                    subgrid_contrib, facet_off, axis=0
                 )
                 subgrid = dft.finish_subgrid(subgrid_acc)
 

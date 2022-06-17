@@ -118,10 +118,10 @@ def batch_NMBF_NMBF_sum_finish_subgrid(
         NMBF_NMBF_list = [
             distr_fft.extract_facet_contrib_to_subgrid(
                 NMBF_BF,
-                1,
                 distr_fft.subgrid_off[i1],
                 base_arrays.facet_m0_trunc,
                 base_arrays.Fn,
+                axis=1,
                 use_dask=False,
                 nout=1,
             )

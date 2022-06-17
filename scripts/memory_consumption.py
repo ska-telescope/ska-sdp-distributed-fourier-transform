@@ -118,8 +118,8 @@ def run_facet_to_subgrid(fundamental_params, use_dask=True):
                 [
                     distr_fft.prepare_facet(
                         facet_2[j0][j1],
-                        0,
                         base_arrays.Fb,
+                        axis=0,
                         use_dask=use_dask,
                         nout=1,
                     )
@@ -138,15 +138,15 @@ def run_facet_to_subgrid(fundamental_params, use_dask=True):
                         distr_fft.prepare_facet(
                             distr_fft.extract_facet_contrib_to_subgrid(
                                 BF_F,
-                                0,
                                 distr_fft.subgrid_off[i0],
                                 base_arrays.facet_m0_trunc,
                                 base_arrays.Fn,
+                                axis=0,
                                 use_dask=use_dask,
                                 nout=1,
                             ),
-                            1,
                             base_arrays.Fb,
+                            axis=1,
                             use_dask=use_dask,
                             nout=1,
                         )
@@ -166,10 +166,10 @@ def run_facet_to_subgrid(fundamental_params, use_dask=True):
                     NMBF_NMBF_tasks = [
                         distr_fft.extract_facet_contrib_to_subgrid(
                             NMBF_BF,
-                            1,
                             distr_fft.subgrid_off[i1],
                             base_arrays.facet_m0_trunc,
                             base_arrays.Fn,
+                            axis=1,
                             use_dask=use_dask,
                             nout=1,
                         )
