@@ -557,7 +557,7 @@ def make_facet_from_sources(
         # Determine position relative to facet centre
         coord = numpy.mod(coord - offs, image_size)
 
-        # Inbounds?
+        # Is the source within boundaries?
         if any((coord < 0) | (coord >= facet_size)):
             continue
 
