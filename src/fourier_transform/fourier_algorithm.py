@@ -566,7 +566,7 @@ def make_facet_from_sources(
 
     # Apply facet mask
     for axis, mask in enumerate(facet_masks or []):
-        facet *= broadcast(mask, dims, axis)
+        facet *= broadcast(numpy.array(mask), dims, axis)
 
     return facet
 
@@ -604,7 +604,7 @@ def make_subgrid_from_sources(
     uvs = numpy.transpose(
         numpy.mgrid[
             tuple(
-                slice(off - subgrid_size // 2, off + subgrid_size // 2)
+                slice(off - subgrid_size // 2, off + (subgrid_size + 1) // 2)
                 for off in reversed(subgrid_offsets)
             )
         ][::-1]
@@ -617,6 +617,6 @@ def make_subgrid_from_sources(
 
     # Apply subgrid masks
     for axis, mask in enumerate(subgrid_masks or []):
-        subgrid *= broadcast(mask, dims, axis)
+        subgrid *= broadcast(numpy.array(mask), dims, axis)
 
     return subgrid

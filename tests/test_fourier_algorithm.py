@@ -651,6 +651,98 @@ def test_roll_and_extract_mid_axis():
     assert (block_data == true_block_data).all()
 
 
+def test_make_facet_from_sources():
+    """
+    Simple unit tests for make_facet_from_sources
+    """
+
+    # Test shapes
+    assert make_facet_from_sources([], 1, 1, [0]).shape == (1,)
+    assert make_facet_from_sources([], 1, 2, [0]).shape == (2,)
+    assert make_facet_from_sources([], 1, 1, [0, 0]).shape == (1, 1)
+    assert make_facet_from_sources([], 1, 1, [0, 0, 0]).shape == (1, 1, 1)
+
+    # Test a bunch of cases for small images
+    def mffs(*xs):
+        return list(make_facet_from_sources(*xs))
+
+    assert mffs([], 1, 1, [0]) == [0]
+    assert mffs([(1, 0)], 1, 1, [0]) == [1]
+    assert mffs([(1, 2)], 1, 1, [0]) == [1]
+    assert mffs([(1, 0)], 2, 1, [0]) == [1]
+    assert mffs([(1, 1)], 2, 1, [0]) == [0]
+    assert mffs([(1, 2)], 2, 1, [0]) == [1]
+    assert mffs([(1, 0)], 2, 2, [0]) == [0, 1]
+    assert mffs([(1, 1)], 2, 2, [0]) == [1, 0]
+    assert mffs([(1, 2)], 2, 2, [0]) == [0, 1]
+    assert mffs([(1, 0), (2, 1)], 2, 2, [0]) == [2, 1]
+    assert mffs([(1, 0), (2, 3)], 2, 2, [0]) == [2, 1]
+    assert mffs([(1, 0)], 2, 2, [1]) == [1, 0]
+    assert mffs([(1, 1)], 2, 2, [1]) == [0, 1]
+    assert mffs([(1, 2)], 2, 2, [1]) == [1, 0]
+    assert mffs([(1, 0)], 2, 2, [-1]) == [1, 0]
+    assert mffs([(1, 1)], 2, 2, [-1]) == [0, 1]
+    assert mffs([(1, 2)], 2, 2, [-1]) == [1, 0]
+    assert mffs([(1, 0)], 2, 2, [0], [[1, 0]]) == [0, 0]
+    assert mffs([(1, 1)], 2, 2, [0], [[1, 0]]) == [1, 0]
+    assert mffs([(1, 2)], 2, 2, [0], [[1, 0]]) == [0, 0]
+    assert mffs([(1, 0)], 2, 2, [0], [[0, 1]]) == [0, 1]
+    assert mffs([(1, 1)], 2, 2, [0], [[0, 1]]) == [0, 0]
+    assert mffs([(1, 2)], 2, 2, [0], [[0, 1]]) == [0, 1]
+    assert mffs([(1, 0)], 2, 2, [-1], [[1, 0]]) == [1, 0]
+    assert mffs([(1, 1)], 2, 2, [-1], [[1, 0]]) == [0, 0]
+    assert mffs([(1, 2)], 2, 2, [-1], [[1, 0]]) == [1, 0]
+    assert mffs([(1, 0)], 2, 2, [1], [[0, 1]]) == [0, 0]
+    assert mffs([(1, 1)], 2, 2, [1], [[0, 1]]) == [0, 1]
+    assert mffs([(1, 2)], 2, 2, [1], [[0, 1]]) == [0, 0]
+
+
+def test_make_subgrid_from_sources():
+    """
+    Simple unit tests for make_subgrid_from_sources
+    """
+
+    # Test shapes
+    assert make_subgrid_from_sources([], 1, 1, [0]).shape == (1,)
+    assert make_subgrid_from_sources([], 1, 2, [0]).shape == (2,)
+    assert make_subgrid_from_sources([], 1, 1, [0, 0]).shape == (1, 1)
+    assert make_subgrid_from_sources([], 1, 1, [0, 0, 0]).shape == (1, 1, 1)
+
+    # Test a bunch of cases for small images
+    def msfs(*xs):
+        return pytest.approx(list(make_subgrid_from_sources(*xs)))
+
+    assert msfs([(1, 0)], 1, 1, [0]) == [1]
+    assert msfs([(1, 2)], 1, 1, [0]) == [1]
+    assert msfs([(1, 0)], 2, 1, [0]) == [0.5]
+    assert msfs([(1, 1)], 2, 1, [0]) == [0.5]
+    assert msfs([(1, 2)], 2, 1, [0]) == [0.5]
+    assert msfs([(1, 0)], 2, 1, [1]) == [0.5]
+    assert msfs([(1, 1)], 2, 1, [1]) == [-0.5]
+    assert msfs([(1, 2)], 2, 1, [1]) == [0.5]
+    assert msfs([(1, 0)], 2, 2, [0]) == [0.5, 0.5]
+    assert msfs([(1, 1)], 2, 2, [0]) == [-0.5, 0.5]
+    assert msfs([(1, 2)], 2, 2, [0]) == [0.5, 0.5]
+    assert msfs([(1, 0)], 2, 2, [1]) == [0.5, 0.5]
+    assert msfs([(1, 1)], 2, 2, [1]) == [0.5, -0.5]
+    assert msfs([(1, 2)], 2, 2, [1]) == [0.5, 0.5]
+    assert msfs([(1, 0)], 2, 2, [-1]) == [0.5, 0.5]
+    assert msfs([(1, 1)], 2, 2, [-1]) == [0.5, -0.5]
+    assert msfs([(1, 2)], 2, 2, [-1]) == [0.5, 0.5]
+    assert msfs([(1, 0)], 2, 2, [0], [[1, 0]]) == [0.5, 0]
+    assert msfs([(1, 1)], 2, 2, [0], [[1, 0]]) == [-0.5, 0]
+    assert msfs([(1, 2)], 2, 2, [0], [[1, 0]]) == [0.5, 0]
+    assert msfs([(1, 0)], 2, 2, [0], [[0, 1]]) == [0, 0.5]
+    assert msfs([(1, 1)], 2, 2, [0], [[0, 1]]) == [0, 0.5]
+    assert msfs([(1, 2)], 2, 2, [0], [[0, 1]]) == [0, 0.5]
+    assert msfs([(1, 0)], 2, 2, [-1], [[1, 0]]) == [0.5, 0]
+    assert msfs([(1, 1)], 2, 2, [-1], [[1, 0]]) == [0.5, 0]
+    assert msfs([(1, 2)], 2, 2, [-1], [[1, 0]]) == [0.5, 0]
+    assert msfs([(1, 0)], 2, 2, [1], [[0, 1]]) == [0, 0.5]
+    assert msfs([(1, 1)], 2, 2, [1], [[0, 1]]) == [0, -0.5]
+    assert msfs([(1, 2)], 2, 2, [1], [[0, 1]]) == [0, 0.5]
+
+
 def test_make_facet_subgrid_from_sources_1d():
     """
     Test facet / subgrid generation from sources - thorough 1D version
