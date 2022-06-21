@@ -52,6 +52,10 @@ def cli_parser_with_batch():
         default=18,
         help="Maximum number of tasks in the queue",
     )
+    # To improve performance, we increase the density of the task stream by
+    # first calculating a certain number of NMBF_BFs and then waiting. This
+    # value can cause the memory usage to rise if it is too large.
+    # Too small will not improve the performance.
     parser.add_argument(
         "--max_NMBF_BF_waiting_task",
         type=int,

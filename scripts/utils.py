@@ -148,8 +148,6 @@ def batch_NMBF_NMBF_sum_finish_subgrid(
 
     :return: approx subgrid index list and shape
     """
-    # jdx_facet_list
-    # [nfacet,ni1_batch]
     ni1_batch_nfacet_list = list(map(list, zip(*nfacet_ni1_batch_list)))
     approx_subgrid_i0_list = []
     for idx, i1 in enumerate(i1_batch):
@@ -204,7 +202,7 @@ def write_network_transfer_info(path, info):
     write the network transfer info
 
     :param path: file path
-    :param info: info
+    :param info: info as config1, data_incoming, data_outgoing
 
     :return info
     """
