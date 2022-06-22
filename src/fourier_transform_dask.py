@@ -165,7 +165,6 @@ def subgrid_to_facet_algorithm(
             for i1 in range(distr_fft_class.nsubgrid):
                 if use_dask:
                     tmp_NAF_MNAF = distr_fft_class.add_subgrid_contribution(
-                        2,
                         naf_naf[i0][i1][j0][j1],
                         distr_fft_class.subgrid_off[i1],
                         base_arrays.facet_m0_trunc,
@@ -180,7 +179,6 @@ def subgrid_to_facet_algorithm(
                     NAF_MNAF = (
                         NAF_MNAF
                         + distr_fft_class.add_subgrid_contribution(
-                            len(NAF_MNAF.shape),
                             naf_naf[i0][i1][j0][j1],
                             distr_fft_class.subgrid_off[i1],
                             base_arrays.facet_m0_trunc,
@@ -199,7 +197,6 @@ def subgrid_to_facet_algorithm(
             )
             if use_dask:
                 tmp_MNAF_BMNAF = distr_fft_class.add_subgrid_contribution(
-                    2,
                     NAF_BMNAF,
                     distr_fft_class.subgrid_off[i0],
                     base_arrays.facet_m0_trunc,
@@ -214,7 +211,6 @@ def subgrid_to_facet_algorithm(
                 MNAF_BMNAF = (
                     MNAF_BMNAF
                     + distr_fft_class.add_subgrid_contribution(
-                        len(MNAF_BMNAF.shape),
                         NAF_BMNAF,
                         distr_fft_class.subgrid_off[i0],
                         base_arrays.facet_m0_trunc,
@@ -282,25 +278,25 @@ def facet_to_subgrid_2d_method_1(
     ):
         BF_F = distr_ft_class.prepare_facet(
             facet[j0][j1],
-            0,
             base_arrays.Fb,
+            axis=0,
             use_dask=use_dask,
             nout=1,
         )
         BF_BF = distr_ft_class.prepare_facet(
             BF_F,
-            1,
             base_arrays.Fb,
+            axis=1,
             use_dask=use_dask,
             nout=1,
         )
         for i0 in range(distr_ft_class.nsubgrid):
             NMBF_BF = distr_ft_class.extract_facet_contrib_to_subgrid(
                 BF_BF,
-                0,
                 distr_ft_class.subgrid_off[i0],
                 base_arrays.facet_m0_trunc,
                 base_arrays.Fn,
+                axis=0,
                 use_dask=use_dask,
                 nout=1,
             )
@@ -309,10 +305,10 @@ def facet_to_subgrid_2d_method_1(
                     j1
                 ] = distr_ft_class.extract_facet_contrib_to_subgrid(
                     NMBF_BF,
-                    1,
                     distr_ft_class.subgrid_off[i1],
                     base_arrays.facet_m0_trunc,
                     base_arrays.Fn,
+                    axis=1,
                     use_dask=use_dask,
                     nout=1,
                 )
@@ -370,25 +366,25 @@ def facet_to_subgrid_2d_method_2(
     ):
         BF_F = distr_fft_class.prepare_facet(
             facet[j0][j1],
-            0,
             base_arrays.Fb,
+            axis=0,
             use_dask=use_dask,
             nout=1,
         )
         for i0 in range(distr_fft_class.nsubgrid):
             NMBF_F = distr_fft_class.extract_facet_contrib_to_subgrid(
                 BF_F,
-                0,
                 distr_fft_class.subgrid_off[i0],
                 base_arrays.facet_m0_trunc,
                 base_arrays.Fn,
+                axis=0,
                 use_dask=use_dask,
                 nout=1,
             )
             NMBF_BF = distr_fft_class.prepare_facet(
                 NMBF_F,
-                1,
                 base_arrays.Fb,
+                axis=1,
                 use_dask=use_dask,
                 nout=1,
             )
@@ -397,10 +393,10 @@ def facet_to_subgrid_2d_method_2(
                     j1
                 ] = distr_fft_class.extract_facet_contrib_to_subgrid(
                     NMBF_BF,
-                    1,
                     distr_fft_class.subgrid_off[i1],
                     base_arrays.facet_m0_trunc,
                     base_arrays.Fn,
+                    axis=1,
                     use_dask=use_dask,
                     nout=1,
                 )
@@ -450,25 +446,25 @@ def facet_to_subgrid_2d_method_3(
     ):
         F_BF = distr_fft_class.prepare_facet(
             facet[j0][j1],
-            1,
             base_arrays.Fb,
+            axis=1,
             use_dask=use_dask,
             nout=1,
         )
         for i1 in range(distr_fft_class.nsubgrid):
             F_NMBF = distr_fft_class.extract_facet_contrib_to_subgrid(
                 F_BF,
-                1,
                 distr_fft_class.subgrid_off[i1],
                 base_arrays.facet_m0_trunc,
                 base_arrays.Fn,
+                axis=1,
                 use_dask=use_dask,
                 nout=1,
             )
             BF_NMBF = distr_fft_class.prepare_facet(
                 F_NMBF,
-                0,
                 base_arrays.Fb,
+                axis=0,
                 use_dask=use_dask,
                 nout=1,
             )
@@ -477,10 +473,10 @@ def facet_to_subgrid_2d_method_3(
                     j1
                 ] = distr_fft_class.extract_facet_contrib_to_subgrid(
                     BF_NMBF,
-                    0,
                     distr_fft_class.subgrid_off[i0],
                     base_arrays.facet_m0_trunc,
                     base_arrays.Fn,
+                    axis=0,
                     use_dask=use_dask,
                     nout=1,
                 )
@@ -546,8 +542,7 @@ def generate_approx_subgrid(
 
         approx_subgrid[i0][i1] = distr_fft_class.finish_subgrid(
             summed_facet,
-            base_arrays.subgrid_A[i0],
-            base_arrays.subgrid_A[i1],
+            [base_arrays.subgrid_A[i0], base_arrays.subgrid_A[i1]],
             use_dask=use_dask,
             nout=1,
         )

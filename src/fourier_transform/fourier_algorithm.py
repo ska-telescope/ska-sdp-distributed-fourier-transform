@@ -348,6 +348,7 @@ def roll_and_extract_mid_axis(data, offset, true_usable_size, axis):
 
     :return: slice list
     """
+
     slice_list = roll_and_extract_mid(
         data.shape[axis], offset, true_usable_size
     )
@@ -356,22 +357,23 @@ def roll_and_extract_mid_axis(data, offset, true_usable_size, axis):
     for slice_item in slice_list:
         delta_slice = slice_item.stop - slice_item.start
         point.append(delta_slice + point[-1])
-    if axis == 0:
-        block_data = numpy.empty(
-            (true_usable_size, data.shape[1]), dtype=data.dtype
+
+    # Allocate new data array
+    new_shape = list(data.shape)
+    new_shape[axis] = true_usable_size
+    block_data = numpy.empty(new_shape, dtype=data.dtype)
+
+    # Set data
+    for idx0, slice_item in enumerate(slice_list):
+        slice_block = slice(point[idx0], point[idx0 + 1])
+        out_slices = create_slice(
+            slice(None), slice_block, len(data.shape), axis
         )
-        for idx0, slice_item in enumerate(slice_list):
-            slice_block = slice(point[idx0], point[idx0 + 1])
-            block_data[slice_block, :] = data[slice_item, :]
-    elif axis == 1:
-        block_data = numpy.empty(
-            (data.shape[0], true_usable_size), dtype=data.dtype
+        in_slices = create_slice(
+            slice(None), slice_item, len(data.shape), axis
         )
-        for idx0, slice_item in enumerate(slice_list):
-            slice_block = slice(point[idx0], point[idx0 + 1])
-            block_data[:, slice_block] = data[:, slice_item]
-    else:
-        raise ValueError("wrong axis")
+        block_data[out_slices] = data[in_slices]
+
     return block_data
 
 
@@ -518,3 +520,103 @@ def make_subgrid_and_facet_from_hdf5(
             nout=1,
         )
     return subgrid, facet
+
+
+def make_facet_from_sources(
+    sources: list[tuple[float, int]],
+    image_size: int,
+    facet_size: int,
+    facet_offsets: list[int],
+    facet_masks: list[numpy.ndarray] = None,
+):
+    """
+    Generates a facet from a source list
+
+    This basically boils down to adding pixels on a grid, taking into account
+    that coordinates might wrap around. Length of facet_offsets tuple decides
+    how many dimensions the result has.
+
+    :param sources: List of (intensity, *coords) tuples, all image
+        coordinates integer and relative to image centre
+    :param image_size: All coordinates and offset are
+        interpreted as modulo this size
+    :param facet_size: Desired size of facet
+    :param facet_offsets: Offset tuple of facet mid-point
+    :param facet_masks: Mask expressions (optional)
+    :returns: Numpy array with facet data
+    """
+
+    # Allocate facet
+    dims = len(facet_offsets)
+    facet = numpy.zeros(dims * [facet_size], dtype=complex)
+
+    # Set indicated pixels on facet
+    offs = numpy.array(facet_offsets, dtype=int) - dims * [facet_size // 2]
+    for intensity, *coord in sources:
+
+        # Determine position relative to facet centre
+        coord = numpy.mod(coord - offs, image_size)
+
+        # Is the source within boundaries?
+        if any((coord < 0) | (coord >= facet_size)):
+            continue
+
+        # Set pixel
+        facet[tuple(coord)] += intensity
+
+    # Apply facet mask
+    for axis, mask in enumerate(facet_masks or []):
+        facet *= broadcast(numpy.array(mask), dims, axis)
+
+    return facet
+
+
+def make_subgrid_from_sources(
+    sources: list[tuple[float, int]],
+    image_size: int,
+    subgrid_size: int,
+    subgrid_offsets: list[int],
+    subgrid_masks: list[numpy.ndarray] = None,
+):
+    """
+    Generates a subgrid from a source list
+
+    This solves a direct Fourier transformation for the given sources.
+    Note that in contrast to make_facet_from_sources this can get fairly
+    expensive. Length of subgrid_offsets tuple decides how many dimensions
+    the result has.
+
+    :param sources: List of (intensity, *coords) tuples, all image
+        coordinates integer and relative to image centre
+    :param image_size: Image size. Determines grid resolution and
+        normalisation.
+    :param subgrid_size: Desired size of subgrid
+    :param subgrid_offsets: Offset tuple of subgrid mid-point
+    :param subgrid_masks: Mask expressions (optional)
+    :returns: Numpy array with subgrid data
+    """
+
+    # Allocate subgrid
+    dims = len(subgrid_offsets)
+    subgrid = numpy.zeros(dims * [subgrid_size], dtype=complex)
+
+    # Determine subgrid data via DFT
+    uvs = numpy.transpose(
+        numpy.mgrid[
+            tuple(
+                slice(off - subgrid_size // 2, off + (subgrid_size + 1) // 2)
+                for off in reversed(subgrid_offsets)
+            )
+        ][::-1]
+    )
+    for intensity, *coords in sources:
+        norm_int = intensity / image_size**dims
+        subgrid += norm_int * numpy.exp(
+            (2j * numpy.pi / image_size) * numpy.dot(uvs, coords)
+        )
+
+    # Apply subgrid masks
+    for axis, mask in enumerate(subgrid_masks or []):
+        subgrid *= broadcast(numpy.array(mask), dims, axis)
+
+    return subgrid

@@ -34,11 +34,6 @@ from src.fourier_transform_dask import (
     subgrid_to_facet_algorithm,
 )
 from src.generate_hdf5 import generate_data_hdf5
-from tests.test_reference_data.ref_data_2d import (
-    EXPECTED_FACET_2D,
-    EXPECTED_NONZERO_APPROX_FACET_2D,
-    EXPECTED_NONZERO_SUBGRID_2D,
-)
 
 log = logging.getLogger("fourier-logger")
 log.setLevel(logging.WARNING)
@@ -151,8 +146,7 @@ def test_main_wrong_arg():
     assert str(error_string.value) == f"'{expected_message}'"
 
 
-@pytest.mark.parametrize("use_dask", [False, True])
-def test_end_to_end_2d_dask(use_dask):
+def test_end_to_end_2d_dask():
     """
     Test that the 2d algorithm produces the same results
     with and without dask.
@@ -163,57 +157,48 @@ def test_end_to_end_2d_dask(use_dask):
     # Fixing seed of numpy random
     numpy.random.seed(123456789)
 
-    if use_dask:
-        client = set_up_dask()
-    else:
-        client = None
+    client = set_up_dask()
 
     (  # pylint: disable=unused-variable
         result_subgrid,
         result_facet,
         result_approx_subgrid,
         result_approx_facet,
+    ) = run_distributed_fft(TEST_PARAMS, to_plot=False, use_dask=False)
+
+    numpy.random.seed(123456789)
+
+    (  # pylint: disable=unused-variable
+        result_subgrid_dask,
+        result_facet_dask,
+        result_approx_subgrid_dask,
+        result_approx_facet_dask,
     ) = run_distributed_fft(
         TEST_PARAMS,
         to_plot=False,
-        use_dask=use_dask,
+        use_dask=True,
         client=client,
     )
 
-    # check array shapes
-    assert result_subgrid.shape == (6, 6, 188, 188)
-    assert result_facet.shape == (4, 4, 256, 256)
-    assert result_approx_facet.shape == result_facet.shape
-
-    # check array values
-    result_subgrid_sliced = result_subgrid[:50, :50, :50, :50]
-    result_subgrid_sliced_nonzero = result_subgrid_sliced[
-        numpy.where(result_subgrid_sliced != 0)
-    ]
+    # check arrays
     assert_array_almost_equal(
-        result_subgrid_sliced_nonzero,
-        EXPECTED_NONZERO_SUBGRID_2D,
-        decimal=9,
+        result_subgrid,
+        result_subgrid_dask,
+    )
+    assert_array_almost_equal(
+        result_facet,
+        result_facet_dask,
+    )
+    assert_array_almost_equal(
+        result_approx_subgrid,
+        result_approx_subgrid_dask,
+    )
+    assert_array_almost_equal(
+        result_approx_facet,
+        result_approx_facet_dask,
     )
 
-    assert_array_almost_equal(
-        result_facet[numpy.where(result_facet != 0)].round(8),
-        EXPECTED_FACET_2D,
-        decimal=4,
-    )
-
-    result_approx_facet_sliced = result_approx_facet[:50, :50, :50, :50]
-    result_approx_facet_sliced_nonzero = result_approx_facet_sliced[
-        numpy.where(result_approx_facet_sliced != 0)
-    ]
-    assert_array_almost_equal(
-        result_approx_facet_sliced_nonzero.round(8),
-        EXPECTED_NONZERO_APPROX_FACET_2D,
-        decimal=4,
-    )
-
-    if use_dask:
-        tear_down_dask(client)
+    tear_down_dask(client)
 
 
 # pylint: disable=too-many-locals
@@ -284,10 +269,10 @@ def test_end_to_end_2d_dask_hdf5(use_dask):
         shutil.rmtree(prefix)
 
     error_G = numpy.std(numpy.abs(G - AG))
-    assert numpy.isclose(error_G, 2.3803543255644684e-08)
+    assert error_G < 3e-08
 
     error_FG = numpy.std(numpy.abs(FG - AFG))
-    assert numpy.isclose(error_FG, 4.8362811108879716e-05)
+    assert error_FG < 5e-05
 
 
 @pytest.mark.parametrize(

@@ -114,10 +114,10 @@ def batch_all_i1_NMBF_NMBF(NMBF_BF, distr_fft, base_arrays, batch_i1_list):
         for i1 in i1_batch:
             NMBF_NMBF = distr_fft.extract_facet_contrib_to_subgrid(
                 NMBF_BF,
-                1,
                 distr_fft.subgrid_off[i1],
                 base_arrays.facet_m0_trunc,
                 base_arrays.Fn,
+                axis=1,
                 use_dask=False,
                 nout=1,
             )
