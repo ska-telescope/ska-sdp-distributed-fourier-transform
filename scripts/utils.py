@@ -60,8 +60,6 @@ def sum_and_finish_subgrid(
     # Finish
     approx_subgrid = distr_fft.finish_subgrid(
         summed_facet,
-        base_arrays.subgrid_A[i0],
-        base_arrays.subgrid_A[i1],
         use_dask=False,
         nout=1,
     )
