@@ -343,7 +343,7 @@ def generate_input_data(sparse_ft_class, add_sources=True):
     # adding sources
     if add_sources:
         FG_2 = numpy.zeros((sparse_ft_class.N, sparse_ft_class.N))
-        source_count = 1000
+        source_count = 10
         sources = [
             (
                 numpy.random.randint(
