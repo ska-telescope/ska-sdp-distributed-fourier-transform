@@ -52,9 +52,7 @@ pylab.rcParams["figure.figsize"] = 16, 4
 pylab.rcParams["image.cmap"] = "viridis"
 
 
-def _generate_subgrid_contributions(
-    subgrid_2, distr_fft_class, base_arrays, use_dask
-):
+def _generate_subgrid_contributions(subgrid_2, distr_fft_class, base_arrays, use_dask):
     """
     Generate the array of individual subgrid contributions to each facet.
 
@@ -176,16 +174,13 @@ def subgrid_to_facet_algorithm(
                         NAF_MNAF, tmp_NAF_MNAF, use_dask=use_dask, nout=1
                     )
                 else:
-                    NAF_MNAF = (
-                        NAF_MNAF
-                        + distr_fft_class.add_subgrid_contribution(
-                            naf_naf[i0][i1][j0][j1],
-                            distr_fft_class.subgrid_off[i1],
-                            base_arrays.facet_m0_trunc,
-                            axis=1,
-                            use_dask=use_dask,
-                            nout=1,
-                        )
+                    NAF_MNAF = NAF_MNAF + distr_fft_class.add_subgrid_contribution(
+                        naf_naf[i0][i1][j0][j1],
+                        distr_fft_class.subgrid_off[i1],
+                        base_arrays.facet_m0_trunc,
+                        axis=1,
+                        use_dask=use_dask,
+                        nout=1,
                     )
             NAF_BMNAF = distr_fft_class.finish_facet(
                 NAF_MNAF,
@@ -208,16 +203,13 @@ def subgrid_to_facet_algorithm(
                     MNAF_BMNAF, tmp_MNAF_BMNAF, use_dask=use_dask, nout=1
                 )
             else:
-                MNAF_BMNAF = (
-                    MNAF_BMNAF
-                    + distr_fft_class.add_subgrid_contribution(
-                        NAF_BMNAF,
-                        distr_fft_class.subgrid_off[i0],
-                        base_arrays.facet_m0_trunc,
-                        axis=0,
-                        use_dask=use_dask,
-                        nout=1,
-                    )
+                MNAF_BMNAF = MNAF_BMNAF + distr_fft_class.add_subgrid_contribution(
+                    NAF_BMNAF,
+                    distr_fft_class.subgrid_off[i0],
+                    base_arrays.facet_m0_trunc,
+                    axis=0,
+                    use_dask=use_dask,
+                    nout=1,
                 )
         approx_facet[j0][j1] = distr_fft_class.finish_facet(
             MNAF_BMNAF,
@@ -486,9 +478,7 @@ def facet_to_subgrid_2d_method_3(
     return approx_subgrid
 
 
-def generate_approx_subgrid(
-    NMBF_NMBF, distr_fft_class, base_arrays, use_dask=False
-):
+def generate_approx_subgrid(NMBF_NMBF, distr_fft_class, base_arrays, use_dask=False):
     """
     Finish generating subgrids from facets.
 
@@ -536,9 +526,7 @@ def generate_approx_subgrid(
                 nout=1,
             )
             # Add two facets using Dask delayed (if use_dask = True)
-            summed_facet = add_two(
-                summed_facet, tmp_facet, use_dask=use_dask, nout=1
-            )
+            summed_facet = add_two(summed_facet, tmp_facet, use_dask=use_dask, nout=1)
 
         approx_subgrid[i0][i1] = distr_fft_class.finish_subgrid(
             summed_facet,
@@ -649,6 +637,7 @@ def run_distributed_fft(
     hdf5_prefix=None,
     hdf5_chunksize_G=None,
     hdf5_chunksize_FG=None,
+    facet_to_subgrid_method=3,
 ):
     """
     Main execution function that reads in the configuration,
@@ -666,6 +655,7 @@ def run_distributed_fft(
     :param hdf5_prefix: hdf5 path prefix
     :param hdf5_chunksize_G: hdf5 chunk size for G data
     :param hdf5_chunksize_G: hdf5 chunk size for FG data
+    :param facet_to_subgrid_method: which method to run the facet to subgrid algorithm
 
     :return: subgrid_2, facet_2, approx_subgrid, approx_facet
                 when use_hdf5=False
@@ -720,6 +710,7 @@ def run_distributed_fft(
             distr_fft,
             base_arrays,
             use_dask=use_dask,
+            version_to_run=facet_to_subgrid_method,
         )
 
         errors_facet_to_subgrid = errors_facet_to_subgrid_2d_dask(
@@ -796,6 +787,7 @@ def run_distributed_fft(
             distr_fft,
             base_arrays,
             use_dask=True,
+            version_to_run=facet_to_subgrid_method,
         )
 
         subgrid_2, facet_2, approx_subgrid, approx_facet = dask.compute(
@@ -814,6 +806,7 @@ def run_distributed_fft(
             distr_fft,
             base_arrays,
             use_dask=False,
+            version_to_run=facet_to_subgrid_method,
         )
 
     errors_facet_to_subgrid_2d(
@@ -881,6 +874,13 @@ def cli_parser():
         "--hdf5_prefix", type=str, default="./", help="hdf5 path prefix"
     )
 
+    parser.add_argument(
+        "--facet_to_subgrid_method",
+        type=str,
+        default="3",
+        help="which facet to subgrid method to run. Options are 1,2 and 3, see documentation for details",
+    )
+
     return parser
 
 
@@ -906,6 +906,12 @@ def main(args):
                 f"for available options."
             ) from error
 
+    try:
+        version = int(args.facet_to_subgrid_method)
+    except ValueError:
+        log.info("Invalid facet to subgrid method. Use default instead.")
+        version = 3
+
     dask_client = set_up_dask(scheduler_address=scheduler)
 
     for config_key in swift_config_keys:
@@ -921,6 +927,7 @@ def main(args):
                 hdf5_prefix=args.hdf5_prefix,
                 hdf5_chunksize_G=args.hdf5_chunksize_G,
                 hdf5_chunksize_FG=args.hdf5_chunksize_FG,
+                facet_to_subgrid_method=version,
             )
             dask_client.restart()
     tear_down_dask(dask_client)
