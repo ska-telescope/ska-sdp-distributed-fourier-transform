@@ -649,6 +649,8 @@ def run_distributed_fft(
     hdf5_prefix=None,
     hdf5_chunksize_G=None,
     hdf5_chunksize_FG=None,
+    generate_generic=True,
+    source_number=10,
     facet_to_subgrid_method=3,
 ):
     """
@@ -779,19 +781,30 @@ def run_distributed_fft(
 
         return G_2_file, FG_2_file, approx_G_2_file, approx_FG_2_file
 
-    G_2, FG_2 = generate_input_data(distr_fft)
+    G_2, FG_2 = generate_input_data(distr_fft, source_count=source_number)
 
     if use_dask and client is not None:
         G_2 = client.scatter(G_2)
         FG_2 = client.scatter(FG_2)
 
-    subgrid_2, facet_2 = make_subgrid_and_facet(
-        G_2,
-        FG_2,
-        base_arrays,  # still use object，
-        dims=2,
-        use_dask=use_dask,
-    )
+    if generate_generic:
+        subgrid_2, facet_2 = make_subgrid_and_facet(
+            G_2,
+            FG_2,
+            base_arrays,  # still use object，
+            dims=2,
+            use_dask=use_dask,
+        )
+    else:
+        # generate facet and subgrid separately from sources list
+        # placeholder
+        subgrid_2, facet_2 = make_subgrid_and_facet(
+            G_2,
+            FG_2,
+            base_arrays,  # still use object，
+            dims=2,
+            use_dask=use_dask,
+        )
 
     if use_dask:
         approx_subgrid, approx_facet = _run_algorithm(
@@ -886,6 +899,18 @@ def cli_parser():
     parser.add_argument(
         "--hdf5_prefix", type=str, default="./", help="hdf5 path prefix"
     )
+    parser.add_argument(
+        "--generate_generic_input",
+        type=str,
+        default="True",
+        help="Whether to generate generic input data (with random sources)",
+    )
+    parser.add_argument(
+        "--source_number",
+        type=int,
+        default=10,
+        help="Number of random sources to add to input data",
+    )
 
     parser.add_argument(
         "--facet_to_subgrid_method",
@@ -941,6 +966,8 @@ def main(args):
                 hdf5_prefix=args.hdf5_prefix,
                 hdf5_chunksize_G=args.hdf5_chunksize_G,
                 hdf5_chunksize_FG=args.hdf5_chunksize_FG,
+                generate_generic=args.generate_generic_data,
+                source_number=args.source_number,
                 facet_to_subgrid_method=version,
             )
             dask_client.restart()
