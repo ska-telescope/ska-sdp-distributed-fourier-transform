@@ -1,5 +1,5 @@
-# pylint: disable=chained-comparison,too-many-arguments
-# pylint: disable=unused-argument,too-many-statements
+# pylint: disable=chained-comparison,too-many-arguments，cell-var-from-loop
+# pylint: disable=unused-argument,too-many-statements，unnecessary-lambda
 # pylint: disable=logging-fstring-interpolation，too-many-branches
 
 """
@@ -498,7 +498,7 @@ def run_distributed_fft(
                     )
                 ]
             )
-            log.info("Facet errors: " + str(check_res))
+            log.info("Facet errors: %.3f", check_res)
 
     ms_df = ms.to_pandas()
     return ms_df
