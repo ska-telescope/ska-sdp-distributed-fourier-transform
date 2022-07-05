@@ -7,36 +7,32 @@ Testing Distributed Fourier Transform Testing for evaluating performance.
 The 1st version was implemented by PM
 """
 
-import argparse
 import itertools
 import logging
 import os
-import sys
-import time
 
 import dask
 import dask.array
 import dask.distributed
-import h5py
 import numpy
-from distributed import performance_report
 from distributed.diagnostics import MemorySampler
-from matplotlib import pylab
 
+from scripts.utils import (
+    human_readable_size,
+    wait_for_tasks,
+    write_network_transfer_info,
+)
 from src.fourier_transform.algorithm_parameters import (
     BaseArrays,
     StreamingDistributedFFT,
 )
-from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
+from src.fourier_transform.dask_wrapper import set_up_dask
 from src.fourier_transform.fourier_algorithm import (
-    extract_mid,
     make_facet_from_sources,
-    make_subgrid_and_facet_from_hdf5,
     make_subgrid_from_sources,
 )
 from src.fourier_transform_dask import cli_parser
 from src.swift_configs import SWIFT_CONFIGS
-from src.utils import generate_input_data
 
 log = logging.getLogger("fourier-logger")
 log.setLevel(logging.INFO)
@@ -46,23 +42,22 @@ def sum_and_finish_subgrid(
     distr_fft, base_arrays, i0, i1, facet_ixs, NMBF_NMBFs
 ):
     """
-    Sum all contributions and Finish subgrid
+    Combined function with Sum and Generate Subgrid
 
-    :param distr_fft:
-    :param base_arrays:
-    :param i0:
-    :param i1:
-    :param facet_ixs:
-    :param NMBF_NMBFs:
+    :param distr_fft: StreamingDistributedFFT class object
+    :param base_arrays: BaseArrays class object
+    :param i0: i0 index
+    :param i1: i1 index
+    :param facet_ixs: facet index list
+    :param NMBF_NMBFs: list of NMBF_NMBF graph
 
-    :return:
+    :return: i0,i1 index, the shape of approx_subgrid
     """
-    # Initialise facet sum
+
     summed_facet = numpy.zeros(
         (distr_fft.xM_size, distr_fft.xM_size), dtype=complex
     )
 
-    # Add contributions
     for (j0, j1), NMBF_NMBF in zip(facet_ixs, NMBF_NMBFs):
         summed_facet += distr_fft.add_facet_contribution(
             distr_fft.add_facet_contribution(
@@ -72,7 +67,6 @@ def sum_and_finish_subgrid(
             axis=1,
         )
 
-    # Finish
     return distr_fft.finish_subgrid(
         summed_facet, [base_arrays.subgrid_A[i0], base_arrays.subgrid_A[i1]]
     )
@@ -80,19 +74,20 @@ def sum_and_finish_subgrid(
 
 def prepare_and_split_subgrid(distr_fft, Fn, i0, i1, facet_ixs, subgrid):
     """
+    prepare and split subgrid facet contributions
 
-    :param distr_fft:
-    :param Fn:
-    :param i0:
-    :param i1:
-    :param facet_ixs:
-    :param subgrid:
-    :return:
+    :param distr_fft: StreamingDistributedFFT class object
+    :param Fn: Fourier transform of gridding function
+    :param i0: i0 index
+    :param i1: i1 index
+    :param facet_ixs: facet index list
+    :param subgrid: subgrid
+
+    :return: NAF_NAFs
     """
-    # Prepare subgrid
+
     prepared_subgrid = distr_fft.prepare_subgrid(subgrid)
 
-    # Extract subgrid facet contributions
     NAF_AFs = {
         j0: distr_fft.extract_subgrid_contrib_to_facet(
             prepared_subgrid, distr_fft.facet_off[j0], Fn, axis=0
@@ -112,17 +107,23 @@ def make_facet(
     N, yB_size, facet_off0, facet_B0, facet_off1, facet_B1, sources
 ):
     """
+    Generates a facet from a source list
 
-    :param N:
-    :param yB_size:
-    :param facet_off0:
-    :param facet_B0:
-    :param facet_off1:
-    :param facet_B1:
-    :param sources:
-    :return:
+    This basically boils down to adding pixels on a grid, taking into account
+    that coordinates might wrap around. Length of facet_offsets tuple decides
+    how many dimensions the result has.
+
+    :param N: image size
+    :param yB_size: Desired size of facet
+    :param facet_off0: Offset tuple of facet mid-point
+    :param facet_B0: Mask expressions (optional)
+    :param facet_off1: Offset tuple of facet mid-point
+    :param facet_B1: Mask expressions (optional)
+    :param sources: List of (intensity, *coords) tuples, all image
+        coordinates integer and relative to image centre
+    :returns: Numpy array with facet data
     """
-    # Create facet
+
     return make_facet_from_sources(
         sources, N, yB_size, [facet_off0, facet_off1], [facet_B0, facet_B1]
     )
@@ -130,17 +131,17 @@ def make_facet(
 
 def check_subgrid(N, sg_off0, sg_A0, sg_off1, sg_A1, approx_subgrid, sources):
     """
-
-    :param N:
-    :param sg_off0:
-    :param sg_A0:
-    :param sg_off1:
-    :param sg_A1:
-    :param approx_subgrid:
-    :param sources:
-    :return:
+    Compare against subgrid (normalised)
+    :param N: image size
+    :param sg_off0: Offset tuple of subgrid mid-point
+    :param sg_A0: Mask expressions (optional)
+    :param sg_off1: Offset tuple of subgrid mid-point
+    :param sg_A1: Mask expressions (optional)
+    :param approx_subgrid: approx_subgrid
+    :param sources: List of (intensity, *coords) tuples, all image
+        coordinates integer and relative to image centre
+    :returns: Numpy array with facet data
     """
-    # Compare against subgrid (normalised)
     subgrid = make_subgrid_from_sources(
         sources, N, approx_subgrid.shape[0], [sg_off0, sg_off1], [sg_A0, sg_A1]
     )
@@ -151,16 +152,18 @@ def check_facet(
     N, facet_off0, facet_B0, facet_off1, facet_B1, approx_facet, sources
 ):
     """
-
-    :param N:
-    :param facet_off0:
-    :param facet_B0:
-    :param facet_off1:
-    :param facet_B1:
-    :param approx_facet:
-    :param sources:
-    :return:
+    Compare against subgrid (normalised)
+    :param N: image size
+    :param facet_off0: Offset tuple of facet mid-point
+    :param facet_B0: Mask expressions (optional)
+    :param facet_off1: Offset tuple of facet mid-point
+    :param facet_B1: Mask expressions (optional)
+    :param approx_facet: approx_facet
+    :param sources: List of (intensity, *coords) tuples, all image
+        coordinates integer and relative to image centre
+    :returns: Numpy array with facet data
     """
+
     # Re-generate facet to compare against
     yB_size = approx_facet.shape[0]
     facet = make_facet(
@@ -169,40 +172,6 @@ def check_facet(
 
     # Compare against result
     return numpy.sqrt(numpy.average(numpy.abs(facet - approx_facet) ** 2))
-
-
-def wait_for_tasks(work_tasks, timeout=None, return_when="ALL_COMPLETED"):
-    """
-    Simple function for waiting for tasks to finish.
-
-    Logs completed tasks, and returns list of still-waiting tasks.
-    :param work_tasks:
-    :param timeout:
-    :param return_when:
-
-    :return:
-    """
-
-    # Wait for any task to finish
-    dask.distributed.wait(
-        [task for _, task in work_tasks], timeout, return_when
-    )
-
-    # Remove finished tasks from work queue, return
-    new_work_tasks = []
-    for name, task in work_tasks:
-        if task.done():
-            # If there's "{}" in the name, we should retrieve the
-            # result and include it in the mesage.
-            if "{}" in name:
-                print(name.format(task.result()))
-            else:
-                print(name)
-        elif task.cancelled():
-            print("Cancelled", name)
-        else:
-            new_work_tasks.append((name, task))
-    return new_work_tasks
 
 
 def run_distributed_fft(
@@ -223,41 +192,43 @@ def run_distributed_fft(
     distr_fft = StreamingDistributedFFT(**fundamental_params)
 
     # Calculate expected memory usage
-    MAX_WORK_TASKS = 20
+    max_work_tasks = 20
     cpx_size = numpy.dtype(complex).itemsize
-    N = fundamental_params["N"]
-    yB_size = fundamental_params["yB_size"]
-    yN_size = fundamental_params["yN_size"]
-    yP_size = fundamental_params["yP_size"]
-    xM_size = fundamental_params["xM_size"]
-    xM_yN_size = xM_size * yN_size // N
 
-    print(" == Expected memory usage:")
+    log.info(" == Expected memory usage:")
     nfacet2 = distr_fft.nfacet**2
-    MAX_WORK_COLUMNS = (
-        1 + (MAX_WORK_TASKS + distr_fft.nsubgrid - 1) // distr_fft.nsubgrid
+    max_work_columns = (
+        1 + (max_work_tasks + distr_fft.nsubgrid - 1) // distr_fft.nsubgrid
     )
-    BF_F_size = 2 * cpx_size * nfacet2 * yB_size * yP_size
+    BF_F_size = cpx_size * nfacet2 * distr_fft.yB_size * distr_fft.yP_size
     NMBF_BF_size = (
-        2 * MAX_WORK_COLUMNS * cpx_size * nfacet2 * yP_size * xM_yN_size
+        max_work_columns
+        * cpx_size
+        * nfacet2
+        * distr_fft.yP_size
+        * distr_fft.xM_yN_size
     )
     NMBF_NMBF_size = (
-        2 * MAX_WORK_TASKS * cpx_size * nfacet2 * xM_yN_size * xM_yN_size
+        max_work_tasks
+        * cpx_size
+        * nfacet2
+        * distr_fft.xM_yN_size
+        * distr_fft.xM_yN_size
     )
-    print(f"BF_F (facets):                     {BF_F_size/1e9:.05} GB")
-    print(f"NMBF_BF (subgrid columns):         {NMBF_BF_size/1e9:.05} GB")
-    print(f"NMBF_NMBF (subgrid contributions): {NMBF_NMBF_size/1e9:.05} GB")
-    print(
-        f"Sum:                               {(BF_F_size+NMBF_BF_size+NMBF_NMBF_size)/1e9:.05} GB"
+    log.info("BF_F (facets): %.3f GB", BF_F_size / 1e9)
+    log.info("NMBF_BF (subgrid columns):    %.3f     GB", NMBF_BF_size / 1e9)
+    log.info(
+        "NMBF_NMBF (subgrid contributions): %.3f GB", NMBF_NMBF_size / 1e9
     )
+    log.info("Sum: %.3f GB", (BF_F_size + NMBF_BF_size + NMBF_NMBF_size) / 1e9)
 
     # Make facets containing just one source
     sources = [(1, 1, 0)]
     facet_2 = [
         [
             dask.delayed(make_facet)(
-                N,
-                yB_size,
+                distr_fft.N,
+                distr_fft.yB_size,
                 distr_fft.facet_off[j0],
                 base_arrays.facet_B[j0],
                 distr_fft.facet_off[j1],
@@ -268,8 +239,8 @@ def run_distributed_fft(
         ]
         for j0 in range(distr_fft.nfacet)
     ]
-    print("Facet offsets: ", distr_fft.facet_off)
-    print("Subgrid offsets: ", distr_fft.subgrid_off)
+    log.info("Facet offsets: %d", distr_fft.facet_off)
+    log.info("Subgrid offsets: %d", distr_fft.subgrid_off)
 
     # List of all facet indices
     facet_ixs = list(
@@ -307,7 +278,7 @@ def run_distributed_fft(
 
             # Make tasks for accumulating facet data (equivalent of BF_F
             # for backwards direction). Generating them from BF_F_tasks is
-            # a small cahet to encourage Dask to put the facets on the
+            # a small cheat to encourage Dask to put the facets on the
             # same node. Not sure it is a good idea - alternatively just go
             # numpy.zeros((xP_size, yB_size), dtype=complex) here.
             MNAF_BMNAF_tasks = dask.persist(
@@ -361,11 +332,10 @@ def run_distributed_fft(
                 )[0]
 
                 # Sequential go over individual subgrids
-                sleep_tasks = []
                 for i1 in list(range(distr_fft.nsubgrid)):
 
                     # No space in work queue?
-                    while len(work_tasks) >= MAX_WORK_TASKS:
+                    while len(work_tasks) >= max_work_tasks:
                         work_tasks = wait_for_tasks(
                             work_tasks, return_when="FIRST_COMPLETED"
                         )
@@ -512,25 +482,23 @@ def run_distributed_fft(
 
             # Get error
             wait_for_tasks(work_tasks)
-            print(
-                "Facet errors: ",
-                dask.compute(
-                    [
-                        dask.delayed(check_facet)(
-                            distr_fft.N,
-                            distr_fft.facet_off[j0],
-                            base_arrays.facet_B[j0],
-                            distr_fft.facet_off[j1],
-                            base_arrays.facet_B[j1],
-                            approx_facet_task,
-                            sources,
-                        )
-                        for (j0, j1), approx_facet_task in zip(
-                            facet_ixs, approx_facet_tasks
-                        )
-                    ]
-                ),
+            check_res = dask.compute(
+                [
+                    dask.delayed(check_facet)(
+                        distr_fft.N,
+                        distr_fft.facet_off[j0],
+                        base_arrays.facet_B[j0],
+                        distr_fft.facet_off[j1],
+                        base_arrays.facet_B[j1],
+                        approx_facet_task,
+                        sources,
+                    )
+                    for (j0, j1), approx_facet_task in zip(
+                        facet_ixs, approx_facet_tasks
+                    )
+                ]
             )
+            log.info("Facet errors: " + str(check_res))
 
     ms_df = ms.to_pandas()
     return ms_df
@@ -541,7 +509,7 @@ def main(args):
     Main function to run the Distributed FFT
     """
     ttt = dask.config.get("distributed.nanny.environ.MALLOC_TRIM_THRESHOLD_")
-    print("MALLOC_TRIM_THRESHOLD_:", ttt)
+    log.info("MALLOC_TRIM_THRESHOLD_: %d", ttt)
     # Fixing seed of numpy random
     numpy.random.seed(123456789)
 
@@ -569,6 +537,38 @@ def main(args):
             client=dask_client,
         )
         ms_df.to_csv(f"ms_{config_key}.csv")
+
+        dict_outgoing = dask_client.run(
+            lambda dask_worker: dask_worker.outgoing_transfer_log
+        )
+        dict_incoming = dask_client.run(
+            lambda dask_worker: dask_worker.incoming_transfer_log
+        )
+
+        sum_getitem_incoming = 0.0
+        for di_key in dict_incoming.keys():
+            for di_key2 in dict_incoming[di_key]:
+                if "getitem" in str(di_key2["keys"]):
+                    sum_getitem_incoming += di_key2["total"]
+        log.info(
+            f"sum_getitem_incoming transfer bytes: {sum_getitem_incoming}"
+        )
+        sum_getitem_outgoing = 0.0
+        for do_key in dict_outgoing.keys():
+            for do_key2 in dict_outgoing[do_key]:
+                if "getitem" in str(do_key2["keys"]):
+                    sum_getitem_outgoing += do_key2["total"]
+        log.info(
+            f"sum_getitem_outgoing transfer bytes: {sum_getitem_outgoing}"
+        )
+        tmp_size_1 = human_readable_size(sum_getitem_incoming)
+        tmp_size_2 = (human_readable_size(sum_getitem_outgoing),)
+        write_task = write_network_transfer_info(
+            "transfer_info_full_step.txt",
+            f"{config_key},{tmp_size_1},{tmp_size_2}",
+        )
+        dask_client.compute(write_task, sync=True)
+
         dask_client.restart()
 
     # PW: Not sure why we would do this?
