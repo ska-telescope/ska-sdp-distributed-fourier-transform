@@ -27,10 +27,9 @@ from src.fourier_transform.algorithm_parameters import (
 )
 from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
 from src.fourier_transform.fourier_algorithm import (
-    make_facet_from_sources,
     make_subgrid_and_facet,
     make_subgrid_and_facet_from_hdf5,
-    make_subgrid_from_sources,
+    make_subgrid_and_facet_from_sources,
 )
 from src.swift_configs import SWIFT_CONFIGS
 from src.utils import (
@@ -803,62 +802,9 @@ def run_distributed_fft(
     else:
         # Make facets and subgrids containing just one source
         sources = [(1, 1, 0)]
-        if use_dask:
-            facet_2 = [
-                [
-                    dask.delayed(make_facet_from_sources)(
-                        sources,
-                        base_arrays.N,
-                        base_arrays.yB_size,
-                        [distr_fft.facet_off[j0], distr_fft.facet_off[j1]],
-                        [base_arrays.facet_B[j0], base_arrays.facet_B[j1]],
-                    )
-                    for j1 in range(distr_fft.nfacet)
-                ]
-                for j0 in range(distr_fft.nfacet)
-            ]
-
-            subgrid_2 = [
-                [
-                    dask.delayed(make_subgrid_from_sources)(
-                        sources,
-                        base_arrays.N,
-                        base_arrays.xA_size,
-                        [distr_fft.subgrid_off[j0], distr_fft.subgrid_off[j1]],
-                        [base_arrays.subgrid_A[j0], base_arrays.subgrid_A[j1]],
-                    )
-                    for j1 in range(distr_fft.nsubgrid)
-                ]
-                for j0 in range(distr_fft.nsubgrid)
-            ]
-        else:
-            facet_2 = [
-                [
-                    make_facet_from_sources(
-                        sources,
-                        base_arrays.N,
-                        base_arrays.yB_size,
-                        [distr_fft.facet_off[j0], distr_fft.facet_off[j1]],
-                        [base_arrays.facet_B[j0], base_arrays.facet_B[j1]],
-                    )
-                    for j1 in range(distr_fft.nfacet)
-                ]
-                for j0 in range(distr_fft.nfacet)
-            ]
-
-            subgrid_2 = [
-                [
-                    make_subgrid_from_sources(
-                        sources,
-                        base_arrays.N,
-                        base_arrays.xA_size,
-                        [distr_fft.subgrid_off[j0], distr_fft.subgrid_off[j1]],
-                        [base_arrays.subgrid_A[j0], base_arrays.subgrid_A[j1]],
-                    )
-                    for j1 in range(distr_fft.nsubgrid)
-                ]
-                for j0 in range(distr_fft.nsubgrid)
-            ]
+        subgrid_2, facet_2 = make_subgrid_and_facet_from_sources(
+            sources, base_arrays, distr_fft, use_dask=use_dask
+        )
 
     if use_dask:
         approx_subgrid, approx_facet = _run_algorithm(
@@ -1022,7 +968,7 @@ def main(args):
                 hdf5_prefix=args.hdf5_prefix,
                 hdf5_chunksize_G=args.hdf5_chunksize_G,
                 hdf5_chunksize_FG=args.hdf5_chunksize_FG,
-                generate_generic=args.generate_generic_data,
+                generate_generic=args.generate_generic_input,
                 source_number=args.source_number,
                 facet_to_subgrid_method=version,
             )
