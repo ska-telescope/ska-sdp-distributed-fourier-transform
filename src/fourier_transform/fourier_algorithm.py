@@ -648,9 +648,9 @@ def make_subgrid_and_facet_from_sources(
                     [distr_fft.facet_off[j0], distr_fft.facet_off[j1]],
                     [base_arrays.facet_B[j0], base_arrays.facet_B[j1]],
                 )
-                for j1 in range(distr_fft.nfacet)
+                for j1 in range(base_arrays.nfacet)
             ]
-            for j0 in range(distr_fft.nfacet)
+            for j0 in range(base_arrays.nfacet)
         ]
 
         subgrid = [
@@ -662,37 +662,50 @@ def make_subgrid_and_facet_from_sources(
                     [distr_fft.subgrid_off[j0], distr_fft.subgrid_off[j1]],
                     [base_arrays.subgrid_A[j0], base_arrays.subgrid_A[j1]],
                 )
-                for j1 in range(distr_fft.nsubgrid)
+                for j1 in range(base_arrays.nsubgrid)
             ]
-            for j0 in range(distr_fft.nsubgrid)
+            for j0 in range(base_arrays.nsubgrid)
         ]
     else:
-        facet = [
-            [
-                make_facet_from_sources(
-                    sources,
-                    base_arrays.N,
-                    base_arrays.yB_size,
-                    [distr_fft.facet_off[j0], distr_fft.facet_off[j1]],
-                    [base_arrays.facet_B[j0], base_arrays.facet_B[j1]],
-                )
-                for j1 in range(distr_fft.nfacet)
-            ]
-            for j0 in range(distr_fft.nfacet)
-        ]
 
-        subgrid = [
-            [
-                make_subgrid_from_sources(
-                    sources,
-                    base_arrays.N,
-                    base_arrays.xA_size,
-                    [distr_fft.subgrid_off[j0], distr_fft.subgrid_off[j1]],
-                    [base_arrays.subgrid_A[j0], base_arrays.subgrid_A[j1]],
-                )
-                for j1 in range(distr_fft.nsubgrid)
-            ]
-            for j0 in range(distr_fft.nsubgrid)
-        ]
+        subgrid = numpy.empty(
+            (
+                base_arrays.nsubgrid,
+                base_arrays.nsubgrid,
+                base_arrays.xA_size,
+                base_arrays.xA_size,
+            ),
+            dtype=complex,
+        )
+        facet = numpy.empty(
+            (
+                base_arrays.nfacet,
+                base_arrays.nfacet,
+                base_arrays.yB_size,
+                base_arrays.yB_size,
+            ),
+            dtype=complex,
+        )
+
+        for i0, i1 in itertools.product(
+            range(base_arrays.nsubgrid), range(base_arrays.nsubgrid)
+        ):
+            subgrid[i0][i1] = make_subgrid_from_sources(
+                sources,
+                base_arrays.N,
+                base_arrays.xA_size,
+                [distr_fft.subgrid_off[i0], distr_fft.subgrid_off[i1]],
+                [base_arrays.subgrid_A[i0], base_arrays.subgrid_A[i1]],
+            )
+        for j0, j1 in itertools.product(
+            range(base_arrays.nfacet), range(base_arrays.nfacet)
+        ):
+            facet[j0][j1] = make_facet_from_sources(
+                sources,
+                base_arrays.N,
+                base_arrays.yB_size,
+                [distr_fft.facet_off[j0], distr_fft.facet_off[j1]],
+                [base_arrays.facet_B[j0], base_arrays.facet_B[j1]],
+            )
 
     return subgrid, facet
