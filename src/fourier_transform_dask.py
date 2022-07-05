@@ -27,8 +27,10 @@ from src.fourier_transform.algorithm_parameters import (
 )
 from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
 from src.fourier_transform.fourier_algorithm import (
+    make_facet_from_sources,
     make_subgrid_and_facet,
     make_subgrid_and_facet_from_hdf5,
+    make_subgrid_from_sources,
 )
 from src.swift_configs import SWIFT_CONFIGS
 from src.utils import (
@@ -669,6 +671,9 @@ def run_distributed_fft(
     :param hdf5_prefix: hdf5 path prefix
     :param hdf5_chunksize_G: hdf5 chunk size for G data
     :param hdf5_chunksize_G: hdf5 chunk size for FG data
+    :param generate_generic: Whether to generate generic input data
+                            (with random sources)
+    :param source_number: Number of random sources to add to input data
     :param facet_to_subgrid_method: which method to run
                                     the facet to subgrid algorithm
 
@@ -796,15 +801,64 @@ def run_distributed_fft(
             use_dask=use_dask,
         )
     else:
-        # generate facet and subgrid separately from sources list
-        # placeholder
-        subgrid_2, facet_2 = make_subgrid_and_facet(
-            G_2,
-            FG_2,
-            base_arrays,  # still use object，
-            dims=2,
-            use_dask=use_dask,
-        )
+        # Make facets and subgrids containing just one source
+        sources = [(1, 1, 0)]
+        if use_dask:
+            facet_2 = [
+                [
+                    dask.delayed(make_facet_from_sources)(
+                        sources,
+                        base_arrays.N,
+                        base_arrays.yB_size,
+                        [distr_fft.facet_off[j0], distr_fft.facet_off[j1]],
+                        [base_arrays.facet_B[j0], base_arrays.facet_B[j1]],
+                    )
+                    for j1 in range(distr_fft.nfacet)
+                ]
+                for j0 in range(distr_fft.nfacet)
+            ]
+
+            subgrid_2 = [
+                [
+                    dask.delayed(make_subgrid_from_sources)(
+                        sources,
+                        base_arrays.N,
+                        base_arrays.xA_size,
+                        [distr_fft.subgrid_off[j0], distr_fft.subgrid_off[j1]],
+                        [base_arrays.subgrid_A[j0], base_arrays.subgrid_A[j1]],
+                    )
+                    for j1 in range(distr_fft.nsubgrid)
+                ]
+                for j0 in range(distr_fft.nsubgrid)
+            ]
+        else:
+            facet_2 = [
+                [
+                    make_facet_from_sources(
+                        sources,
+                        base_arrays.N,
+                        base_arrays.yB_size,
+                        [distr_fft.facet_off[j0], distr_fft.facet_off[j1]],
+                        [base_arrays.facet_B[j0], base_arrays.facet_B[j1]],
+                    )
+                    for j1 in range(distr_fft.nfacet)
+                ]
+                for j0 in range(distr_fft.nfacet)
+            ]
+
+            subgrid_2 = [
+                [
+                    make_subgrid_from_sources(
+                        sources,
+                        base_arrays.N,
+                        base_arrays.xA_size,
+                        [distr_fft.subgrid_off[j0], distr_fft.subgrid_off[j1]],
+                        [base_arrays.subgrid_A[j0], base_arrays.subgrid_A[j1]],
+                    )
+                    for j1 in range(distr_fft.nsubgrid)
+                ]
+                for j0 in range(distr_fft.nsubgrid)
+            ]
 
     if use_dask:
         approx_subgrid, approx_facet = _run_algorithm(
@@ -899,12 +953,14 @@ def cli_parser():
     parser.add_argument(
         "--hdf5_prefix", type=str, default="./", help="hdf5 path prefix"
     )
+
     parser.add_argument(
         "--generate_generic_input",
         type=str,
         default="True",
         help="Whether to generate generic input data (with random sources)",
     )
+
     parser.add_argument(
         "--source_number",
         type=int,
