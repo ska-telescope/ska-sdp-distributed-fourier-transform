@@ -700,6 +700,8 @@ def run_distributed_fft(
 
     # The branch of using HDF5
     if use_hdf5:
+
+        log.info("Use HDF5 to generate input data.")
         G_2_file = f"{hdf5_prefix}/G_{base_arrays.N}_{hdf5_chunksize_G}.h5"
         FG_2_file = f"{hdf5_prefix}/FG_{base_arrays.N}_{hdf5_chunksize_FG}.h5"
         approx_G_2_file = (
@@ -792,6 +794,10 @@ def run_distributed_fft(
         FG_2 = client.scatter(FG_2)
 
     if generate_generic:
+
+        log.info(
+            "Make subgrid and facet using random %s sources", source_number
+        )
         subgrid_2, facet_2 = make_subgrid_and_facet(
             G_2,
             FG_2,
@@ -800,7 +806,9 @@ def run_distributed_fft(
             use_dask=use_dask,
         )
     else:
-        # Make facets and subgrids containing just one source
+        log.info(
+            "Make subgrid and facet using just one source. For scaling tests purposes only."
+        )
         sources = [(1, 1, 0)]
         subgrid_2, facet_2 = make_subgrid_and_facet_from_sources(
             sources, base_arrays, distr_fft, use_dask=use_dask
@@ -903,7 +911,7 @@ def cli_parser():
     parser.add_argument(
         "--generate_generic_input",
         type=str,
-        default="True",
+        default="False",
         help="Whether to generate generic input data (with random sources)",
     )
 
