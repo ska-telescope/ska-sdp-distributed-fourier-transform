@@ -807,7 +807,8 @@ def run_distributed_fft(
         )
     else:
         log.info(
-            "Make subgrid and facet using just one source. For scaling tests purposes only."
+            "Make subgrid and facet using just one source. "
+            "For scaling tests purposes only."
         )
         sources = [(1, 1, 0)]
         subgrid_2, facet_2 = make_subgrid_and_facet_from_sources(
