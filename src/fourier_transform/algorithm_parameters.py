@@ -321,7 +321,7 @@ class StreamingDistributedFFT(BaseParameters):
 
     # facet to subgrid algorithm
     @dask_wrapper
-    def prepare_facet(self, facet, Fb, axis, chunk=False, **kwargs):
+    def prepare_facet(self, facet, Fb, axis, **kwargs):
         """
         Calculate the inverse FFT of a padded facet element multiplied by Fb
         (Fb: Fourier transform of grid correction function)
@@ -337,36 +337,6 @@ class StreamingDistributedFFT(BaseParameters):
         :return: TODO: BF? prepared facet
         """
 
-        # Special case: If input is large, break down generation of
-        # result arrays into "chunks" to reduce peak memory usage.
-
-        if chunk:
-            dims = len(facet.shape)
-            PF_CHUNK_SIZE = 1024 * 1024 // 16  # 1 MB
-            other_axis = 0 if axis == 1 else 1
-            chunk_size = max(1, PF_CHUNK_SIZE // facet.shape[axis])
-            if other_axis < dims and facet.shape[other_axis] > chunk_size:
-
-                # Allocate
-                new_shape = list(facet.shape)
-                new_shape[axis] = self.yP_size
-                BF = numpy.empty(new_shape, dtype=complex)
-
-                # Fill incrementally
-                for start in range(0, self.yP_size, chunk_size):
-                    slc = create_slice(
-                        slice(None),
-                        slice(start, start + chunk_size),
-                        dims,
-                        other_axis,
-                    )
-                    BF[slc] = self.prepare_facet(facet[slc], Fb, axis)
-
-                return BF
-
-        # Facet preparation: Fourier transform facet after image-space
-        # multiplication with b and padding (akin to grid correction
-        # for degridding).
         BF = pad_mid(
             facet * broadcast(Fb, len(facet.shape), axis),
             self.yP_size,

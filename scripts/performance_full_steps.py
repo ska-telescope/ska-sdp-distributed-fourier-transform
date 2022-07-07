@@ -37,8 +37,13 @@ log.setLevel(logging.INFO)
 def wait_for_tasks(work_tasks, timeout=None, return_when="ALL_COMPLETED"):
     """
     Simple function for waiting for tasks to finish.
-
     Logs completed tasks, and returns list of still-waiting tasks.
+
+    :param work_tasks: task list
+    :param timeout: timeout for waiting a task finshed
+    :param return_when: return string
+
+    :return: unfinshed task
     """
 
     # Wait for any task to finish
@@ -53,11 +58,11 @@ def wait_for_tasks(work_tasks, timeout=None, return_when="ALL_COMPLETED"):
             # If there's "{}" in the name, we should retrieve the
             # result and include it in the mesage.
             if "{}" in name:
-                print(name.format(task.result()))
+                log.info("%s", str(name.format(task.result())))
             else:
-                print(name)
+                log.info("%s", str(name))
         elif task.cancelled():
-            print("Cancelled", name)
+            log.info("Cancelled %s", str(name))
         else:
             new_work_tasks.append((name, task))
     return new_work_tasks
@@ -201,6 +206,7 @@ def check_facet(
 
 def run_distributed_fft(
     fundamental_params,
+    max_work_tasks=20,
     client=None,
 ):
     """
@@ -217,7 +223,6 @@ def run_distributed_fft(
     distr_fft = StreamingDistributedFFT(**fundamental_params)
 
     # Calculate expected memory usage
-    max_work_tasks = 20
     cpx_size = numpy.dtype(complex).itemsize
 
     log.info(" == Expected memory usage:")
@@ -559,6 +564,7 @@ def main(args):
         log.info("Running for swift-config: %s", config_key)
         ms_df = run_distributed_fft(
             SWIFT_CONFIGS[config_key],
+            args.queue_size,
             client=dask_client,
         )
         ms_df.to_csv(f"ms_{config_key}.csv")
@@ -596,11 +602,14 @@ def main(args):
 
         dask_client.restart()
 
-    # PW: Not sure why we would do this?
-    # tear_down_dask(dask_client)
-
 
 if __name__ == "__main__":
     dfft_parser = cli_parser()
+    dfft_parser.add_argument(
+        "--queue_size",
+        type=int,
+        default=20,
+        help="the size of queue",
+    )
     parsed_args = dfft_parser.parse_args()
     main(parsed_args)
