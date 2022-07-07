@@ -8,6 +8,7 @@ import dask
 import numpy
 import pytest
 
+from src.fourier_transform.algorithm_parameters import BaseArrays
 from src.fourier_transform.fourier_algorithm import (
     _ith_subgrid_facet_element,
     broadcast,
@@ -17,6 +18,7 @@ from src.fourier_transform.fourier_algorithm import (
     fft,
     ifft,
     make_facet_from_sources,
+    make_subgrid_and_facet_from_sources,
     make_subgrid_from_sources,
     pad_mid,
     roll_and_extract_mid,
@@ -836,3 +838,58 @@ def test_make_facet_subgrid_from_sources_2d():
             numpy.testing.assert_array_almost_equal(
                 subgrid, 1 / image_size / image_size
             )
+
+
+def test_make_subgrid_and_facet_from_sources_function():
+    """
+    Test the function make_facet_and_subgrid_from_sources
+    """
+
+    image_size = 1024
+    xA_size = 188
+    yB_size = 256
+
+    TEST_PARAMS = {
+        "W": 13.25,
+        "fov": 0.75,
+        "N": image_size,
+        "Nx": 4,
+        "yB_size": yB_size,
+        "yN_size": 320,
+        "yP_size": 512,
+        "xA_size": xA_size,
+        "xM_size": 256,
+    }
+
+    base_arrays = BaseArrays(**TEST_PARAMS)
+
+    sources = [(1, 0, 0)]
+
+    subgrid, facet = make_subgrid_and_facet_from_sources(
+        sources, base_arrays, use_dask=False
+    )
+
+    # Testing the shape
+    assert subgrid.shape == (
+        base_arrays.nsubgrid,
+        base_arrays.nsubgrid,
+        xA_size,
+        xA_size,
+    )
+    assert facet.shape == (
+        base_arrays.nfacet,
+        base_arrays.nfacet,
+        yB_size,
+        yB_size,
+    )
+
+    # Testing the data
+    assert abs(numpy.sum(facet[0, 0])) == 1.0
+
+    subgrid = numpy.roll(subgrid, [0, 0], axis=(0, 1))
+    ft_subgrid_0 = fft(fft(subgrid[0, 0], axis=0), axis=1)
+    assert numpy.isclose(
+        abs(numpy.sum(ft_subgrid_0)),
+        1.0 / (image_size / xA_size) ** 2,
+        rtol=1e-13,
+    )

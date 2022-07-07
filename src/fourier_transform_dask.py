@@ -29,6 +29,7 @@ from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
 from src.fourier_transform.fourier_algorithm import (
     make_subgrid_and_facet,
     make_subgrid_and_facet_from_hdf5,
+    make_subgrid_and_facet_from_sources,
 )
 from src.swift_configs import SWIFT_CONFIGS
 from src.utils import (
@@ -639,6 +640,7 @@ def _run_algorithm(
 
 
 # pylint: disable=too-many-arguments
+# TODO: Futher refactor to optimise on the pylint errors
 def run_distributed_fft(
     fundamental_params,
     to_plot=True,
@@ -647,8 +649,10 @@ def run_distributed_fft(
     client=None,
     use_hdf5=False,
     hdf5_prefix=None,
-    hdf5_chunksize_G=None,
-    hdf5_chunksize_FG=None,
+    hdf5_chunksize=None,
+    generate_random=False,
+    source_number=10,
+    facet_to_subgrid_method=3,
 ):
     """
     Main execution function that reads in the configuration,
@@ -664,8 +668,12 @@ def run_distributed_fft(
     :param client: Dask client or None
     :param use_hdf5: use Hdf5?
     :param hdf5_prefix: hdf5 path prefix
-    :param hdf5_chunksize_G: hdf5 chunk size for G data
-    :param hdf5_chunksize_G: hdf5 chunk size for FG data
+    :param hdf5_chunksize: hdf5 chunk size in tuple [size(G), size(FG)]
+    :param generate_random: Whether to generate generic input data
+                            with random sources
+    :param source_number: Number of random sources to add to input data
+    :param facet_to_subgrid_method: which method to run
+                                    the facet to subgrid algorithm
 
     :return: subgrid_2, facet_2, approx_subgrid, approx_facet
                 when use_hdf5=False
@@ -691,6 +699,9 @@ def run_distributed_fft(
 
     # The branch of using HDF5
     if use_hdf5:
+
+        log.info("Use HDF5 to generate input data.")
+        hdf5_chunksize_G, hdf5_chunksize_FG = hdf5_chunksize
         G_2_file = f"{hdf5_prefix}/G_{base_arrays.N}_{hdf5_chunksize_G}.h5"
         FG_2_file = f"{hdf5_prefix}/FG_{base_arrays.N}_{hdf5_chunksize_FG}.h5"
         approx_G_2_file = (
@@ -720,6 +731,7 @@ def run_distributed_fft(
             distr_fft,
             base_arrays,
             use_dask=use_dask,
+            version_to_run=facet_to_subgrid_method,
         )
 
         errors_facet_to_subgrid = errors_facet_to_subgrid_2d_dask(
@@ -775,19 +787,31 @@ def run_distributed_fft(
 
         return G_2_file, FG_2_file, approx_G_2_file, approx_FG_2_file
 
-    G_2, FG_2 = generate_input_data(distr_fft)
+    if generate_random:
+        log.info(
+            "Make subgrid and facet using random %s sources", source_number
+        )
+        G_2, FG_2 = generate_input_data(distr_fft, source_count=source_number)
 
-    if use_dask and client is not None:
-        G_2 = client.scatter(G_2)
-        FG_2 = client.scatter(FG_2)
-
-    subgrid_2, facet_2 = make_subgrid_and_facet(
-        G_2,
-        FG_2,
-        base_arrays,  # still use object，
-        dims=2,
-        use_dask=use_dask,
-    )
+        if use_dask and client is not None:
+            G_2 = client.scatter(G_2)
+            FG_2 = client.scatter(FG_2)
+        subgrid_2, facet_2 = make_subgrid_and_facet(
+            G_2,
+            FG_2,
+            base_arrays,  # still use object，
+            dims=2,
+            use_dask=use_dask,
+        )
+    else:
+        log.info(
+            "Make subgrid and facet using just one source. "
+            "For scaling tests purposes only."
+        )
+        sources = [(1, 1, 0)]
+        subgrid_2, facet_2 = make_subgrid_and_facet_from_sources(
+            sources, base_arrays, use_dask=use_dask
+        )
 
     if use_dask:
         approx_subgrid, approx_facet = _run_algorithm(
@@ -796,6 +820,7 @@ def run_distributed_fft(
             distr_fft,
             base_arrays,
             use_dask=True,
+            version_to_run=facet_to_subgrid_method,
         )
 
         subgrid_2, facet_2, approx_subgrid, approx_facet = dask.compute(
@@ -814,6 +839,7 @@ def run_distributed_fft(
             distr_fft,
             base_arrays,
             use_dask=False,
+            version_to_run=facet_to_subgrid_method,
         )
 
     errors_facet_to_subgrid_2d(
@@ -864,21 +890,36 @@ def cli_parser():
     )
 
     parser.add_argument(
-        "--hdf5_chunksize_G",
+        "--hdf5_chunksize",
         type=int,
         default=256,
-        help="hdf5 chunksize for G",
-    )
-
-    parser.add_argument(
-        "--hdf5_chunksize_FG",
-        type=int,
-        default=256,
-        help="hdf5 chunksize for FG",
+        help="hdf5 chunksize for G and FG",
     )
 
     parser.add_argument(
         "--hdf5_prefix", type=str, default="./", help="hdf5 path prefix"
+    )
+
+    parser.add_argument(
+        "--generate_random_sources",
+        type=str,
+        default="False",
+        help="Whether to generate generic input data with random sources",
+    )
+
+    parser.add_argument(
+        "--source_number",
+        type=int,
+        default=10,
+        help="Number of random sources to add to input data",
+    )
+
+    parser.add_argument(
+        "--facet_to_subgrid_method",
+        type=str,
+        default="3",
+        help="which facet to subgrid method to run. "
+        "Options are 1,2 and 3, see documentation for details",
     )
 
     return parser
@@ -906,6 +947,12 @@ def main(args):
                 f"for available options."
             ) from error
 
+    try:
+        version = int(args.facet_to_subgrid_method)
+    except ValueError:
+        log.info("Invalid facet to subgrid method. Use default instead.")
+        version = 3
+
     dask_client = set_up_dask(scheduler_address=scheduler)
 
     for config_key in swift_config_keys:
@@ -919,8 +966,10 @@ def main(args):
                 client=dask_client,
                 use_hdf5=args.use_hdf5 == "True",
                 hdf5_prefix=args.hdf5_prefix,
-                hdf5_chunksize_G=args.hdf5_chunksize_G,
-                hdf5_chunksize_FG=args.hdf5_chunksize_FG,
+                hdf5_chunksize=[args.hdf5_chunksize, args.hdf5_chunksize],
+                generate_random=args.generate_random_sources,
+                source_number=args.source_number,
+                facet_to_subgrid_method=version,
             )
             dask_client.restart()
     tear_down_dask(dask_client)

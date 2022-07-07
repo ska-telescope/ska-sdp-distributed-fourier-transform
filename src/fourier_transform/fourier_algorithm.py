@@ -5,6 +5,7 @@ Included are a list of base functions that are used across the code.
 """
 import itertools
 
+import dask
 import h5py
 import numpy
 
@@ -620,3 +621,89 @@ def make_subgrid_from_sources(
         subgrid *= broadcast(numpy.array(mask), dims, axis)
 
     return subgrid
+
+
+def make_subgrid_and_facet_from_sources(sources, base_arrays, use_dask=False):
+    """
+    Calculate the actual subgrids and facets from a list of specific sources.
+    Dask.delayed compatible version
+    Currently only works for 2D.
+
+    :param sources: List of source positions
+    :param base_arrays: BaseArrays class object
+    :param use_dask: run function with dask.delayed or not?
+    :return: tuple of two numpy.ndarray (subgrid, facet) if use_dask=False,
+             else, the dask graph of the arrays
+    """
+
+    if use_dask:
+        facet = [
+            [
+                dask.delayed(make_facet_from_sources)(
+                    sources,
+                    base_arrays.N,
+                    base_arrays.yB_size,
+                    [base_arrays.facet_off[j0], base_arrays.facet_off[j1]],
+                    [base_arrays.facet_B[j0], base_arrays.facet_B[j1]],
+                )
+                for j1 in range(base_arrays.nfacet)
+            ]
+            for j0 in range(base_arrays.nfacet)
+        ]
+
+        subgrid = [
+            [
+                dask.delayed(make_subgrid_from_sources)(
+                    sources,
+                    base_arrays.N,
+                    base_arrays.xA_size,
+                    [base_arrays.subgrid_off[j0], base_arrays.subgrid_off[j1]],
+                    [base_arrays.subgrid_A[j0], base_arrays.subgrid_A[j1]],
+                )
+                for j1 in range(base_arrays.nsubgrid)
+            ]
+            for j0 in range(base_arrays.nsubgrid)
+        ]
+    else:
+
+        subgrid = numpy.empty(
+            (
+                base_arrays.nsubgrid,
+                base_arrays.nsubgrid,
+                base_arrays.xA_size,
+                base_arrays.xA_size,
+            ),
+            dtype=complex,
+        )
+        facet = numpy.empty(
+            (
+                base_arrays.nfacet,
+                base_arrays.nfacet,
+                base_arrays.yB_size,
+                base_arrays.yB_size,
+            ),
+            dtype=complex,
+        )
+
+        for i0, i1 in itertools.product(
+            range(base_arrays.nsubgrid), range(base_arrays.nsubgrid)
+        ):
+            subgrid[i0][i1] = make_subgrid_from_sources(
+                sources,
+                base_arrays.N,
+                base_arrays.xA_size,
+                [base_arrays.subgrid_off[i0], base_arrays.subgrid_off[i1]],
+                [base_arrays.subgrid_A[i0], base_arrays.subgrid_A[i1]],
+            )
+        for j0, j1 in itertools.product(
+            range(base_arrays.nfacet), range(base_arrays.nfacet)
+        ):
+            facet[j0][j1] = make_facet_from_sources(
+                sources,
+                base_arrays.N,
+                base_arrays.yB_size,
+                [base_arrays.facet_off[j0], base_arrays.facet_off[j1]],
+                [base_arrays.facet_B[j0], base_arrays.facet_B[j1]],
+            )
+
+    return subgrid, facet

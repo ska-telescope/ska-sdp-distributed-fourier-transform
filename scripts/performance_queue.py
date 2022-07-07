@@ -194,7 +194,7 @@ def run_facet_to_subgrid_with_batch(
     FG_2_file = f"{hdf5_prefix}/FG_{base_arrays.N}_{hdf5_chunksize_FG}.h5"
 
     if (not os.path.exists(G_2_file)) and (not os.path.exists(FG_2_file)):
-        G_2, FG_2 = generate_input_data(distr_fft)
+        G_2, FG_2 = generate_input_data(distr_fft, source_count=10)
 
     if not os.path.exists(G_2_file):
         with h5py.File(G_2_file, "w") as f:
