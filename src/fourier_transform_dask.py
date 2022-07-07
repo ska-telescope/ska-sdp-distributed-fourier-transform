@@ -640,7 +640,7 @@ def _run_algorithm(
 
 
 # pylint: disable=too-many-arguments
-# TODO: Refactor to optimise on the pylint errors
+# TODO: Futher refactor to optimise on the pylint errors
 def run_distributed_fft(
     fundamental_params,
     to_plot=True,
@@ -649,8 +649,7 @@ def run_distributed_fft(
     client=None,
     use_hdf5=False,
     hdf5_prefix=None,
-    hdf5_chunksize_G=None,
-    hdf5_chunksize_FG=None,
+    hdf5_chunksize=None,
     generate_random=False,
     source_number=10,
     facet_to_subgrid_method=3,
@@ -669,8 +668,7 @@ def run_distributed_fft(
     :param client: Dask client or None
     :param use_hdf5: use Hdf5?
     :param hdf5_prefix: hdf5 path prefix
-    :param hdf5_chunksize_G: hdf5 chunk size for G data
-    :param hdf5_chunksize_G: hdf5 chunk size for FG data
+    :param hdf5_chunksize: hdf5 chunk size in tuple [size(G), size(FG)]
     :param generate_random: Whether to generate generic input data
                             with random sources
     :param source_number: Number of random sources to add to input data
@@ -703,6 +701,7 @@ def run_distributed_fft(
     if use_hdf5:
 
         log.info("Use HDF5 to generate input data.")
+        hdf5_chunksize_G, hdf5_chunksize_FG = hdf5_chunksize
         G_2_file = f"{hdf5_prefix}/G_{base_arrays.N}_{hdf5_chunksize_G}.h5"
         FG_2_file = f"{hdf5_prefix}/FG_{base_arrays.N}_{hdf5_chunksize_FG}.h5"
         approx_G_2_file = (
@@ -891,17 +890,10 @@ def cli_parser():
     )
 
     parser.add_argument(
-        "--hdf5_chunksize_G",
+        "--hdf5_chunksize",
         type=int,
         default=256,
-        help="hdf5 chunksize for G",
-    )
-
-    parser.add_argument(
-        "--hdf5_chunksize_FG",
-        type=int,
-        default=256,
-        help="hdf5 chunksize for FG",
+        help="hdf5 chunksize for G and FG",
     )
 
     parser.add_argument(
@@ -974,8 +966,7 @@ def main(args):
                 client=dask_client,
                 use_hdf5=args.use_hdf5 == "True",
                 hdf5_prefix=args.hdf5_prefix,
-                hdf5_chunksize_G=args.hdf5_chunksize_G,
-                hdf5_chunksize_FG=args.hdf5_chunksize_FG,
+                hdf5_chunksize=[args.hdf5_chunksize, args.hdf5_chunksize],
                 generate_random=args.generate_random_sources,
                 source_number=args.source_number,
                 facet_to_subgrid_method=version,

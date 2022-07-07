@@ -199,7 +199,7 @@ def test_generate_hdf5(use_dask):
 
 
 @pytest.mark.parametrize("use_dask", [False, True])
-def test_erros_task(use_dask):
+def test_errors_task(use_dask):
     """
     For testing the correctness of calculating subgrid and facets error
      terms using dask and serial
