@@ -8,10 +8,7 @@ import dask
 import numpy
 import pytest
 
-from src.fourier_transform.algorithm_parameters import (
-    BaseArrays,
-    StreamingDistributedFFT,
-)
+from src.fourier_transform.algorithm_parameters import BaseArrays
 from src.fourier_transform.fourier_algorithm import (
     _ith_subgrid_facet_element,
     broadcast,
@@ -865,12 +862,11 @@ def test_make_subgrid_and_facet_from_sources_function():
     }
 
     base_arrays = BaseArrays(**TEST_PARAMS)
-    distr_fft = StreamingDistributedFFT(**TEST_PARAMS)
 
     sources = [(1, 0, 0)]
 
     subgrid, facet = make_subgrid_and_facet_from_sources(
-        sources, base_arrays, distr_fft, use_dask=False
+        sources, base_arrays, use_dask=False
     )
 
     # Testing the shape
@@ -890,8 +886,10 @@ def test_make_subgrid_and_facet_from_sources_function():
     # Testing the data
     assert abs(numpy.sum(facet[0, 0])) == 1.0
 
-    # TODO: This test somehow doesn't work
-    # Find out why
-    # subgrid = numpy.roll(subgrid, [0,0], axis=(0, 1))
-    # ft_subgrid_0 = fft(fft(subgrid[0,0], axis=0), axis=1)
-    # assert abs(numpy.sum(ft_subgrid_0)) == 1.0/ image_size/ xA_size
+    subgrid = numpy.roll(subgrid, [0, 0], axis=(0, 1))
+    ft_subgrid_0 = fft(fft(subgrid[0, 0], axis=0), axis=1)
+    assert numpy.isclose(
+        abs(numpy.sum(ft_subgrid_0)),
+        1.0 / (image_size / xA_size) ** 2,
+        rtol=1e-13,
+    )

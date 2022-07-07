@@ -623,16 +623,14 @@ def make_subgrid_from_sources(
     return subgrid
 
 
-def make_subgrid_and_facet_from_sources(
-    sources, base_arrays, distr_fft, use_dask=False
-):
+def make_subgrid_and_facet_from_sources(sources, base_arrays, use_dask=False):
     """
     Calculate the actual subgrids and facets from a list of specific sources.
     Dask.delayed compatible version
     Currently only works for 2D.
 
+    :param sources: List of source positions
     :param base_arrays: BaseArrays class object
-    :param distr_fft: StreamingDistributedFFT class object
     :param use_dask: run function with dask.delayed or not?
     :return: tuple of two numpy.ndarray (subgrid, facet) if use_dask=False,
              else, the dask graph of the arrays
@@ -645,7 +643,7 @@ def make_subgrid_and_facet_from_sources(
                     sources,
                     base_arrays.N,
                     base_arrays.yB_size,
-                    [distr_fft.facet_off[j0], distr_fft.facet_off[j1]],
+                    [base_arrays.facet_off[j0], base_arrays.facet_off[j1]],
                     [base_arrays.facet_B[j0], base_arrays.facet_B[j1]],
                 )
                 for j1 in range(base_arrays.nfacet)
@@ -659,7 +657,7 @@ def make_subgrid_and_facet_from_sources(
                     sources,
                     base_arrays.N,
                     base_arrays.xA_size,
-                    [distr_fft.subgrid_off[j0], distr_fft.subgrid_off[j1]],
+                    [base_arrays.subgrid_off[j0], base_arrays.subgrid_off[j1]],
                     [base_arrays.subgrid_A[j0], base_arrays.subgrid_A[j1]],
                 )
                 for j1 in range(base_arrays.nsubgrid)
@@ -694,7 +692,7 @@ def make_subgrid_and_facet_from_sources(
                 sources,
                 base_arrays.N,
                 base_arrays.xA_size,
-                [distr_fft.subgrid_off[i0], distr_fft.subgrid_off[i1]],
+                [base_arrays.subgrid_off[i0], base_arrays.subgrid_off[i1]],
                 [base_arrays.subgrid_A[i0], base_arrays.subgrid_A[i1]],
             )
         for j0, j1 in itertools.product(
@@ -704,7 +702,7 @@ def make_subgrid_and_facet_from_sources(
                 sources,
                 base_arrays.N,
                 base_arrays.yB_size,
-                [distr_fft.facet_off[j0], distr_fft.facet_off[j1]],
+                [base_arrays.facet_off[j0], base_arrays.facet_off[j1]],
                 [base_arrays.facet_B[j0], base_arrays.facet_B[j1]],
             )
 

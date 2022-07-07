@@ -640,6 +640,7 @@ def _run_algorithm(
 
 
 # pylint: disable=too-many-arguments
+# TODO: Refactor to optimise on the pylint errors
 def run_distributed_fft(
     fundamental_params,
     to_plot=True,
@@ -650,7 +651,7 @@ def run_distributed_fft(
     hdf5_prefix=None,
     hdf5_chunksize_G=None,
     hdf5_chunksize_FG=None,
-    generate_generic=True,
+    generate_random=False,
     source_number=10,
     facet_to_subgrid_method=3,
 ):
@@ -670,8 +671,8 @@ def run_distributed_fft(
     :param hdf5_prefix: hdf5 path prefix
     :param hdf5_chunksize_G: hdf5 chunk size for G data
     :param hdf5_chunksize_G: hdf5 chunk size for FG data
-    :param generate_generic: Whether to generate generic input data
-                            (with random sources)
+    :param generate_random: Whether to generate generic input data
+                            with random sources
     :param source_number: Number of random sources to add to input data
     :param facet_to_subgrid_method: which method to run
                                     the facet to subgrid algorithm
@@ -787,17 +788,15 @@ def run_distributed_fft(
 
         return G_2_file, FG_2_file, approx_G_2_file, approx_FG_2_file
 
-    G_2, FG_2 = generate_input_data(distr_fft, source_count=source_number)
-
-    if use_dask and client is not None:
-        G_2 = client.scatter(G_2)
-        FG_2 = client.scatter(FG_2)
-
-    if generate_generic:
-
+    if generate_random:
         log.info(
             "Make subgrid and facet using random %s sources", source_number
         )
+        G_2, FG_2 = generate_input_data(distr_fft, source_count=source_number)
+
+        if use_dask and client is not None:
+            G_2 = client.scatter(G_2)
+            FG_2 = client.scatter(FG_2)
         subgrid_2, facet_2 = make_subgrid_and_facet(
             G_2,
             FG_2,
@@ -812,7 +811,7 @@ def run_distributed_fft(
         )
         sources = [(1, 1, 0)]
         subgrid_2, facet_2 = make_subgrid_and_facet_from_sources(
-            sources, base_arrays, distr_fft, use_dask=use_dask
+            sources, base_arrays, use_dask=use_dask
         )
 
     if use_dask:
@@ -910,10 +909,10 @@ def cli_parser():
     )
 
     parser.add_argument(
-        "--generate_generic_input",
+        "--generate_random_sources",
         type=str,
         default="False",
-        help="Whether to generate generic input data (with random sources)",
+        help="Whether to generate generic input data with random sources",
     )
 
     parser.add_argument(
@@ -977,7 +976,7 @@ def main(args):
                 hdf5_prefix=args.hdf5_prefix,
                 hdf5_chunksize_G=args.hdf5_chunksize_G,
                 hdf5_chunksize_FG=args.hdf5_chunksize_FG,
-                generate_generic=args.generate_generic_input,
+                generate_random=args.generate_random_sources,
                 source_number=args.source_number,
                 facet_to_subgrid_method=version,
             )
