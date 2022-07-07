@@ -17,11 +17,7 @@ import dask.distributed
 import numpy
 from distributed.diagnostics import MemorySampler
 
-from scripts.utils import (
-    human_readable_size,
-    wait_for_tasks,
-    write_network_transfer_info,
-)
+from scripts.utils import human_readable_size, write_network_transfer_info
 from src.fourier_transform.algorithm_parameters import (
     BaseArrays,
     StreamingDistributedFFT,
@@ -36,6 +32,35 @@ from src.swift_configs import SWIFT_CONFIGS
 
 log = logging.getLogger("fourier-logger")
 log.setLevel(logging.INFO)
+
+
+def wait_for_tasks(work_tasks, timeout=None, return_when="ALL_COMPLETED"):
+    """
+    Simple function for waiting for tasks to finish.
+
+    Logs completed tasks, and returns list of still-waiting tasks.
+    """
+
+    # Wait for any task to finish
+    dask.distributed.wait(
+        [task for _, task in work_tasks], timeout, return_when
+    )
+
+    # Remove finished tasks from work queue, return
+    new_work_tasks = []
+    for name, task in work_tasks:
+        if task.done():
+            # If there's "{}" in the name, we should retrieve the
+            # result and include it in the mesage.
+            if "{}" in name:
+                print(name.format(task.result()))
+            else:
+                print(name)
+        elif task.cancelled():
+            print("Cancelled", name)
+        else:
+            new_work_tasks.append((name, task))
+    return new_work_tasks
 
 
 def sum_and_finish_subgrid(
@@ -239,8 +264,8 @@ def run_distributed_fft(
         ]
         for j0 in range(distr_fft.nfacet)
     ]
-    log.info("Facet offsets: %d", distr_fft.facet_off)
-    log.info("Subgrid offsets: %d", distr_fft.subgrid_off)
+    log.info("Facet offsets: %s", str(distr_fft.facet_off))
+    log.info("Subgrid offsets: %s", str(distr_fft.subgrid_off))
 
     # List of all facet indices
     facet_ixs = list(
@@ -498,7 +523,7 @@ def run_distributed_fft(
                     )
                 ]
             )
-            log.info("Facet errors: %.3f", check_res)
+            log.info("Facet errors: %s", str(check_res))
 
     ms_df = ms.to_pandas()
     return ms_df
