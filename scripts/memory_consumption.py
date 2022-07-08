@@ -52,7 +52,7 @@ def run_facet_to_subgrid(fundamental_params, use_dask=True):
     base_arrays = BaseArrays(**fundamental_params)
 
     # Generate the simplest input data
-    G_2, FG_2 = generate_input_data(distr_fft, add_sources=False)
+    G_2, FG_2 = generate_input_data(distr_fft, source_count=0)
 
     log.info("------------------------------------------")
 

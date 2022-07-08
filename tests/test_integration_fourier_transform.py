@@ -247,8 +247,7 @@ def test_end_to_end_2d_dask_hdf5(use_dask):
         client=client,
         use_hdf5=True,
         hdf5_prefix=prefix,
-        hdf5_chunksize_G=chunksize,
-        hdf5_chunksize_FG=chunksize,
+        hdf5_chunksize=[chunksize, chunksize],
     )
 
     if use_dask:

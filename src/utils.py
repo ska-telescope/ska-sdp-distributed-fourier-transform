@@ -328,22 +328,22 @@ def add_two(one, two, **kwargs):
     return one + two
 
 
-def generate_input_data(sparse_ft_class, add_sources=True):
+def generate_input_data(sparse_ft_class, source_count=10):
     """Generate standard data G and FG
         Memory may not be enough at larger
         scales
 
     :param sparse_ft_class: sparse_ft_class
-    :param add_sources: Add sources?
+    :param source_count: number of sources to add
+                         If 0, then don't add sources
 
     :returns: G,FG
     """
     log.info("\n== Generate input data")
 
     # adding sources
-    if add_sources:
+    if source_count > 0:
         FG_2 = numpy.zeros((sparse_ft_class.N, sparse_ft_class.N))
-        source_count = 1000
         sources = [
             (
                 numpy.random.randint(
@@ -363,7 +363,8 @@ def generate_input_data(sparse_ft_class, add_sources=True):
         for x, y, i in sources:
             FG_2[y + sparse_ft_class.N // 2, x + sparse_ft_class.N // 2] += i
         G_2 = ifft(ifft(FG_2, axis=0), axis=1)
-    else:
+
+    elif source_count == 0:
         # without sources
         G_2 = (
             numpy.exp(
@@ -375,6 +376,9 @@ def generate_input_data(sparse_ft_class, add_sources=True):
             / 2
         )
         FG_2 = fft(fft(G_2, axis=0), axis=1)
+
+    else:
+        log.info("Invalid number of sources specified.")
 
     log.info("Mean grid absolute: %s", numpy.mean(numpy.abs(G_2)))
     return G_2, FG_2
