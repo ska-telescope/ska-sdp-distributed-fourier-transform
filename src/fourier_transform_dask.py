@@ -640,7 +640,7 @@ def _run_algorithm(
 
 
 # pylint: disable=too-many-arguments
-# TODO: Futher refactor to optimise on the pylint errors
+# TODO: Further refactor to optimise on the pylint errors
 def run_distributed_fft(
     fundamental_params,
     to_plot=True,
@@ -788,9 +788,11 @@ def run_distributed_fft(
         return G_2_file, FG_2_file, approx_G_2_file, approx_FG_2_file
 
     if generate_random:
+
         log.info(
             "Make subgrid and facet using random %s sources", source_number
         )
+
         G_2, FG_2 = generate_input_data(distr_fft, source_count=source_number)
 
         if use_dask and client is not None:
@@ -967,7 +969,7 @@ def main(args):
                 use_hdf5=args.use_hdf5 == "True",
                 hdf5_prefix=args.hdf5_prefix,
                 hdf5_chunksize=[args.hdf5_chunksize, args.hdf5_chunksize],
-                generate_random=args.generate_random_sources,
+                generate_random=args.generate_random_sources == "True",
                 source_number=args.source_number,
                 facet_to_subgrid_method=version,
             )
