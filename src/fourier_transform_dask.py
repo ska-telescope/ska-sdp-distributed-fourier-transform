@@ -53,9 +53,7 @@ pylab.rcParams["figure.figsize"] = 16, 4
 pylab.rcParams["image.cmap"] = "viridis"
 
 
-def _generate_subgrid_contributions(
-    subgrid_2, distr_fft_class, base_arrays, use_dask
-):
+def _generate_subgrid_contributions(subgrid_2, distr_fft_class, base_arrays, use_dask):
     """
     Generate the array of individual subgrid contributions to each facet.
 
@@ -177,16 +175,13 @@ def subgrid_to_facet_algorithm(
                         NAF_MNAF, tmp_NAF_MNAF, use_dask=use_dask, nout=1
                     )
                 else:
-                    NAF_MNAF = (
-                        NAF_MNAF
-                        + distr_fft_class.add_subgrid_contribution(
-                            naf_naf[i0][i1][j0][j1],
-                            distr_fft_class.subgrid_off[i1],
-                            base_arrays.facet_m0_trunc,
-                            axis=1,
-                            use_dask=use_dask,
-                            nout=1,
-                        )
+                    NAF_MNAF = NAF_MNAF + distr_fft_class.add_subgrid_contribution(
+                        naf_naf[i0][i1][j0][j1],
+                        distr_fft_class.subgrid_off[i1],
+                        base_arrays.facet_m0_trunc,
+                        axis=1,
+                        use_dask=use_dask,
+                        nout=1,
                     )
             NAF_BMNAF = distr_fft_class.finish_facet(
                 NAF_MNAF,
@@ -209,16 +204,13 @@ def subgrid_to_facet_algorithm(
                     MNAF_BMNAF, tmp_MNAF_BMNAF, use_dask=use_dask, nout=1
                 )
             else:
-                MNAF_BMNAF = (
-                    MNAF_BMNAF
-                    + distr_fft_class.add_subgrid_contribution(
-                        NAF_BMNAF,
-                        distr_fft_class.subgrid_off[i0],
-                        base_arrays.facet_m0_trunc,
-                        axis=0,
-                        use_dask=use_dask,
-                        nout=1,
-                    )
+                MNAF_BMNAF = MNAF_BMNAF + distr_fft_class.add_subgrid_contribution(
+                    NAF_BMNAF,
+                    distr_fft_class.subgrid_off[i0],
+                    base_arrays.facet_m0_trunc,
+                    axis=0,
+                    use_dask=use_dask,
+                    nout=1,
                 )
         approx_facet[j0][j1] = distr_fft_class.finish_facet(
             MNAF_BMNAF,
@@ -487,9 +479,7 @@ def facet_to_subgrid_2d_method_3(
     return approx_subgrid
 
 
-def generate_approx_subgrid(
-    NMBF_NMBF, distr_fft_class, base_arrays, use_dask=False
-):
+def generate_approx_subgrid(NMBF_NMBF, distr_fft_class, base_arrays, use_dask=False):
     """
     Finish generating subgrids from facets.
 
@@ -537,9 +527,7 @@ def generate_approx_subgrid(
                 nout=1,
             )
             # Add two facets using Dask delayed (if use_dask = True)
-            summed_facet = add_two(
-                summed_facet, tmp_facet, use_dask=use_dask, nout=1
-            )
+            summed_facet = add_two(summed_facet, tmp_facet, use_dask=use_dask, nout=1)
 
         approx_subgrid[i0][i1] = distr_fft_class.finish_subgrid(
             summed_facet,
@@ -640,7 +628,7 @@ def _run_algorithm(
 
 
 # pylint: disable=too-many-arguments
-# TODO: Futher refactor to optimise on the pylint errors
+# TODO: Further refactor to optimise on the pylint errors
 def run_distributed_fft(
     fundamental_params,
     to_plot=True,
@@ -787,10 +775,10 @@ def run_distributed_fft(
 
         return G_2_file, FG_2_file, approx_G_2_file, approx_FG_2_file
 
-    if generate_random:
-        log.info(
-            "Make subgrid and facet using random %s sources", source_number
-        )
+    elif generate_random:
+
+        log.info("Make subgrid and facet using random %s sources", source_number)
+
         G_2, FG_2 = generate_input_data(distr_fft, source_count=source_number)
 
         if use_dask and client is not None:
@@ -967,7 +955,7 @@ def main(args):
                 use_hdf5=args.use_hdf5 == "True",
                 hdf5_prefix=args.hdf5_prefix,
                 hdf5_chunksize=[args.hdf5_chunksize, args.hdf5_chunksize],
-                generate_random=args.generate_random_sources,
+                generate_random=args.generate_random_sources == "True",
                 source_number=args.source_number,
                 facet_to_subgrid_method=version,
             )
