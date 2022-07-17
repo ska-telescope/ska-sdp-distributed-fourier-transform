@@ -1,7 +1,7 @@
 # pylint: disable=too-many-arguments,too-few-public-methods,unnecessary-pass
 # pylint: disable=consider-using-set-comprehension
 """
-sub graph API
+Application Programming Interface for Distributed Fourier Transform
 """
 
 import dask
@@ -16,9 +16,18 @@ from src.fourier_transform.fourier_algorithm import (
 
 
 class FacetConfig:
-    """Facet configuration"""
+    """Facet Configuration Class"""
 
     def __init__(self, j0, j1, offset, mask, sizes):
+        """
+        Initialize FacetConfig class
+
+        :param j0: j0 index
+        :param j1: j1 index
+        :param offset: ith offset (subgrid or facet)
+        :param mask:
+        :param sizes:
+        """
         self.j0 = j0
         self.j1 = j1
         self.offset = offset
@@ -27,9 +36,18 @@ class FacetConfig:
 
 
 class SubgridConfig:
-    """Subgrid configuration"""
+    """Subgrid Configuration Class"""
 
-    def __init__(self, i0, i1, offset, mask, sizes):
+    def __init__(self, i0, i1, offset, mask, sizes) -> object:
+        """
+        Initialize SubgridConfig class
+
+        :param i0: i0 index
+        :param i1: i1 index
+        :param offset: ith offset (subgrid or facet)
+        :param mask:
+        :param sizes:
+        """
         self.i0 = i0
         self.i1 = i1
         self.offset = offset
@@ -249,6 +267,13 @@ def swiftly_major(
     skymodel predict model vis
     res vis = obs vis - model vis
     res vis invert res image
+
+    :param core_config:
+    :param facets_config_list:
+    :param facets_data:
+    :param obs_subgrid_data:
+    :param obs_subgrid_config_list:
+    :param base_arrays:
     """
     BF_F_tasks = dask.persist(
         [
