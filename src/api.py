@@ -18,41 +18,43 @@ from src.fourier_transform.fourier_algorithm import (
 class FacetConfig:
     """Facet Configuration Class"""
 
-    def __init__(self, j0, j1, offset, mask, sizes):
+    def __init__(self, j0, j1, facet_off, facet_B, yB_size):
         """
         Initialize FacetConfig class
 
+        :param facet_off:
+        :param facet_B:
+        :param yB_size:
         :param j0: j0 index
         :param j1: j1 index
-        :param offset: ith offset (subgrid or facet)
-        :param mask:
-        :param sizes:
+
         """
         self.j0 = j0
         self.j1 = j1
-        self.offset = offset
-        self.mask = mask
-        self.sizes = sizes
+        self.facet_off = facet_off
+        self.facet_B = facet_B
+        self.yBsize = yB_size
 
 
 class SubgridConfig:
     """Subgrid Configuration Class"""
 
-    def __init__(self, i0, i1, offset, mask, sizes) -> object:
+    def __init__(self, i0, i1, subgrid_off, subgrid_A, xA_size) -> object:
         """
         Initialize SubgridConfig class
 
+        :param subgrid_off:
+        :param subgrid_A:
+        :param xA_size:
         :param i0: i0 index
         :param i1: i1 index
-        :param offset: ith offset (subgrid or facet)
-        :param mask:
-        :param sizes:
+
         """
         self.i0 = i0
         self.i1 = i1
-        self.offset = offset
-        self.mask = mask
-        self.sizes = sizes
+        self.subgrid_off = subgrid_off
+        self.subgrid_A = subgrid_A
+        self.xA_size = xA_size
 
 
 class SwiftlyConfig:
