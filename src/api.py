@@ -96,13 +96,10 @@ def swiftly_forward(
     )[0]
 
     config_i = from_subgrid_config_list_get_i0_i1(subgrid_config_list)
-    print("config_i:", config_i)
     i0_i1_list = [
         (subgrid_config.i0, subgrid_config.i1)
         for subgrid_config in subgrid_config_list
     ]
-    for test in i0_i1_list:
-        print(test)
     for i0 in config_i[0]:
         NMBF_BF_task = [
             core_config.prepare_facet(

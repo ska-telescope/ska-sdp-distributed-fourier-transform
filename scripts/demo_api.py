@@ -48,14 +48,14 @@ def demo_swiftly_forward(fundamental_params):
         [
             dask.delayed(make_facet)(
                 distr_fft.N,
-                distr_fft.yB_size,
+                distr_fft.yB_s,
                 distr_fft.facet_off[j0],
                 base_arrays.facet_B[j0],
                 distr_fft.facet_off[j1],
                 base_arrays.facet_B[j1],
                 sources,
             )
-            for j1 in range(distr_fft.nfacet)
+            or j1 in range(distr_fft.nfacet)
         ]
         for j0 in range(distr_fft.nfacet)
     ]
