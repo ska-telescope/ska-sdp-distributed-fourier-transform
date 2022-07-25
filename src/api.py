@@ -4,64 +4,95 @@
 Application Programming Interface for Distributed Fourier Transform
 """
 
+import math
+
 import dask
 import dask.array
 import dask.distributed
 import numpy
 
-from src.fourier_transform.fourier_algorithm import (
-    make_facet_from_sources,
-    make_subgrid_from_sources,
+from src.api_helper import (
+    accumulate_column,
+    accumulate_facet,
+    generate_mask,
+    prepare_and_split_subgrid,
+    sum_and_finish_subgrid,
+)
+from src.fourier_transform.algorithm_parameters import (
+    BaseArrays,
+    StreamingDistributedFFT,
 )
 
 
 class FacetConfig:
     """Facet Configuration Class"""
 
-    def __init__(self, j0, j1, facet_off, facet_B, yB_size):
+    def __init__(self, j0, j1, **fundamental_constants):
         """
         Initialize FacetConfig class
 
-        :param facet_off:
-        :param facet_B:
-        :param yB_size:
         :param j0: j0 index
         :param j1: j1 index
+        :param fundamental_params: dictionary of fundamental parmeters
+                               chosen from swift_configs.py
 
         """
         self.j0 = j0
         self.j1 = j1
-        self.facet_off = facet_off
-        self.facet_B = facet_B
-        self.yBsize = yB_size
+        self.yB_size = fundamental_constants["yB_size"]
+
+        facet_off = self.yB_size * numpy.arange(
+            int(math.ceil(fundamental_constants["N"] / self.yB_size))
+        )
+        self.facet_off0 = facet_off[j0]
+        self.facet_off1 = facet_off[j1]
+        # TODO: mask compute
+        self.facet_mask0 = generate_mask(
+            fundamental_constants["N"], self.yB_size, facet_off
+        )[j0]
+
+        self.facet_mask1 = generate_mask(
+            fundamental_constants["N"], self.yB_size, facet_off
+        )[j1]
 
 
 class SubgridConfig:
     """Subgrid Configuration Class"""
 
-    def __init__(self, i0, i1, subgrid_off, subgrid_A, xA_size) -> object:
+    def __init__(self, i0, i1, **fundamental_constants):
         """
         Initialize SubgridConfig class
 
-        :param subgrid_off:
-        :param subgrid_A:
-        :param xA_size:
         :param i0: i0 index
         :param i1: i1 index
+        :param fundamental_params: dictionary of fundamental parmeters
+                               chosen from swift_configs.py
 
         """
         self.i0 = i0
         self.i1 = i1
-        self.subgrid_off = subgrid_off
-        self.subgrid_A = subgrid_A
-        self.xA_size = xA_size
+        self.xA_size = fundamental_constants["xA_size"]
+
+        subgrid_off = self.xA_size * numpy.arange(
+            int(math.ceil(fundamental_constants["N"] / self.xA_size))
+        )
+        self.subgrid_off0 = subgrid_off[i0]
+        self.subgrid_off1 = subgrid_off[i1]
+        # TODO: mask compute
+        self.subgrid_mask0 = generate_mask(
+            fundamental_constants["N"], self.xA_size, subgrid_off
+        )[i0]
+        self.subgrid_mask1 = generate_mask(
+            fundamental_constants["N"], self.xA_size, subgrid_off
+        )[i1]
 
 
 class SwiftlyConfig:
     """Swiftly configuration"""
 
-    def __init__(self):
-        pass
+    def __init__(self, **fundamental_constants):
+        self.base_arrays = BaseArrays(**fundamental_constants)
+        self.distriFFT = StreamingDistributedFFT(**fundamental_constants)
 
 
 def swiftly_forward(
@@ -69,7 +100,6 @@ def swiftly_forward(
     facets_config_list,
     facets_data,
     subgrid_config_list,
-    base_arrays,
 ):
     """forward sub graph generator
 
@@ -77,76 +107,76 @@ def swiftly_forward(
     :param facets_config_list: _description_
     :param facets_data: _description_
     :param subgrid_config_list: _description_
-    :param base_arrays: _description_
     :yield: _description_
     """
     # persist BF_F
-    config_j = from_facets_config_list_get_j0_j1(facets_config_list)
+
     BF_F_tasks = dask.persist(
         [
-            core_config.prepare_facet(
-                facets_data[facets_config.j0][facets_config.j1],
-                base_arrays.Fb,
-                axis=0,
-                use_dask=True,
-                nout=1,
-            )
-            for facets_config in facets_config_list
-        ]
-    )[0]
-
-    config_i = from_subgrid_config_list_get_i0_i1(subgrid_config_list)
-    i0_i1_list = [
-        (subgrid_config.i0, subgrid_config.i1)
-        for subgrid_config in subgrid_config_list
-    ]
-    for i0 in config_i[0]:
-        NMBF_BF_task = [
-            core_config.prepare_facet(
-                core_config.extract_facet_contrib_to_subgrid(
-                    BF_F,
-                    core_config.subgrid_off[i0],
-                    base_arrays.facet_m0_trunc,
-                    base_arrays.Fn,
+            [
+                core_config.distriFFT.prepare_facet(
+                    facets_data[facets_config.j0][facets_config.j1],
+                    core_config.base_arrays.Fb,
                     axis=0,
                     use_dask=True,
                     nout=1,
-                ),
-                base_arrays.Fb,
-                axis=1,
-                use_dask=True,
-                nout=1,
-            )
-            for BF_F in BF_F_tasks
+                )
+                for facets_config in facets_config_j0
+            ]
+            for facets_config_j0 in facets_config_list
         ]
+    )[0]
 
-        for i1 in config_i[1]:
-            NMBF_NMBF_tasks = [
-                core_config.extract_facet_contrib_to_subgrid(
-                    NMBF_BF,
-                    core_config.subgrid_off[i1],
-                    base_arrays.facet_m0_trunc,
-                    base_arrays.Fn,
+    for subgrid_config_i0 in subgrid_config_list:
+
+        NMBF_BF_task = [
+            [
+                core_config.distriFFT.prepare_facet(
+                    core_config.distriFFT.extract_facet_contrib_to_subgrid(
+                        BF_F,
+                        subgrid_config_i0[0].subgrid_off0,
+                        core_config.base_arrays.facet_m0_trunc,
+                        core_config.base_arrays.Fn,
+                        axis=0,
+                        use_dask=True,
+                        nout=1,
+                    ),
+                    core_config.base_arrays.Fb,
                     axis=1,
                     use_dask=True,
                     nout=1,
                 )
-                for NMBF_BF in NMBF_BF_task
+                for BF_F in BF_F_j0
+            ]
+            for BF_F_j0 in BF_F_tasks
+        ]
+
+        for subgrid_config in subgrid_config_i0:
+
+            NMBF_NMBF_tasks = [
+                [
+                    core_config.distriFFT.extract_facet_contrib_to_subgrid(
+                        NMBF_BF,
+                        subgrid_config.subgrid_off1,
+                        core_config.base_arrays.facet_m0_trunc,
+                        core_config.base_arrays.Fn,
+                        axis=1,
+                        use_dask=True,
+                        nout=1,
+                    )
+                    for NMBF_BF in NMBF_BF_j0
+                ]
+                for NMBF_BF_j0 in NMBF_BF_task
             ]
 
-            # redis
+            # re-distributed here
             subgrid_task = dask.delayed(sum_and_finish_subgrid)(
-                core_config,
-                i0,
-                i1,
-                zip(config_j[0], config_j[1]),
+                core_config.distriFFT,
                 NMBF_NMBF_tasks,
-                base_arrays,
+                subgrid_config,
+                facets_config_list,
             )
-
-            # tmp cut no in list
-            if (i0, i1) in i0_i1_list:
-                yield (i0, i1), subgrid_task
+            yield subgrid_config, subgrid_task
 
 
 def swiftly_backward(
@@ -154,7 +184,6 @@ def swiftly_backward(
     facets_config_list,
     subgrid_data,
     subgrid_config_list,
-    base_arrays,
 ):
     """backward sub graph generator
 
@@ -162,104 +191,115 @@ def swiftly_backward(
     :param facets_config_list: _description_
     :param subgrid_data: _description_
     :param subgrid_config_list: _description_
-    :param base_arrays: _description_
     :yield: _description_
     """
     MNAF_BMNAF_tasks = dask.persist(
         [
-            dask.delayed(lambda shape: numpy.zeros(shape, dtype="complex128"))(
-                (core_config.yP_size, core_config.yB_size)
-            )
-            for facets_config in facets_config_list
+            [
+                dask.delayed(
+                    lambda shape: numpy.zeros(shape, dtype="complex128")
+                )((core_config.distriFFT.yP_size, facets_config.yB_size))
+                for facets_config in facets_config_j0
+            ]
+            for facets_config_j0 in facets_config_list
         ]
     )[0]
 
-    config_i = from_subgrid_config_list_get_i0_i1(subgrid_config_list)
-    i0_i1_list = [
-        (subgrid_config.i0, subgrid_config.i1)
-        for subgrid_config in subgrid_config_list
-    ]
-    j0_j1_list = [
-        (facets_config.j0, facets_config.j1)
-        for facets_config in facets_config_list
-    ]
-    for i0 in config_i[0]:
+    for subgrid_config_i0 in subgrid_config_list:
+        i0 = subgrid_config_i0[0].i0
 
-        NAF_MNAF_tasks = [None for facets_config in facets_config_list]
+        NAF_MNAF_tasks = [
+            [None for facets_config in facets_config_j0]
+            for facets_config_j0 in facets_config_list
+        ]
 
-        for i1 in config_i[1]:
+        for subgrid_config in subgrid_config_i0:
+            i1 = subgrid_config.i1
 
-            NAF_NAF_tasks = dask.delayed(
-                prepare_and_split_subgrid, nout=len(j0_j1_list)
+            NAF_NAF_floot = dask.delayed(
+                prepare_and_split_subgrid,
+                nout=len(facets_config_list) * len(facets_config_list[0]),
             )(
-                core_config,
-                base_arrays.Fn,
-                j0_j1_list,
+                core_config.distriFFT,
+                core_config.base_arrays.Fn,
+                facets_config_list,
                 subgrid_data[i0][i1],
             )
+            # split to 2D
+            NAF_NAF_tasks = []
+            for j0, facet_config_j0 in enumerate(facets_config_list):
+                NAF_NAF_task_j0 = []
+                for j1, facet_config in enumerate(facet_config_j0):
+                    NAF_NAF_task_j0.append(
+                        NAF_NAF_floot[j0 * len(facets_config_list) + j1]
+                    )
+                NAF_NAF_tasks.append(NAF_NAF_task_j0)
+
             # update NAF_MNAF_tasks
             NAF_MNAF_tasks = [
-                dask.delayed(accumulate_column)(
-                    core_config,
-                    NAF_NAF_task,
-                    NAF_MNAF_task,
-                    base_arrays.facet_m0_trunc,
-                    i1,
-                )
-                for NAF_NAF_task, NAF_MNAF_task in zip(
-                    NAF_NAF_tasks, NAF_MNAF_tasks
-                )
+                [
+                    dask.delayed(accumulate_column)(
+                        core_config.distriFFT,
+                        NAF_NAF_tasks[j0][j1],
+                        NAF_MNAF_tasks[j0][j1],
+                        core_config.base_arrays.facet_m0_trunc,
+                        subgrid_config,
+                    )
+                    for j1, facet_config in enumerate(facet_config_j0)
+                ]
+                for j0, facet_config_j0 in enumerate(facets_config_list)
             ]
 
             # task-checker1
-            if (i0, i1) in i0_i1_list:
-                yield (i0, i1), NAF_MNAF_tasks
+            yield subgrid_config, (i0, i1), NAF_MNAF_tasks
 
         # update MNAF_BMNAF_tasks
         MNAF_BMNAF_tasks = dask.persist(
             [
-                dask.delayed(accumulate_facet)(
-                    core_config,
-                    NAF_MNAF_task,
-                    MNAF_BMNAF_task,
-                    base_arrays.Fb,
-                    base_arrays.facet_m0_trunc,
-                    j1,
-                    i0,
-                    base_arrays,
-                )
-                for NAF_MNAF_task, MNAF_BMNAF_task, (j0, j1) in zip(
-                    NAF_MNAF_tasks, MNAF_BMNAF_tasks, j0_j1_list
-                )
+                [
+                    dask.delayed(accumulate_facet)(
+                        core_config.distriFFT,
+                        NAF_MNAF_tasks[j0][j1],
+                        MNAF_BMNAF_tasks[j0][j1],
+                        core_config.base_arrays.Fb,
+                        core_config.base_arrays.facet_m0_trunc,
+                        facet_config,
+                        subgrid_config_i0[0],
+                    )
+                    for j1, facet_config in enumerate(facet_config_j0)
+                ]
+                for j0, facet_config_j0 in enumerate(facets_config_list)
             ]
         )[0]
 
         # task-checker2
-        yield (i0, -1), MNAF_BMNAF_tasks
+        yield -1, (i0, -1), MNAF_BMNAF_tasks
         del NAF_MNAF_tasks
 
     approx_facet_tasks = [
-        core_config.finish_facet(
-            MNAF_BMNAF_task,
-            base_arrays.facet_B[j0],
-            base_arrays.Fb,
-            axis=0,
-            use_dask=True,
-            nout=1,
-        )
-        for MNAF_BMNAF_task, (j0, j1) in zip(MNAF_BMNAF_tasks, j0_j1_list)
+        [
+            core_config.distriFFT.finish_facet(
+                MNAF_BMNAF_tasks[j0][j1],
+                facet_config.facet_mask0,
+                core_config.base_arrays.Fb,
+                axis=0,
+                use_dask=True,
+                nout=1,
+            )
+            for j1, facet_config in enumerate(facet_config_j0)
+        ]
+        for j0, facet_config_j0 in enumerate(facets_config_list)
     ]
 
-    yield (-1, -1), approx_facet_tasks
+    yield -1, (-1, -1), approx_facet_tasks
 
 
 def swiftly_major(
     core_config,
     facets_config_list,
     facets_data,
-    obs_subgrid_data,
     obs_subgrid_config_list,
-    base_arrays,
+    obs_subgrid_data,
 ):
     """
     forward and backward sub graph generator
@@ -270,87 +310,92 @@ def swiftly_major(
     :param core_config:
     :param facets_config_list:
     :param facets_data:
-    :param obs_subgrid_data:
     :param obs_subgrid_config_list:
-    :param base_arrays:
+    :param obs_subgrid_data:
+
     """
     BF_F_tasks = dask.persist(
         [
-            core_config.prepare_facet(
-                facets_data[facets_config.j0][facets_config.j1],
-                base_arrays.Fb,
-                axis=0,
-                use_dask=True,
-                nout=1,
-            )
-            for facets_config in facets_config_list
+            [
+                core_config.distriFFT.prepare_facet(
+                    facets_data[facets_config.j0][facets_config.j1],
+                    core_config.base_arrays.Fb,
+                    axis=0,
+                    use_dask=True,
+                    nout=1,
+                )
+                for facets_config in facets_config_j0
+            ]
+            for facets_config_j0 in facets_config_list
         ]
     )[0]
 
     MNAF_BMNAF_tasks = dask.persist(
         [
-            dask.delayed(lambda shape: numpy.zeros(shape, dtype="complex128"))(
-                (core_config.yP_size, core_config.yB_size)
-            )
-            for facets_config in facets_config_list
+            [
+                dask.delayed(
+                    lambda shape: numpy.zeros(shape, dtype="complex128")
+                )((core_config.distriFFT.yP_size, facets_config.yB_size))
+                for facets_config in facets_config_j0
+            ]
+            for facets_config_j0 in facets_config_list
         ]
     )[0]
 
-    config_i = from_subgrid_config_list_get_i0_i1(obs_subgrid_config_list)
-    config_j = from_facets_config_list_get_j0_j1(facets_config_list)
-    i0_i1_list = [
-        (subgrid_config.i0, subgrid_config.i1)
-        for subgrid_config in obs_subgrid_config_list
-    ]
-    j0_j1_list = [
-        (facets_config.j0, facets_config.j1)
-        for facets_config in facets_config_list
-    ]
-
-    for i0 in config_i[0]:
+    for subgrid_config_i0 in obs_subgrid_config_list:
+        i0 = subgrid_config_i0[0].i0
 
         NMBF_BF_task = [
-            core_config.prepare_facet(
-                core_config.extract_facet_contrib_to_subgrid(
-                    BF_F,
-                    core_config.subgrid_off[i0],
-                    base_arrays.facet_m0_trunc,
-                    base_arrays.Fn,
-                    axis=0,
-                    use_dask=True,
-                    nout=1,
-                ),
-                base_arrays.Fb,
-                axis=1,
-                use_dask=True,
-                nout=1,
-            )
-            for BF_F in BF_F_tasks
-        ]
-
-        NAF_MNAF_tasks = [None for facets_config in facets_config_list]
-
-        for i1 in config_i[1]:
-            NMBF_NMBF_tasks = [
-                core_config.extract_facet_contrib_to_subgrid(
-                    NMBF_BF,
-                    core_config.subgrid_off[i1],
-                    base_arrays.facet_m0_trunc,
-                    base_arrays.Fn,
+            [
+                core_config.distriFFT.prepare_facet(
+                    core_config.distriFFT.extract_facet_contrib_to_subgrid(
+                        BF_F,
+                        subgrid_config_i0[0].subgrid_off0,
+                        core_config.base_arrays.facet_m0_trunc,
+                        core_config.base_arrays.Fn,
+                        axis=0,
+                        use_dask=True,
+                        nout=1,
+                    ),
+                    core_config.base_arrays.Fb,
                     axis=1,
                     use_dask=True,
                     nout=1,
                 )
-                for NMBF_BF in NMBF_BF_task
+                for BF_F in BF_F_j0
+            ]
+            for BF_F_j0 in BF_F_tasks
+        ]
+
+        NAF_MNAF_tasks = [
+            [None for facets_config in facets_config_j0]
+            for facets_config_j0 in facets_config_list
+        ]
+
+        for subgrid_config in subgrid_config_i0:
+            i1 = subgrid_config.i1
+
+            NMBF_NMBF_tasks = [
+                [
+                    core_config.distriFFT.extract_facet_contrib_to_subgrid(
+                        NMBF_BF,
+                        subgrid_config.subgrid_off1,
+                        core_config.base_arrays.facet_m0_trunc,
+                        core_config.base_arrays.Fn,
+                        axis=1,
+                        use_dask=True,
+                        nout=1,
+                    )
+                    for NMBF_BF in NMBF_BF_j0
+                ]
+                for NMBF_BF_j0 in NMBF_BF_task
             ]
 
             model_subgrid_data = dask.delayed(sum_and_finish_subgrid)(
-                core_config,
-                i0,
-                i1,
-                zip(config_j[0], config_j[1]),
+                core_config.distriFFT,
                 NMBF_NMBF_tasks,
-                base_arrays,
+                subgrid_config,
+                facets_config_list,
             )
 
             # subtraction
@@ -358,222 +403,79 @@ def swiftly_major(
                 obs_subgrid_data[i0][i1], model_subgrid_data
             )
             # backward
-            NAF_NAF_tasks = dask.delayed(
-                prepare_and_split_subgrid, nout=len(j0_j1_list)
+            NAF_NAF_floot = dask.delayed(
+                prepare_and_split_subgrid,
+                nout=len(facets_config_list) * len(facets_config_list[0]),
             )(
-                core_config,
-                base_arrays.Fn,
-                j0_j1_list,
+                core_config.distriFFT,
+                core_config.base_arrays.Fn,
+                facets_config_list,
                 residual_subgrid_data,
             )
+
+            # split to 2D
+            NAF_NAF_tasks = []
+            for j0, facet_config_j0 in enumerate(facets_config_list):
+                NAF_NAF_task_j0 = []
+                for j1, facet_config in enumerate(facet_config_j0):
+                    NAF_NAF_task_j0.append(
+                        NAF_NAF_floot[j0 * len(facets_config_list) + j1]
+                    )
+                NAF_NAF_tasks.append(NAF_NAF_task_j0)
+
             # update NAF_MNAF_tasks
             NAF_MNAF_tasks = [
-                dask.delayed(accumulate_column)(
-                    core_config,
-                    NAF_NAF_task,
-                    NAF_MNAF_task,
-                    base_arrays.facet_m0_trunc,
-                    i1,
-                )
-                for NAF_NAF_task, NAF_MNAF_task in zip(
-                    NAF_NAF_tasks, NAF_MNAF_tasks
-                )
+                [
+                    dask.delayed(accumulate_column)(
+                        core_config.distriFFT,
+                        NAF_NAF_tasks[j0][j1],
+                        NAF_MNAF_tasks[j0][j1],
+                        core_config.base_arrays.facet_m0_trunc,
+                        subgrid_config,
+                    )
+                    for j1, facet_config in enumerate(facet_config_j0)
+                ]
+                for j0, facet_config_j0 in enumerate(facets_config_list)
             ]
-
             # task-checker1
-            if (i0, i1) in i0_i1_list:
-                yield (i0, i1), NAF_MNAF_tasks
+            yield subgrid_config, (i0, i1), NAF_MNAF_tasks
 
         # update MNAF_BMNAF_tasks
         MNAF_BMNAF_tasks = dask.persist(
             [
-                dask.delayed(accumulate_facet)(
-                    core_config,
-                    NAF_MNAF_task,
-                    MNAF_BMNAF_task,
-                    base_arrays.Fb,
-                    base_arrays.facet_m0_trunc,
-                    j1,
-                    i0,
-                    base_arrays,
-                )
-                for NAF_MNAF_task, MNAF_BMNAF_task, (j0, j1) in zip(
-                    NAF_MNAF_tasks, MNAF_BMNAF_tasks, j0_j1_list
-                )
+                [
+                    dask.delayed(accumulate_facet)(
+                        core_config.distriFFT,
+                        NAF_MNAF_tasks[j0][j1],
+                        MNAF_BMNAF_tasks[j0][j1],
+                        core_config.base_arrays.Fb,
+                        core_config.base_arrays.facet_m0_trunc,
+                        facet_config,
+                        subgrid_config_i0[0],
+                    )
+                    for j1, facet_config in enumerate(facet_config_j0)
+                ]
+                for j0, facet_config_j0 in enumerate(facets_config_list)
             ]
         )[0]
 
         # task-checker2
-        yield (i0, -1), MNAF_BMNAF_tasks
+        yield -1, (i0, -1), MNAF_BMNAF_tasks
         del NAF_MNAF_tasks
 
     residual_facet_tasks = [
-        core_config.finish_facet(
-            MNAF_BMNAF_task,
-            base_arrays.facet_B[j0],
-            base_arrays.Fb,
-            axis=0,
-            use_dask=True,
-            nout=1,
-        )
-        for MNAF_BMNAF_task, (j0, j1) in zip(MNAF_BMNAF_tasks, j0_j1_list)
+        [
+            core_config.distriFFT.finish_facet(
+                MNAF_BMNAF_tasks[j0][j1],
+                facet_config.facet_mask0,
+                core_config.base_arrays.Fb,
+                axis=0,
+                use_dask=True,
+                nout=1,
+            )
+            for j1, facet_config in enumerate(facet_config_j0)
+        ]
+        for j0, facet_config_j0 in enumerate(facets_config_list)
     ]
 
-    yield (-1, -1), residual_facet_tasks
-
-
-def from_subgrid_config_list_get_i0_i1(subgrid_config_list):
-    """get i0,i1 set"""
-    config_i0_list = list(
-        set([subgrid_config.i0 for subgrid_config in subgrid_config_list])
-    )
-    config_i1_list = list(
-        set([subgrid_config.i1 for subgrid_config in subgrid_config_list])
-    )
-    return config_i0_list, config_i1_list
-
-
-def from_facets_config_list_get_j0_j1(facets_config_data_list):
-    """get j0,j1 set"""
-    config_j0_list = list(
-        set([facets_config.j0 for facets_config in facets_config_data_list])
-    )
-    config_j1_list = list(
-        set([facets_config.j1 for facets_config in facets_config_data_list])
-    )
-    return config_j0_list, config_j1_list
-
-
-def make_subgrid(N, xA_size, sg_off0, sg_A0, sg_off1, sg_A1, sources):
-    """make subgrid"""
-    return make_subgrid_from_sources(
-        sources, N, xA_size, [sg_off0, sg_off1], [sg_A0, sg_A1]
-    )
-
-
-def make_facet(
-    N, yB_size, facet_off0, facet_B0, facet_off1, facet_B1, sources
-):
-    """make facet"""
-    # Create facet
-    return make_facet_from_sources(
-        sources, N, yB_size, [facet_off0, facet_off1], [facet_B0, facet_B1]
-    )
-
-
-def check_facet(
-    N, facet_off0, facet_B0, facet_off1, facet_B1, approx_facet, sources
-):
-    """
-    check facet using sources
-    """
-    # Re-generate facet to compare against
-    yB_size = approx_facet.shape[0]
-    facet = make_facet(
-        N, yB_size, facet_off0, facet_B0, facet_off1, facet_B1, sources
-    )
-
-    # Compare against result
-    return numpy.sqrt(numpy.average(numpy.abs(facet - approx_facet) ** 2))
-
-
-def check_residual(residual_facet):
-    """
-    check residual image
-    """
-    return numpy.sqrt(numpy.average(numpy.abs(residual_facet) ** 2))
-
-
-def check_subgrid(N, sg_off0, sg_A0, sg_off1, sg_A1, approx_subgrid, sources):
-    """
-    check subgrid using sources
-    """
-    # Compare against subgrid (normalised)
-    subgrid = make_subgrid_from_sources(
-        sources, N, approx_subgrid.shape[0], [sg_off0, sg_off1], [sg_A0, sg_A1]
-    )
-    return numpy.sqrt(numpy.average(numpy.abs(subgrid - approx_subgrid) ** 2))
-
-
-def sum_and_finish_subgrid(
-    distr_fft, i0, i1, facet_ixs, NMBF_NMBFs, base_arrays
-):
-    """sum faect contribution and finsh subgrid"""
-    # Initialise facet sum
-    summed_facet = numpy.zeros(
-        (distr_fft.xM_size, distr_fft.xM_size), dtype=complex
-    )
-
-    # Add contributions
-    for (j0, j1), NMBF_NMBF in zip(facet_ixs, NMBF_NMBFs):
-        summed_facet += distr_fft.add_facet_contribution(
-            distr_fft.add_facet_contribution(
-                NMBF_NMBF, distr_fft.facet_off[j0], axis=0
-            ),
-            distr_fft.facet_off[j1],
-            axis=1,
-        )
-
-    # Finish
-    return distr_fft.finish_subgrid(
-        summed_facet, [base_arrays.subgrid_A[i0], base_arrays.subgrid_A[i1]]
-    )
-
-
-def prepare_and_split_subgrid(distr_fft, Fn, facet_ixs, subgrid):
-    """prepare NAF_NAF"""
-    # Prepare subgrid
-    prepared_subgrid = distr_fft.prepare_subgrid(subgrid)
-
-    # Extract subgrid facet contributions
-    NAF_AFs = {
-        j0: distr_fft.extract_subgrid_contrib_to_facet(
-            prepared_subgrid, distr_fft.facet_off[j0], Fn, axis=0
-        )
-        for j0 in set(j0 for j0, j1 in facet_ixs)
-    }
-    NAF_NAFs = [
-        distr_fft.extract_subgrid_contrib_to_facet(
-            NAF_AFs[j0], distr_fft.facet_off[j1], Fn, axis=1
-        )
-        for j0, j1 in facet_ixs
-    ]
-    return NAF_NAFs
-
-
-def accumulate_column(distr_fft, NAF_NAF, NAF_MNAF, m, i1):
-    """update NAF_MNAF"""
-    # TODO: add_subgrid_contribution should add
-    # directly to NAF_MNAF here at some point.
-    if NAF_MNAF is None:
-        return distr_fft.add_subgrid_contribution(
-            NAF_NAF,
-            distr_fft.subgrid_off[i1],
-            m,
-            axis=1,
-        )
-    return NAF_MNAF + distr_fft.add_subgrid_contribution(
-        NAF_NAF,
-        distr_fft.subgrid_off[i1],
-        m,
-        axis=1,
-    )
-
-
-def accumulate_facet(
-    distr_fft, NAF_MNAF, MNAF_BMNAF, Fb, m, j1, i0, base_arrays
-):
-    """update MNAF_BMNAF"""
-    NAF_BMNAF = distr_fft.finish_facet(
-        NAF_MNAF, base_arrays.facet_B[j1], Fb, axis=1
-    )
-    if MNAF_BMNAF is None:
-        return distr_fft.add_subgrid_contribution(
-            NAF_BMNAF, distr_fft.subgrid_off[i0], m, axis=0
-        )
-    # TODO: add_subgrid_contribution should add
-    # directly to NAF_MNAF here at some point.
-    MNAF_BMNAF = MNAF_BMNAF + distr_fft.add_subgrid_contribution(
-        NAF_BMNAF, distr_fft.subgrid_off[i0], m, axis=0
-    )
-    return MNAF_BMNAF
+    yield -1, (-1, -1), residual_facet_tasks

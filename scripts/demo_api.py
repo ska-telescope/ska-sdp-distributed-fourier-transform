@@ -3,10 +3,8 @@
 demo using api
 """
 
-import itertools
 import logging
 import os
-import sys
 
 import dask
 import dask.array
@@ -16,86 +14,88 @@ import numpy
 from src.api import (
     FacetConfig,
     SubgridConfig,
+    SwiftlyConfig,
+    swiftly_backward,
+    swiftly_forward,
+    swiftly_major,
+)
+from src.api_helper import (
     check_facet,
     check_residual,
     check_subgrid,
     make_facet,
     make_subgrid,
-    swiftly_backward,
-    swiftly_forward,
-    swiftly_major,
 )
-from src.fourier_transform.algorithm_parameters import (
-    BaseArrays,
-    StreamingDistributedFFT,
-)
-from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
+from src.fourier_transform.dask_wrapper import set_up_dask
 from src.fourier_transform_dask import cli_parser
 from src.swift_configs import SWIFT_CONFIGS
 
 log = logging.getLogger("fourier-logger")
 log.setLevel(logging.INFO)
-log.addHandler(logging.StreamHandler(sys.stdout))
 
 
 def demo_swiftly_forward(fundamental_params):
     """demo the use of swiftly_forward"""
-    base_arrays = BaseArrays(**fundamental_params)
-    distr_fft = StreamingDistributedFFT(**fundamental_params)
-
-    sources = [(1, 1, 0)]
-    facet_2 = [
-        [
-            dask.delayed(make_facet)(
-                distr_fft.N,
-                distr_fft.yB_s,
-                distr_fft.facet_off[j0],
-                base_arrays.facet_B[j0],
-                distr_fft.facet_off[j1],
-                base_arrays.facet_B[j1],
-                sources,
-            )
-            or j1 in range(distr_fft.nfacet)
-        ]
-        for j0 in range(distr_fft.nfacet)
-    ]
+    swiftlyconfig = SwiftlyConfig(**fundamental_params)
 
     facets_config_list = [
-        FacetConfig(j0, j1, None, None, None)
-        for j0, j1 in list(
-            itertools.product(range(distr_fft.nfacet), range(distr_fft.nfacet))
-        )
+        [
+            FacetConfig(j0, j1, **fundamental_params)
+            for j1 in range(swiftlyconfig.distriFFT.nfacet)
+        ]
+        for j0 in range(swiftlyconfig.distriFFT.nfacet)
+    ]
+
+    sources = [(1, 1, 0)]
+    facet_data = [
+        [
+            dask.delayed(make_facet)(
+                swiftlyconfig.distriFFT.N,
+                swiftlyconfig.distriFFT.yB_size,
+                facets_config_list[j0][j1].facet_off0,
+                facets_config_list[j0][j1].facet_mask0,
+                facets_config_list[j0][j1].facet_off1,
+                facets_config_list[j0][j1].facet_mask1,
+                sources,
+            )
+            for j1 in range(swiftlyconfig.distriFFT.nfacet)
+        ]
+        for j0 in range(swiftlyconfig.distriFFT.nfacet)
     ]
 
     subgrid_config_list = [
-        SubgridConfig(i0, i1, None, None, None)
-        for i0, i1 in list(
-            itertools.product(
-                range(distr_fft.nsubgrid), range(distr_fft.nsubgrid)
-            )
-        )
+        [
+            SubgridConfig(i0, i1, **fundamental_params)
+            for i1 in range(swiftlyconfig.distriFFT.nsubgrid)
+        ]
+        for i0 in range(swiftlyconfig.distriFFT.nsubgrid)
     ]
 
-    for (i0, i1), subgrid_data_task in swiftly_forward(
-        distr_fft,
+    for subgrid_config, subgrid_data_task in swiftly_forward(
+        swiftlyconfig,
         facets_config_list,
-        facet_2,
+        facet_data,
         subgrid_config_list,
-        base_arrays,
     ):
         check_task = dask.compute(
             dask.delayed(check_subgrid)(
-                distr_fft.N,
-                distr_fft.subgrid_off[i0],
-                base_arrays.subgrid_A[i0],
-                distr_fft.subgrid_off[i1],
-                base_arrays.subgrid_A[i1],
+                swiftlyconfig.distriFFT.N,
+                subgrid_config.subgrid_off0,
+                subgrid_config.subgrid_mask0,
+                subgrid_config.subgrid_off1,
+                subgrid_config.subgrid_mask1,
                 subgrid_data_task,
                 sources,
             ),
             sync=True,
         )[0]
-        log.info(f"finshed, {i0}, {i1}, subgrid_error, {check_task}")
+
+        log.info(
+            "finshed, %d, %d, subgrid_error, %e",
+            subgrid_config.i0,
+            subgrid_config.i1,
+            check_task,
+        )
 
 
 def demo_swiftly_backward(fundamental_params):
@@ -103,54 +103,53 @@ def demo_swiftly_backward(fundamental_params):
 
     :param fundamental_params: _description_
     """
-    base_arrays = BaseArrays(**fundamental_params)
-    distr_fft = StreamingDistributedFFT(**fundamental_params)
+    swiftlyconfig = SwiftlyConfig(**fundamental_params)
+
+    subgrid_config_list = [
+        [
+            SubgridConfig(i0, i1, **fundamental_params)
+            for i1 in range(swiftlyconfig.distriFFT.nsubgrid)
+        ]
+        for i0 in range(swiftlyconfig.distriFFT.nsubgrid)
+    ]
     sources = [(1, 1, 0)]
-    subgrid_2 = [
+    subgrid_data = [
         [
             dask.delayed(make_subgrid)(
-                distr_fft.N,
-                distr_fft.xA_size,
-                distr_fft.subgrid_off[i0],
-                base_arrays.subgrid_A[i0],
-                distr_fft.subgrid_off[i1],
-                base_arrays.subgrid_A[i1],
+                swiftlyconfig.distriFFT.N,
+                swiftlyconfig.distriFFT.xA_size,
+                subgrid_config_list[i0][i1].subgrid_off0,
+                subgrid_config_list[i0][i1].subgrid_mask0,
+                subgrid_config_list[i0][i1].subgrid_off1,
+                subgrid_config_list[i0][i1].subgrid_mask1,
                 sources,
             )
-            for i0 in range(distr_fft.nsubgrid)
+            for i0 in range(swiftlyconfig.distriFFT.nsubgrid)
         ]
-        for i1 in range(distr_fft.nsubgrid)
+        for i1 in range(swiftlyconfig.distriFFT.nsubgrid)
     ]
 
     facets_config_list = [
-        FacetConfig(j0, j1, None, None, None)
-        for j0, j1 in list(
-            itertools.product(range(distr_fft.nfacet), range(distr_fft.nfacet))
-        )
+        [
+            FacetConfig(j0, j1, **fundamental_params)
+            for j1 in range(swiftlyconfig.distriFFT.nfacet)
+        ]
+        for j0 in range(swiftlyconfig.distriFFT.nfacet)
     ]
 
-    subgrid_config_list = [
-        SubgridConfig(i0, i1, None, None, None)
-        for i0, i1 in list(
-            itertools.product(
-                range(distr_fft.nsubgrid), range(distr_fft.nsubgrid)
-            )
-        )
-        # for i0,i1 in [(1,4),(10,34),(30,30)]
-    ]
-
-    for (i0, i1), handle_tasks in swiftly_backward(
-        distr_fft,
+    for subgrid_config, (i0, i1), handle_tasks in swiftly_backward(
+        swiftlyconfig,
         facets_config_list,
-        subgrid_2,
+        subgrid_data,
         subgrid_config_list,
-        base_arrays,
     ):
         # just a i0 i1 task-checker
         if i0 != -1 and i1 != -1:
             handles = dask.compute(handle_tasks, sync=False)
             dask.distributed.wait(handles)
-            log.info(f"check task i1 done: {i0},{i1}")
+            log.info(
+                f"check task i1 done: {subgrid_config.i0},{subgrid_config.i1}"
+            )
 
         # i0 task-checker
         elif i0 != -1 and i1 == -1:
@@ -161,87 +160,99 @@ def demo_swiftly_backward(fundamental_params):
         elif i0 == -1 and i1 == -1:
             facet_tasks = handle_tasks
             check_task = [
-                dask.delayed(check_facet)(
-                    distr_fft.N,
-                    distr_fft.facet_off[fc.j0],
-                    base_arrays.facet_B[fc.j0],
-                    distr_fft.facet_off[fc.j1],
-                    base_arrays.facet_B[fc.j1],
-                    facet,
-                    sources,
-                )
-                for fc, facet in zip(facets_config_list, facet_tasks)
+                [
+                    dask.delayed(check_facet)(
+                        swiftlyconfig.distriFFT.N,
+                        facet_config.facet_off0,
+                        facet_config.facet_mask0,
+                        facet_config.facet_off1,
+                        facet_config.facet_mask1,
+                        facet_tasks[j0][j1],
+                        sources,
+                    )
+                    for j1, facet_config in enumerate(facet_config_j0)
+                ]
+                for j0, facet_config_j0 in enumerate(facets_config_list)
             ]
-            check_facet_res = dask.compute(check_task)
-            log.info("Facet errors: %s", str(check_facet_res))
+            check_facet_res = dask.compute(check_task)[0]
+            for facet_config_j0 in facets_config_list:
+                for facet_config in facet_config_j0:
+
+                    log.info(
+                        "(%d,%d), Facet errors: %e",
+                        facet_config.j0,
+                        facet_config.j1,
+                        check_facet_res[facet_config.j0][facet_config.j1],
+                    )
 
 
 def demo_major(fundamental_params):
     """demo the use of swiftly_major"""
-    base_arrays = BaseArrays(**fundamental_params)
-    distr_fft = StreamingDistributedFFT(**fundamental_params)
+    swiftlyconfig = SwiftlyConfig(**fundamental_params)
 
     sources = [(1, 1, 0)]
-    obs_subgrid_2 = [
+
+    subgrid_config_list = [
         [
-            dask.delayed(make_subgrid)(
-                distr_fft.N,
-                distr_fft.xA_size,
-                distr_fft.subgrid_off[i0],
-                base_arrays.subgrid_A[i0],
-                distr_fft.subgrid_off[i1],
-                base_arrays.subgrid_A[i1],
-                sources,
-            )
-            for i0 in range(distr_fft.nsubgrid)
+            SubgridConfig(i0, i1, **fundamental_params)
+            for i1 in range(swiftlyconfig.distriFFT.nsubgrid)
         ]
-        for i1 in range(distr_fft.nsubgrid)
+        for i0 in range(swiftlyconfig.distriFFT.nsubgrid)
     ]
 
-    skymodel_facet_2 = [
+    obs_subgrid_data = [
         [
-            dask.delayed(make_facet)(
-                distr_fft.N,
-                distr_fft.yB_size,
-                distr_fft.facet_off[j0],
-                base_arrays.facet_B[j0],
-                distr_fft.facet_off[j1],
-                base_arrays.facet_B[j1],
+            dask.delayed(make_subgrid)(
+                swiftlyconfig.distriFFT.N,
+                subgrid_config_list[i0][i1].xA_size,
+                subgrid_config_list[i0][i1].subgrid_off0,
+                subgrid_config_list[i0][i1].subgrid_mask0,
+                subgrid_config_list[i0][i1].subgrid_off1,
+                subgrid_config_list[i0][i1].subgrid_mask1,
                 sources,
             )
-            for j1 in range(distr_fft.nfacet)
+            for i0 in range(swiftlyconfig.distriFFT.nsubgrid)
         ]
-        for j0 in range(distr_fft.nfacet)
+        for i1 in range(swiftlyconfig.distriFFT.nsubgrid)
     ]
 
     facets_config_list = [
-        FacetConfig(j0, j1, None, None, None)
-        for j0, j1 in list(
-            itertools.product(range(distr_fft.nfacet), range(distr_fft.nfacet))
-        )
+        [
+            FacetConfig(j0, j1, **fundamental_params)
+            for j1 in range(swiftlyconfig.distriFFT.nfacet)
+        ]
+        for j0 in range(swiftlyconfig.distriFFT.nfacet)
     ]
 
-    subgrid_config_list = [
-        SubgridConfig(i0, i1, None, None, None)
-        for i0, i1 in list(
-            itertools.product(
-                range(distr_fft.nsubgrid), range(distr_fft.nsubgrid)
+    skymodel_facet_data = [
+        [
+            dask.delayed(make_facet)(
+                swiftlyconfig.distriFFT.N,
+                swiftlyconfig.distriFFT.yB_size,
+                facets_config_list[j0][j1].facet_off0,
+                facets_config_list[j0][j1].facet_mask0,
+                facets_config_list[j0][j1].facet_off1,
+                facets_config_list[j0][j1].facet_mask1,
+                sources,
             )
-        )
+            for j1 in range(swiftlyconfig.distriFFT.nfacet)
+        ]
+        for j0 in range(swiftlyconfig.distriFFT.nfacet)
     ]
 
-    for (i0, i1), handle_tasks in swiftly_major(
-        distr_fft,
+    for subgrid_config, (i0, i1), handle_tasks in swiftly_major(
+        swiftlyconfig,
         facets_config_list,
-        skymodel_facet_2,
-        obs_subgrid_2,
+        skymodel_facet_data,
         subgrid_config_list,
-        base_arrays,
+        obs_subgrid_data,
     ):
         if i0 != -1 and i1 != -1:
             handles = dask.compute(handle_tasks, sync=False)
             dask.distributed.wait(handles)
-            log.info(f"check task i1 done: {i0},{i1}")
+            log.info(
+                f"check task i1 done: {subgrid_config.i0},{subgrid_config.i1}"
+            )
 
         # i0 task-checker
         elif i0 != -1 and i1 == -1:
@@ -252,13 +263,25 @@ def demo_major(fundamental_params):
         elif i0 == -1 and i1 == -1:
             facet_tasks = handle_tasks
             check_task = [
-                dask.delayed(check_residual)(
-                    facet,
-                )
-                for fc, facet in zip(facets_config_list, facet_tasks)
+                [
+                    dask.delayed(check_residual)(
+                        facet_tasks[j0][j1],
+                    )
+                    for j1, facet_config in enumerate(facet_config_j0)
+                ]
+                for j0, facet_config_j0 in enumerate(facets_config_list)
             ]
-            check_facet_res = dask.compute(check_task)
-            log.info("residual Facet errors: %s", str(check_facet_res))
+
+            check_facet_res = dask.compute(check_task)[0]
+            for facet_config_j0 in facets_config_list:
+                for facet_config in facet_config_j0:
+
+                    log.info(
+                        "(%d,%d), residual errors: %e",
+                        facet_config.j0,
+                        facet_config.j1,
+                        check_facet_res[facet_config.j0][facet_config.j1],
+                    )
 
 
 def main(args):
@@ -295,8 +318,6 @@ def main(args):
             )
 
         dask_client.restart()
-
-    tear_down_dask(dask_client)
 
 
 if __name__ == "__main__":
