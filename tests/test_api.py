@@ -1,19 +1,13 @@
-# pylint: disable=logging-fstring-interpolation,consider-using-f-string
 """
-demo using api
+End-to-end api test
 """
+
 
 import logging
-import os
 
 import dask
-import dask.array
-import dask.distributed
-import numpy
-from distributed import performance_report
-from distributed.diagnostics import MemorySampler
+import pytest
 
-from scripts.utils import get_and_write_transfer
 from src.api import (
     FacetConfig,
     SubgridConfig,
@@ -31,25 +25,41 @@ from src.api_helper import (
     make_subgrid,
 )
 from src.fourier_transform.dask_wrapper import set_up_dask
-from src.fourier_transform_dask import cli_parser
-from src.swift_configs import SWIFT_CONFIGS
 
 log = logging.getLogger("fourier-logger")
-log.setLevel(logging.INFO)
+log.setLevel(logging.WARNING)
 
 
-def demo_swiftly_forward(client, queue_size, fundamental_params):
-    """demo the use of swiftly_forward"""
-    swiftlyconfig = SwiftlyConfig(**fundamental_params)
+TEST_PARAMS = {
+    "W": 13.25,
+    "fov": 0.75,
+    "N": 1024,
+    "Nx": 4,
+    "yB_size": 256,
+    "yN_size": 320,
+    "yP_size": 512,
+    "xA_size": 188,
+    "xM_size": 256,
+}
 
+
+@pytest.mark.parametrize(
+    "queue_size",
+    [1, 2],
+)
+def test_swiftly_forward(queue_size):
+    """test forward with api"""
+
+    client = set_up_dask()
+
+    swiftlyconfig = SwiftlyConfig(**TEST_PARAMS)
     facets_config_list = [
         [
-            FacetConfig(j0, j1, **fundamental_params)
+            FacetConfig(j0, j1, **TEST_PARAMS)
             for j1 in range(swiftlyconfig.distriFFT.nfacet)
         ]
         for j0 in range(swiftlyconfig.distriFFT.nfacet)
     ]
-
     sources = [(1, 1, 0)]
     facet_data = [
         [
@@ -66,15 +76,13 @@ def demo_swiftly_forward(client, queue_size, fundamental_params):
         ]
         for j0 in range(swiftlyconfig.distriFFT.nfacet)
     ]
-
     subgrid_config_list = [
         [
-            SubgridConfig(i0, i1, **fundamental_params)
+            SubgridConfig(i0, i1, **TEST_PARAMS)
             for i1 in range(swiftlyconfig.distriFFT.nsubgrid)
         ]
         for i0 in range(swiftlyconfig.distriFFT.nsubgrid)
     ]
-
     task_queue = TaskQueue(queue_size)
     for msg, subgrid_config, (i0, i1), handle_tasks in swiftly_forward(
         client,
@@ -94,47 +102,37 @@ def demo_swiftly_forward(client, queue_size, fundamental_params):
         )
 
         task_queue.process(msg, (i0, i1), [[check_task]])
-        for meta, task in task_queue.done_tasks:
-            log.info(
-                "%s,check done: %d,%d, handle: (%d/%d), subgrid error: %e",
-                meta[2],
-                meta[3][0],
-                meta[3][1],
-                meta[0],
-                meta[1],
-                task.result(),
-            )
+        for _, task in task_queue.done_tasks:
+            assert task.result() < 1e-15
+
         task_queue.empty_done()
 
     # forward without finish facet, need wait all done.
     task_queue.wait_all_done()
-    for meta, task in task_queue.done_tasks:
-        log.info(
-            "%s,check done: %d,%d, handle: (%d/%d), subgrid error: %e",
-            meta[2],
-            meta[3][0],
-            meta[3][1],
-            meta[0],
-            meta[1],
-            task.result(),
-        )
+    for _, task in task_queue.done_tasks:
+        assert task.result() < 1e-15
+    client.close()
 
 
-def demo_swiftly_backward(client, queue_size, fundamental_params):
-    """demo backward
+@pytest.mark.parametrize(
+    "queue_size",
+    [1, 2],
+)
+def test_swiftly_backward(queue_size):
+    """test backward with api"""
 
-    :param fundamental_params: _description_
-    """
-    swiftlyconfig = SwiftlyConfig(**fundamental_params)
+    client = set_up_dask()
+
+    swiftlyconfig = SwiftlyConfig(**TEST_PARAMS)
 
     subgrid_config_list = [
         [
-            SubgridConfig(i0, i1, **fundamental_params)
+            SubgridConfig(i0, i1, **TEST_PARAMS)
             for i1 in range(swiftlyconfig.distriFFT.nsubgrid)
         ]
         for i0 in range(swiftlyconfig.distriFFT.nsubgrid)
     ]
-    sources = [(1, 1, 0)]
+    sources = [(1, 512, 512)]
     subgrid_data = [
         [
             dask.delayed(make_subgrid)(
@@ -153,7 +151,7 @@ def demo_swiftly_backward(client, queue_size, fundamental_params):
 
     facets_config_list = [
         [
-            FacetConfig(j0, j1, **fundamental_params)
+            FacetConfig(j0, j1, **TEST_PARAMS)
             for j1 in range(swiftlyconfig.distriFFT.nfacet)
         ]
         for j0 in range(swiftlyconfig.distriFFT.nfacet)
@@ -188,50 +186,32 @@ def demo_swiftly_backward(client, queue_size, fundamental_params):
             check_facet_res = dask.compute(check_task)[0]
             for facet_config_j0 in facets_config_list:
                 for facet_config in facet_config_j0:
-
-                    log.info(
-                        "%s,(%d,%d), Facet errors: %e",
-                        msg,
-                        facet_config.j0,
-                        facet_config.j1,
-                        check_facet_res[facet_config.j0][facet_config.j1],
+                    assert (
+                        check_facet_res[facet_config.j0][facet_config.j1]
+                        < 1.675e-3
                     )
         else:
             task_queue.process(msg, (i0, i1), handle_tasks)
-            for meta, _ in task_queue.done_tasks:
-                # i1 task-checker
-                if meta[3][0] != -1 and meta[3][1] != -1:
-                    log.info(
-                        "%s,check task i1 done: %d,%d, handle task: (%d/%d)",
-                        meta[2],
-                        meta[3][0],
-                        meta[3][1],
-                        meta[0],
-                        meta[1],
-                    )
-                # i0 task-checker
-                elif meta[3][0] != -1 and meta[3][1] == -1:
-                    log.info(
-                        "%s,check task i0 done: %d,%d, handle task: (%d/%d)",
-                        meta[2],
-                        meta[3][0],
-                        meta[3][1],
-                        meta[0],
-                        meta[1],
-                    )
             task_queue.empty_done()
     task_queue.wait_all_done()
+    client.close()
 
 
-def demo_major(client, queue_size, fundamental_params):
-    """demo the use of swiftly_major"""
-    swiftlyconfig = SwiftlyConfig(**fundamental_params)
+@pytest.mark.parametrize(
+    "queue_size",
+    [1, 2],
+)
+def test_swiftly_major(queue_size):
+    """test major with api"""
+    client = set_up_dask()
+
+    swiftlyconfig = SwiftlyConfig(**TEST_PARAMS)
 
     sources = [(1, 1, 0)]
 
     subgrid_config_list = [
         [
-            SubgridConfig(i0, i1, **fundamental_params)
+            SubgridConfig(i0, i1, **TEST_PARAMS)
             for i1 in range(swiftlyconfig.distriFFT.nsubgrid)
         ]
         for i0 in range(swiftlyconfig.distriFFT.nsubgrid)
@@ -255,7 +235,7 @@ def demo_major(client, queue_size, fundamental_params):
 
     facets_config_list = [
         [
-            FacetConfig(j0, j1, **fundamental_params)
+            FacetConfig(j0, j1, **TEST_PARAMS)
             for j1 in range(swiftlyconfig.distriFFT.nfacet)
         ]
         for j0 in range(swiftlyconfig.distriFFT.nfacet)
@@ -302,116 +282,13 @@ def demo_major(client, queue_size, fundamental_params):
             check_facet_res = dask.compute(check_task)[0]
             for facet_config_j0 in facets_config_list:
                 for facet_config in facet_config_j0:
-
-                    log.info(
-                        "%s,(%d,%d), residual errors: %e",
-                        msg,
-                        facet_config.j0,
-                        facet_config.j1,
-                        check_facet_res[facet_config.j0][facet_config.j1],
+                    assert (
+                        check_facet_res[facet_config.j0][facet_config.j1]
+                        < 0.00573
                     )
         else:
             task_queue.process(msg, (i0, i1), handle_tasks)
-            for meta, _ in task_queue.done_tasks:
-                # i1 task-checker
-                if meta[3][0] != -1 and meta[3][1] != -1:
-                    log.info(
-                        "%s,check task i1 done: %d,%d, handle task: (%d/%d)",
-                        meta[2],
-                        meta[3][0],
-                        meta[3][1],
-                        meta[0],
-                        meta[1],
-                    )
-                # i0 task-checker
-                elif meta[3][0] != -1 and meta[3][1] == -1:
-                    log.info(
-                        "%s,check task i0 done: %d,%d, handle task: (%d/%d)",
-                        meta[2],
-                        meta[3][0],
-                        meta[3][1],
-                        meta[0],
-                        meta[1],
-                    )
             task_queue.empty_done()
 
     task_queue.wait_all_done()
-
-
-def main(args):
-    """main function"""
-    # Fixing seed of numpy random
-    numpy.random.seed(123456789)
-
-    scheduler = os.environ.get("DASK_SCHEDULER", None)
-    dask_client = set_up_dask(scheduler_address=scheduler)
-
-    swift_config_keys = args.swift_config.split(",")
-    for c in swift_config_keys:
-        try:
-            SWIFT_CONFIGS[c]
-        except KeyError as error:
-            raise KeyError(
-                f"Provided argument ({c}) does not match any swift "
-                f"configuration keys. Please consult src/swift_configs.py "
-                f"for available options."
-            ) from error
-
-    for config_key in swift_config_keys:
-        log.info("Running for swift-config: %s", config_key)
-        mem_sampler = MemorySampler()
-
-        with performance_report(
-            filename="mode-%s-%s-queue-%d.html"
-            % (args.demo_mode, config_key, args.queue_size)
-        ), mem_sampler.sample(
-            "process", measure="process"
-        ), mem_sampler.sample(
-            "managed", measure="managed"
-        ):
-            if args.demo_mode == "forward":
-                demo_swiftly_forward(
-                    dask_client, args.queue_size, SWIFT_CONFIGS[config_key]
-                )
-            elif args.demo_mode == "backward":
-                demo_swiftly_backward(
-                    dask_client, args.queue_size, SWIFT_CONFIGS[config_key]
-                )
-            elif args.demo_mode == "major":
-                demo_major(
-                    dask_client, args.queue_size, SWIFT_CONFIGS[config_key]
-                )
-            else:
-                raise ValueError(
-                    "Only supported forward, backward and major demo mode"
-                )
-
-        mem_sampler.to_pandas().to_csv(
-            "mem-mode-%s-%s-queue-%d.csv"
-            % (args.demo_mode, config_key, args.queue_size)
-        )
-
-        get_and_write_transfer(
-            dask_client,
-            f"mode-{args.demo_mode}-{config_key}-queue-{args.queue_size}",
-        )
-
-        dask_client.restart()
-
-
-if __name__ == "__main__":
-    dfft_parser = cli_parser()
-    dfft_parser.add_argument(
-        "--demo_mode",
-        type=str,
-        default="backward",
-        help="api demo mode, forward, backward or major",
-    )
-    dfft_parser.add_argument(
-        "--queue_size",
-        type=int,
-        default=20,
-        help="the size of queue",
-    )
-    parsed_args = dfft_parser.parse_args()
-    main(parsed_args)
+    client.close()

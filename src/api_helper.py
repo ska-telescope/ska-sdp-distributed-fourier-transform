@@ -68,6 +68,18 @@ def check_facet(
     return numpy.sqrt(numpy.average(numpy.abs(facet - approx_facet) ** 2))
 
 
+def check_facet2(
+    facet,
+    approx_facet,
+):
+    """
+    check facet using sources
+    """
+
+    # Compare against result
+    return numpy.sqrt(numpy.average(numpy.abs(facet - approx_facet) ** 2))
+
+
 def check_residual(residual_facet):
     """
     check residual image
@@ -87,7 +99,7 @@ def check_subgrid(N, sg_off0, sg_A0, sg_off1, sg_A1, approx_subgrid, sources):
 
 
 def sum_and_finish_subgrid(
-    distributedFFT, NMBF_NMBF_tasks, subgrid_config, facets_config_list
+    distributedFFT, NMBF_NMBF_tasks, subgrid_config, facets_light_j_off
 ):
     """sum faect contribution and finsh subgrid"""
     # Initialise facet sum
@@ -95,14 +107,14 @@ def sum_and_finish_subgrid(
         (distributedFFT.xM_size, distributedFFT.xM_size), dtype=complex
     )
 
-    for facets_config_j0 in facets_config_list:
+    for facets_config_j0 in facets_light_j_off:
         for facets_config in facets_config_j0:
-            NMBF_NMBF = NMBF_NMBF_tasks[facets_config.j0][facets_config.j1]
+            NMBF_NMBF = NMBF_NMBF_tasks[facets_config[0]][facets_config[1]]
             summed_facet += distributedFFT.add_facet_contribution(
                 distributedFFT.add_facet_contribution(
-                    NMBF_NMBF, facets_config.facet_off0, axis=0
+                    NMBF_NMBF, facets_config[2], axis=0
                 ),
-                facets_config.facet_off1,
+                facets_config[3],
                 axis=1,
             )
     # Finish
@@ -134,29 +146,30 @@ def generate_mask(N, mask_size, offsets):
             raise ValueError(
                 "Mask size not large enough to cover subgrids / facets!"
             )
+
         mask[i, left:right] = 1
     return mask
 
 
-def prepare_and_split_subgrid(distributedFFT, Fn, facets_config_list, subgrid):
+def prepare_and_split_subgrid(distributedFFT, Fn, facets_light_j_off, subgrid):
     """prepare NAF_NAF"""
     # Prepare subgrid
     prepared_subgrid = distributedFFT.prepare_subgrid(subgrid)
 
     # Extract subgrid facet contributions
     facet_ixs = []
-    for facets_config_i0 in facets_config_list:
+    for facets_config_i0 in facets_light_j_off:
         for facets_config in facets_config_i0:
-            facet_ixs.append((facets_config.j0, facets_config.j1))
+            facet_ixs.append((facets_config[0], facets_config[1]))
     NAF_AFs = {
         j0: distributedFFT.extract_subgrid_contrib_to_facet(
-            prepared_subgrid, facets_config_list[j0][0].facet_off0, Fn, axis=0
+            prepared_subgrid, facets_light_j_off[j0][0][2], Fn, axis=0
         )
         for j0 in set(j0 for j0, j1 in facet_ixs)
     }
     NAF_NAFs = [
         distributedFFT.extract_subgrid_contrib_to_facet(
-            NAF_AFs[j0], facets_config_list[j0][j1].facet_off1, Fn, axis=1
+            NAF_AFs[j0], facets_light_j_off[j0][j1][3], Fn, axis=1
         )
         for j0, j1 in facet_ixs
     ]
@@ -164,7 +177,7 @@ def prepare_and_split_subgrid(distributedFFT, Fn, facets_config_list, subgrid):
 
 
 def accumulate_column(
-    distributedFFT, NAF_NAF, NAF_MNAF, facet_m0_trunc, subgrid_config
+    distributedFFT, NAF_NAF, NAF_MNAF, facet_m0_trunc, subgrid_off1
 ):
     """update NAF_MNAF"""
     # TODO: add_subgrid_contribution should add
@@ -172,13 +185,13 @@ def accumulate_column(
     if NAF_MNAF is None:
         return distributedFFT.add_subgrid_contribution(
             NAF_NAF,
-            subgrid_config.subgrid_off1,
+            subgrid_off1,
             facet_m0_trunc,
             axis=1,
         )
     return NAF_MNAF + distributedFFT.add_subgrid_contribution(
         NAF_NAF,
-        subgrid_config.subgrid_off1,
+        subgrid_off1,
         facet_m0_trunc,
         axis=1,
     )
@@ -190,20 +203,35 @@ def accumulate_facet(
     MNAF_BMNAF,
     Fb,
     facet_m0_trunc,
-    facet_config,
-    subgrid_config_i0_0,
+    facet_mask1,
+    subgrid_off0,
 ):
     """update MNAF_BMNAF"""
-    NAF_BMNAF = distributedFFT.finish_facet(
-        NAF_MNAF, facet_config.facet_mask1, Fb, axis=1
-    )
+    NAF_BMNAF = distributedFFT.finish_facet(NAF_MNAF, facet_mask1, Fb, axis=1)
     if MNAF_BMNAF is None:
         return distributedFFT.add_subgrid_contribution(
-            NAF_BMNAF, subgrid_config_i0_0.subgrid_off0, facet_m0_trunc, axis=0
+            NAF_BMNAF, subgrid_off0, facet_m0_trunc, axis=0
         )
     # TODO: add_subgrid_contribution should add
     # directly to NAF_MNAF here at some point.
     MNAF_BMNAF = MNAF_BMNAF + distributedFFT.add_subgrid_contribution(
-        NAF_BMNAF, subgrid_config_i0_0.subgrid_off0, facet_m0_trunc, axis=0
+        NAF_BMNAF, subgrid_off0, facet_m0_trunc, axis=0
     )
     return MNAF_BMNAF
+
+
+def extract_column(
+    distriFFT, BF_F, Fn_task, Fb_task, facet_m0_trunc_task, subgrid_off0
+):
+    """extract column task"""
+    return distriFFT.prepare_facet(
+        distriFFT.extract_facet_contrib_to_subgrid(
+            BF_F,
+            subgrid_off0,
+            facet_m0_trunc_task,
+            Fn_task,
+            axis=0,
+        ),
+        Fb_task,
+        axis=1,
+    )
