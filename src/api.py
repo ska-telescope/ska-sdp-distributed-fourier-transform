@@ -11,14 +11,19 @@ import dask
 import dask.array
 import dask.distributed
 import numpy
+from distributed import Client
 
 from src.api_helper import (
     accumulate_column,
     accumulate_facet,
+    accumulate_facet_new,
     extract_column,
+    finish_facet,
     generate_mask,
     prepare_and_split_subgrid,
+    prepare_and_split_subgrid_new,
     sum_and_finish_subgrid,
+    sum_and_finish_subgrid_new,
 )
 from src.fourier_transform.algorithm_parameters import (
     BaseArrays,
@@ -98,6 +103,278 @@ class SwiftlyConfig:
     def __init__(self, **fundamental_constants):
         self.base_arrays = BaseArrays(**fundamental_constants)
         self.distriFFT = StreamingDistributedFFT(**fundamental_constants)
+        self.dask_client = Client.current()
+
+
+class SwiftlyForward:
+    def __init__(self, swiftly_config, facet_tasks):
+        self.core_config = swiftly_config
+        self.facet_tasks = facet_tasks
+
+        self.facets_light_j_off = [
+            [
+                (
+                    facets_config.j0,
+                    facets_config.j1,
+                )
+                for facets_config, _ in facets_j0
+            ]
+            for facets_j0 in facet_tasks
+        ]
+
+        self.BF_Fs_persist = None
+
+        self.Fb_task = self.core_config.dask_client.scatter(
+            self.core_config.base_arrays.Fb, broadcast=True
+        )
+        self.facet_m0_trunc_task = self.core_config.dask_client.scatter(
+            self.core_config.base_arrays.facet_m0_trunc, broadcast=True
+        )
+        self.Fn_task = self.core_config.dask_client.scatter(
+            self.core_config.base_arrays.Fn, broadcast=True
+        )
+        self.distriFFT_obj_task = self.core_config.dask_client.scatter(
+            self.core_config.distriFFT, broadcast=True
+        )
+        self.base_arrays_task = self.core_config.dask_client.scatter(
+            self.core_config.base_arrays, broadcast=True
+        )
+
+        self.NMBF_BFs_persist = {}
+
+    def get_subgrid_task(self, subgrid_config):
+        BF_Fs = self.get_BF_Fs()
+
+        i0 = subgrid_config.i0
+        NMBF_BFs_i0 = self.get_NMBF_BFs_i0(i0, BF_Fs)
+
+        i1 = subgrid_config.i1
+
+        return self._gen_subgrid(i0, i1, NMBF_BFs_i0)
+
+    def _gen_subgrid(self, i0, i1, NMBF_BFs_i0):
+        NMBF_NMBF_tasks = [
+            [
+                self.core_config.distriFFT.extract_facet_contrib_to_subgrid(
+                    NMBF_BF,
+                    self.core_config.distriFFT.subgrid_off[i1],
+                    self.facet_m0_trunc_task,
+                    self.Fn_task,
+                    axis=1,
+                    use_dask=True,
+                    nout=1,
+                )
+                for NMBF_BF in NMBF_BF_j0
+            ]
+            for NMBF_BF_j0 in NMBF_BFs_i0
+        ]
+        subgrid_task = dask.delayed(sum_and_finish_subgrid_new)(
+            self.distriFFT_obj_task,
+            NMBF_NMBF_tasks,
+            self.base_arrays_task,
+            i0,
+            i1,
+            self.facets_light_j_off,
+        )
+
+        return subgrid_task
+
+    def get_BF_Fs(self):
+        if self.BF_Fs_persist is None:
+            self.BF_Fs_persist = dask.persist(
+                [
+                    [
+                        self.core_config.distriFFT.prepare_facet(
+                            facet_data,
+                            self.Fb_task,
+                            axis=0,
+                            use_dask=True,
+                            nout=1,
+                        )
+                        for facet_config, facet_data in facet_i0
+                    ]
+                    for facet_i0 in self.facet_tasks
+                ]
+            )[0]
+
+        return self.BF_Fs_persist
+
+    def get_NMBF_BFs_i0(self, i0, BF_Fs):
+        NMBF_BFs_i0_persist = self.NMBF_BFs_persist.get(i0, None)
+        if NMBF_BFs_i0_persist is None:
+            self.NMBF_BFs_persist[i0] = dask.persist(
+                [
+                    [
+                        dask.delayed(extract_column)(
+                            self.distriFFT_obj_task,
+                            BF_F,
+                            self.Fn_task,
+                            self.Fb_task,
+                            self.facet_m0_trunc_task,
+                            self.core_config.distriFFT.subgrid_off[i0],
+                        )
+                        for BF_F in BF_F_j0
+                    ]
+                    for BF_F_j0 in BF_Fs
+                ]
+            )[0]
+            NMBF_BFs_i0_persist = self.NMBF_BFs_persist[i0]
+        return NMBF_BFs_i0_persist
+
+
+class SwiftlyBackward:
+    def __init__(self, swiftly_config) -> None:
+        self.core_config = swiftly_config
+
+        self.Fb_task = self.core_config.dask_client.scatter(
+            self.core_config.base_arrays.Fb, broadcast=True
+        )
+        self.facet_m0_trunc_task = self.core_config.dask_client.scatter(
+            self.core_config.base_arrays.facet_m0_trunc, broadcast=True
+        )
+        self.Fn_task = self.core_config.dask_client.scatter(
+            self.core_config.base_arrays.Fn, broadcast=True
+        )
+        self.distriFFT_obj_task = self.core_config.dask_client.scatter(
+            self.core_config.distriFFT, broadcast=True
+        )
+        self.base_arrays_task = self.core_config.dask_client.scatter(
+            self.core_config.base_arrays, broadcast=True
+        )
+
+        self.facets_light_j_off = [
+            [(j0, j1) for j0 in range(self.core_config.distriFFT.nfacet)]
+            for j1 in range(self.core_config.distriFFT.nfacet)
+        ]
+
+        self.MNAF_BMNAFs_persist = dask.persist(
+            [
+                [
+                    dask.delayed(
+                        lambda shape: numpy.zeros(shape, dtype="complex128")
+                    )(
+                        (
+                            self.core_config.distriFFT.yP_size,
+                            self.core_config.distriFFT.yB_size,
+                        )
+                    )
+                    for _ in range(self.core_config.distriFFT.nfacet)
+                ]
+                for _ in range(self.core_config.distriFFT.nfacet)
+            ]
+        )[0]
+        self.NAF_MNAFs_persist = {}
+        self.complete_i0_i1_counter = {}
+
+    def add_new_subgrid_task(self, subgrid_config, new_subgrid_task):
+        i0 = subgrid_config.i0
+        i1 = subgrid_config.i1
+
+        NAF_NAF_floot = dask.delayed(
+            prepare_and_split_subgrid_new,
+            nout=len(self.MNAF_BMNAFs_persist)
+            * len(self.MNAF_BMNAFs_persist[0]),
+        )(
+            self.distriFFT_obj_task,
+            self.Fn_task,
+            self.facets_light_j_off,
+            new_subgrid_task,
+            self.base_arrays_task,
+        )
+        # split to 2D
+        NAF_NAF_tasks = []
+        for j0 in range(self.core_config.distriFFT.nfacet):
+            NAF_NAF_task_j0 = []
+            for j1 in range(self.core_config.distriFFT.nfacet):
+                NAF_NAF_task_j0.append(
+                    NAF_NAF_floot[j0 * len(self.MNAF_BMNAFs_persist) + j1]
+                )
+            NAF_NAF_tasks.append(NAF_NAF_task_j0)
+
+        # update i0-th NAF_MNAF_tasks every i1
+        new_NAF_MNAFs = self.update_i0_NAF_MNAFs(i0, i1, NAF_NAF_tasks)
+
+        self.update_i0_i1_counter_status(i0, i1)
+
+        handle_task = new_NAF_MNAFs
+        # is the last i1 in this i0？，yes, and update MNAF_BMNAF
+        if self.is_all_i1_done_in_this_i0(i0):
+            handle_task = self.update_MNAF_BMNAFs(i0, new_NAF_MNAFs)
+        return handle_task
+
+    def finish(self):
+        approx_facet_tasks = [
+            [
+                dask.delayed(finish_facet)(
+                    self.distriFFT_obj_task,
+                    self.MNAF_BMNAFs_persist[j0][j1],
+                    self.base_arrays_task,
+                    self.Fb_task,
+                    j0,
+                )
+                for j1 in range(self.core_config.distriFFT.nfacet)
+            ]
+            for j0 in range(self.core_config.distriFFT.nfacet)
+        ]
+        return approx_facet_tasks
+
+    def update_i0_i1_counter_status(self, i0, i1):
+        if self.complete_i0_i1_counter.get(i0, None) is None:
+            self.complete_i0_i1_counter[i0] = []
+
+        self.complete_i0_i1_counter[i0].append(i1)
+
+    def is_all_i1_done_in_this_i0(self, i0):
+        return (
+            self.complete_i0_i1_counter[i0][-1]
+            == self.core_config.distriFFT.nsubgrid - 1
+        )
+
+    def update_i0_NAF_MNAFs(self, i0, i1, new_NAF_NAF_tasks):
+        old_NAF_MNAFs = self.NAF_MNAFs_persist.get(i0, None)
+        if old_NAF_MNAFs is None:
+            old_NAF_MNAFs = [
+                [None for _ in range(self.core_config.distriFFT.nfacet)]
+                for _ in range(self.core_config.distriFFT.nfacet)
+            ]
+        new_NAF_MNAFs = dask.persist(
+            [
+                [
+                    dask.delayed(accumulate_column)(
+                        self.distriFFT_obj_task,
+                        new_NAF_NAF_tasks[j0][j1],
+                        old_NAF_MNAFs[j0][j1],
+                        self.facet_m0_trunc_task,
+                        self.core_config.distriFFT.subgrid_off[i1],
+                    )
+                    for j1 in range(self.core_config.distriFFT.nfacet)
+                ]
+                for j0 in range(self.core_config.distriFFT.nfacet)
+            ]
+        )[0]
+        self.NAF_MNAFs_persist[i0] = new_NAF_MNAFs
+        return new_NAF_MNAFs
+
+    def update_MNAF_BMNAFs(self, i0, new_NAF_MNAFs):
+        self.MNAF_BMNAFs_persist = dask.persist(
+            [
+                [
+                    dask.delayed(accumulate_facet_new)(
+                        self.distriFFT_obj_task,
+                        new_NAF_MNAFs[j0][j1],
+                        self.MNAF_BMNAFs_persist[j0][j1],
+                        self.Fb_task,
+                        self.facet_m0_trunc_task,
+                        self.base_arrays_task,
+                        j1,
+                        i0,
+                    )
+                    for j1 in range(self.core_config.distriFFT.nfacet)
+                ]
+                for j0 in range(self.core_config.distriFFT.nfacet)
+            ]
+        )[0]
+        return self.MNAF_BMNAFs_persist
 
 
 def swiftly_forward(
@@ -345,6 +622,7 @@ def swiftly_major(
     facets_data,
     obs_subgrid_config_list,
     obs_subgrid_data,
+    facets_mask_task_list,
 ):
     """
     forward and backward sub graph generator
@@ -514,7 +792,8 @@ def swiftly_major(
                         MNAF_BMNAF_tasks[j0][j1],
                         Fb_task,
                         facet_m0_trunc_task,
-                        dask.delayed(facet_config.facet_mask1),
+                        facets_mask_task_list[j0][j1][1],
+                        # dask.delayed(facet_config.facet_mask1),
                         subgrid_config_i0[0].subgrid_off0,
                     )
                     for j1, facet_config in enumerate(facet_config_j0)
@@ -531,7 +810,8 @@ def swiftly_major(
         [
             core_config.distriFFT.finish_facet(
                 MNAF_BMNAF_tasks[j0][j1],
-                dask.delayed(facet_config.facet_mask0),
+                facets_mask_task_list[j0][j1][0],
+                # dask.delayed(facet_config.facet_mask0),
                 Fb_task,
                 axis=0,
                 use_dask=True,
