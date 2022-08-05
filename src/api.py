@@ -104,7 +104,8 @@ class SwiftlyForward:
             self.core_config.base_arrays, broadcast=True
         )
 
-        self.NMBF_BFs_persist = {}
+        self.last_i0 = None
+        self.NMBF_BFs_i0_persist = None
 
     def get_subgrid_task(self, subgrid_config):
         """make a subgrid sub graph
@@ -112,7 +113,7 @@ class SwiftlyForward:
         :param subgrid_config: subgrid config
         :return: sub graph
         """
-        BF_Fs = self.get_BF_Fs()
+        BF_Fs = self._get_BF_Fs()
 
         i0 = subgrid_config.i0
         NMBF_BFs_i0 = self.get_NMBF_BFs_i0(i0, BF_Fs)
@@ -155,8 +156,8 @@ class SwiftlyForward:
 
         return subgrid_task
 
-    def get_BF_Fs(self):
-        """make BF_F
+    def _get_BF_Fs(self):
+        """make BF_F prepared facet buffers
 
         :return: BF_F dict
         """
@@ -186,9 +187,13 @@ class SwiftlyForward:
         :param BF_Fs: BF_F task
         :return: i0-th NMBF_BFs dict
         """
-        NMBF_BFs_i0_persist = self.NMBF_BFs_persist.get(i0, None)
-        if NMBF_BFs_i0_persist is None:
-            self.NMBF_BFs_persist[i0] = dask.persist(
+
+        if self.last_i0 != i0:
+            if self.NMBF_BFs_i0_persist is not None:
+                for NMBF_BF_j0 in self.NMBF_BFs_i0_persist:
+                    for NMBF_BF in NMBF_BF_j0:
+                        NMBF_BF.cancel()
+            self.NMBF_BFs_i0_persist = dask.persist(
                 [
                     [
                         dask.delayed(extract_column)(
@@ -204,8 +209,9 @@ class SwiftlyForward:
                     for BF_F_j0 in BF_Fs
                 ]
             )[0]
-            NMBF_BFs_i0_persist = self.NMBF_BFs_persist[i0]
-        return NMBF_BFs_i0_persist
+            self.last_i0 = i0
+
+        return self.NMBF_BFs_i0_persist
 
 
 class SwiftlyBackward:
@@ -235,22 +241,7 @@ class SwiftlyBackward:
             for j1 in range(self.core_config.distriFFT.nfacet)
         ]
 
-        self.MNAF_BMNAFs_persist = dask.persist(
-            [
-                [
-                    dask.delayed(
-                        lambda shape: numpy.zeros(shape, dtype="complex128")
-                    )(
-                        (
-                            self.core_config.distriFFT.yP_size,
-                            self.core_config.distriFFT.yB_size,
-                        )
-                    )
-                    for _ in range(self.core_config.distriFFT.nfacet)
-                ]
-                for _ in range(self.core_config.distriFFT.nfacet)
-            ]
-        )[0]
+        self.MNAF_BMNAFs_persist = self._get_MNAF_BMNAFs()
         self.NAF_MNAFs_persist = {}
         self.complete_i0_i1_counter = {}
 
@@ -290,17 +281,18 @@ class SwiftlyBackward:
 
         self.update_i0_i1_counter_status(i0, i1)
 
-        handle_task = new_NAF_MNAFs
+        task_finished = new_NAF_MNAFs
         # is the last i1 in this i0？，yes, and update MNAF_BMNAF
         if self.is_all_i1_done_in_this_i0(i0):
-            handle_task = self.update_MNAF_BMNAFs(i0, new_NAF_MNAFs)
-        return handle_task
+            task_finished = self.update_MNAF_BMNAFs(i0, new_NAF_MNAFs)
+        return task_finished
 
     def finish(self):
         """finish facet
 
         :return: approx_facet_tasks
         """
+
         approx_facet_tasks = [
             [
                 dask.delayed(finish_facet)(
@@ -396,6 +388,25 @@ class SwiftlyBackward:
             ]
         )[0]
         return self.MNAF_BMNAFs_persist
+
+    def _get_MNAF_BMNAFs(self):
+        MNAF_BMNAFs = dask.persist(
+            [
+                [
+                    dask.delayed(
+                        lambda shape: numpy.zeros(shape, dtype="complex128")
+                    )(
+                        (
+                            self.core_config.distriFFT.yP_size,
+                            self.core_config.distriFFT.yB_size,
+                        )
+                    )
+                    for _ in range(self.core_config.distriFFT.nfacet)
+                ]
+                for _ in range(self.core_config.distriFFT.nfacet)
+            ]
+        )[0]
+        return MNAF_BMNAFs
 
 
 class TaskQueue:
