@@ -113,11 +113,11 @@ def demo_api(queue_size, fundamental_params):
         new_subgrid_task = dask.delayed(process_subgrid)(
             subgrid_config, subgrid_task
         )
-        handle_task = bwd.add_new_subgrid_task(
+        task_finished = bwd.add_new_subgrid_task(
             subgrid_config, new_subgrid_task
         )
         task_queue.process(
-            "hd", (subgrid_config.i0, subgrid_config.i1), handle_task
+            "task", (subgrid_config.i0, subgrid_config.i1), task_finished
         )
         task_queue.empty_done()
         log.info(
