@@ -75,7 +75,7 @@ class SwiftlyForward:
         self.core_config = swiftly_config
         self.facet_tasks = facet_tasks
 
-        self.facets_light_j_off = [
+        self.facets_j_list = [
             [
                 (
                     facets_config.j0,
@@ -150,7 +150,7 @@ class SwiftlyForward:
             self.base_arrays_task,
             i0,
             i1,
-            self.facets_light_j_off,
+            self.facets_j_list,
         )
 
         return subgrid_task
@@ -230,7 +230,7 @@ class SwiftlyBackward:
             self.core_config.base_arrays, broadcast=True
         )
 
-        self.facets_light_j_off = [
+        self.facets_j_list = [
             [(j0, j1) for j0 in range(self.core_config.distriFFT.nfacet)]
             for j1 in range(self.core_config.distriFFT.nfacet)
         ]
@@ -271,7 +271,7 @@ class SwiftlyBackward:
         )(
             self.distriFFT_obj_task,
             self.Fn_task,
-            self.facets_light_j_off,
+            self.facets_j_list,
             new_subgrid_task,
             self.base_arrays_task,
         )
