@@ -104,8 +104,10 @@ class SwiftlyForward:
             self.core_config.base_arrays, broadcast=True
         )
 
-        self.last_i0 = None
-        self.NMBF_BFs_i0_persist = None
+        self.max_i0_NMBF_BFs_persist = 1
+        # self.last_i0 = None
+        self.NMBF_BFs_i0_persist = {}
+        self.NMBF_BFs_i0_queue = []
 
     def get_subgrid_task(self, subgrid_config):
         """make a subgrid sub graph
@@ -188,12 +190,17 @@ class SwiftlyForward:
         :return: i0-th NMBF_BFs dict
         """
 
-        if self.last_i0 != i0:
-            if self.NMBF_BFs_i0_persist is not None:
-                for NMBF_BF_j0 in self.NMBF_BFs_i0_persist:
-                    for NMBF_BF in NMBF_BF_j0:
-                        NMBF_BF.cancel()
-            self.NMBF_BFs_i0_persist = dask.persist(
+        while len(self.NMBF_BFs_i0_persist) > self.max_i0_NMBF_BFs_persist:
+            oldest_i0 = self.NMBF_BFs_i0_queue.pop(0)
+            oldest_NMBF_BFs = self.NMBF_BFs_i0_persist[oldest_i0]
+
+            for oldest_NMBF_BFs_j0 in oldest_NMBF_BFs:
+                for oldNMBF_BF in oldest_NMBF_BFs_j0:
+                    oldNMBF_BF.cancel()
+            del self.NMBF_BFs_i0_persist[oldest_i0]
+
+        if self.NMBF_BFs_i0_persist.get(i0, None) is None:
+            self.NMBF_BFs_i0_persist[i0] = dask.persist(
                 [
                     [
                         dask.delayed(extract_column)(
@@ -209,9 +216,33 @@ class SwiftlyForward:
                     for BF_F_j0 in BF_Fs
                 ]
             )[0]
-            self.last_i0 = i0
+            self.NMBF_BFs_i0_queue.append(i0)
+        return self.NMBF_BFs_i0_persist[i0]
 
-        return self.NMBF_BFs_i0_persist
+        # if self.last_i0 != i0:
+        #     if self.NMBF_BFs_i0_persist is not None:
+        #         for NMBF_BF_j0 in self.NMBF_BFs_i0_persist:
+        #             for NMBF_BF in NMBF_BF_j0:
+        #                 NMBF_BF.cancel()
+        #     self.NMBF_BFs_i0_persist = dask.persist(
+        #         [
+        #             [
+        #                 dask.delayed(extract_column)(
+        #                     self.distriFFT_obj_task,
+        #                     BF_F,
+        #                     self.Fn_task,
+        #                     self.Fb_task,
+        #                     self.facet_m0_trunc_task,
+        #                     self.core_config.distriFFT.subgrid_off[i0],
+        #                 )
+        #                 for BF_F in BF_F_j0
+        #             ]
+        #             for BF_F_j0 in BF_Fs
+        #         ]
+        #     )[0]
+        #     self.last_i0 = i0
+
+        # return self.NMBF_BFs_i0_persist
 
 
 class SwiftlyBackward:
@@ -242,8 +273,11 @@ class SwiftlyBackward:
         ]
 
         self.MNAF_BMNAFs_persist = self._get_MNAF_BMNAFs()
+
         self.NAF_MNAFs_persist = {}
-        self.complete_i0_i1_counter = {}
+        self.NAF_MNAFs_queue = []
+        self.updating_MNAF_BMNAFs = None
+        self.max_i0_NAF_MNAFs_persit = 2
 
     def add_new_subgrid_task(self, subgrid_config, new_subgrid_task):
         """add new subgrid task
@@ -276,22 +310,44 @@ class SwiftlyBackward:
                 )
             NAF_NAF_tasks.append(NAF_NAF_task_j0)
 
-        # update i0-th NAF_MNAF_tasks every i1
         new_NAF_MNAFs = self.update_i0_NAF_MNAFs(i0, i1, NAF_NAF_tasks)
 
-        self.update_i0_i1_counter_status(i0, i1)
-
-        task_finished = new_NAF_MNAFs
-        # is the last i1 in this i0？，yes, and update MNAF_BMNAF
-        if self.is_all_i1_done_in_this_i0(i0):
-            task_finished = self.update_MNAF_BMNAFs(i0, new_NAF_MNAFs)
+        task_finished = self.update_max_i0_MNAF_BMNAFs(new_NAF_MNAFs)
         return task_finished
+
+    def _update_and_clean_NAF_MNAF(self):
+        """
+        update and clean all NAF_MNAFs_persist items
+        """
+
+        for i0, NAF_MNAFs in self.NAF_MNAFs_persist.items():
+            MNAF_BMNAFs = self.update_MNAF_BMNAFs(i0, NAF_MNAFs)
+            dask.distributed.wait(MNAF_BMNAFs)
+            for NAF_MNAFs_j0 in NAF_MNAFs:
+                for NAF_MNAF in NAF_MNAFs_j0:
+                    NAF_MNAF.cancel()
+        self.NAF_MNAFs_persist = {}
+
+    def update_max_i0_MNAF_BMNAFs(self, new_NAF_MNAFs):
+        """if persist NAF_MNAFs is larger than max value
+            update all NAF_MNAFs and clean with sync method
+
+        :param new_NAF_MNAFs: new NAF_MNAFs
+        :return: same new NAF_MNAFs
+        """
+
+        if len(self.NAF_MNAFs_persist) > self.max_i0_NAF_MNAFs_persit:
+            self._update_and_clean_NAF_MNAF()
+        return new_NAF_MNAFs
 
     def finish(self):
         """finish facet
 
         :return: approx_facet_tasks
         """
+
+        # update the remain NAF_MNAFs
+        self._update_and_clean_NAF_MNAF()
 
         approx_facet_tasks = [
             [
@@ -307,28 +363,6 @@ class SwiftlyBackward:
             for j0 in range(self.core_config.distriFFT.nfacet)
         ]
         return approx_facet_tasks
-
-    def update_i0_i1_counter_status(self, i0, i1):
-        """update i0,i1 counter
-
-        :param i0: i0
-        :param i1: i1
-        """
-        if self.complete_i0_i1_counter.get(i0, None) is None:
-            self.complete_i0_i1_counter[i0] = []
-
-        self.complete_i0_i1_counter[i0].append(i1)
-
-    def is_all_i1_done_in_this_i0(self, i0):
-        """Is the last i1 in this i0
-
-        :param i0: i0
-        :return: True or False
-        """
-        return (
-            self.complete_i0_i1_counter[i0][-1]
-            == self.core_config.distriFFT.nsubgrid - 1
-        )
 
     def update_i0_NAF_MNAFs(self, i0, i1, new_NAF_NAF_tasks):
         """update the i0-th NAF_MNAFs
@@ -360,6 +394,8 @@ class SwiftlyBackward:
             ]
         )[0]
         self.NAF_MNAFs_persist[i0] = new_NAF_MNAFs
+        if i0 not in self.NAF_MNAFs_queue:
+            self.NAF_MNAFs_queue.append(i0)
         return new_NAF_MNAFs
 
     def update_MNAF_BMNAFs(self, i0, new_NAF_MNAFs):
