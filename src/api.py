@@ -72,7 +72,7 @@ class SwiftlyConfig:
 class SwiftlyForward:
     """Swiftly Forward class"""
 
-    def __init__(self, swiftly_config, facet_tasks):
+    def __init__(self, swiftly_config, facet_tasks, lru_forward=1):
         self.core_config = swiftly_config
         self.facet_tasks = facet_tasks
 
@@ -105,8 +105,7 @@ class SwiftlyForward:
             self.core_config.base_arrays, broadcast=True
         )
 
-        self.max_i0_NMBF_BFs_persist = 1
-        # self.last_i0 = None
+        self.max_i0_NMBF_BFs_persist = lru_forward
         self.NMBF_BFs_i0_persist = {}
         self.NMBF_BFs_i0_queue = []
 
@@ -220,36 +219,11 @@ class SwiftlyForward:
             self.NMBF_BFs_i0_queue.append(i0)
         return self.NMBF_BFs_i0_persist[i0]
 
-        # if self.last_i0 != i0:
-        #     if self.NMBF_BFs_i0_persist is not None:
-        #         for NMBF_BF_j0 in self.NMBF_BFs_i0_persist:
-        #             for NMBF_BF in NMBF_BF_j0:
-        #                 NMBF_BF.cancel()
-        #     self.NMBF_BFs_i0_persist = dask.persist(
-        #         [
-        #             [
-        #                 dask.delayed(extract_column)(
-        #                     self.distriFFT_obj_task,
-        #                     BF_F,
-        #                     self.Fn_task,
-        #                     self.Fb_task,
-        #                     self.facet_m0_trunc_task,
-        #                     self.core_config.distriFFT.subgrid_off[i0],
-        #                 )
-        #                 for BF_F in BF_F_j0
-        #             ]
-        #             for BF_F_j0 in BF_Fs
-        #         ]
-        #     )[0]
-        #     self.last_i0 = i0
-
-        # return self.NMBF_BFs_i0_persist
-
 
 class SwiftlyBackward:
     """Swiftly Backward class"""
 
-    def __init__(self, swiftly_config) -> None:
+    def __init__(self, swiftly_config, lru_backward=1) -> None:
         self.core_config = swiftly_config
 
         self.Fb_task = self.core_config.dask_client.scatter(
@@ -278,7 +252,7 @@ class SwiftlyBackward:
         self.NAF_MNAFs_persist = {}
         self.NAF_MNAFs_queue = []
         self.updating_MNAF_BMNAFs = None
-        self.max_i0_NAF_MNAFs_persit = 1
+        self.max_i0_NAF_MNAFs_persit = lru_backward
 
     def add_new_subgrid_task(self, subgrid_config, new_subgrid_task):
         """add new subgrid task
@@ -314,12 +288,7 @@ class SwiftlyBackward:
         new_NAF_MNAFs = self.update_i0_NAF_MNAFs(i0, i1, NAF_NAF_tasks)
 
         task_finished = self.update_max_i0_MNAF_BMNAFs(new_NAF_MNAFs)
-        print(
-            "now q:",
-            self.NAF_MNAFs_queue,
-            "updating:",
-            self.updating_MNAF_BMNAFs,
-        )
+
         return task_finished
 
     def _update_and_clean_NAF_MNAF(self):
@@ -335,6 +304,33 @@ class SwiftlyBackward:
                     NAF_MNAF.cancel()
         self.NAF_MNAFs_persist = {}
 
+    def _clean_updating(self):
+        """
+        clean NAF_MNAFs_persist when update done
+        """
+        all_done = True
+        for j0, j1 in itertools.product(
+            range(len(self.updating_MNAF_BMNAFs[0])),
+            range(len(self.updating_MNAF_BMNAFs[0][0])),
+        ):
+            updating = self.updating_MNAF_BMNAFs[0][j0][j1]
+            fs_updating = dask.distributed.futures_of(updating)[0]
+            if not fs_updating.done():
+                all_done = False
+                break
+
+        if all_done:
+            oldest_i0 = self.updating_MNAF_BMNAFs[1]
+            self.NAF_MNAFs_queue.remove(oldest_i0)
+            oldest_NAF_MNAFs = self.NAF_MNAFs_persist[oldest_i0]
+
+            for NAF_MNAFs_j0 in oldest_NAF_MNAFs:
+                for NAF_MNAF in NAF_MNAFs_j0:
+                    NAF_MNAF.cancel()
+            del self.NAF_MNAFs_persist[oldest_i0]
+
+            self.updating_MNAF_BMNAFs = None
+
     def update_max_i0_MNAF_BMNAFs(self, new_NAF_MNAFs):
         """if persist NAF_MNAFs is larger than max value
             update all NAF_MNAFs and clean with sync method
@@ -345,29 +341,7 @@ class SwiftlyBackward:
         if len(self.NAF_MNAFs_persist) > self.max_i0_NAF_MNAFs_persit:
             if self.updating_MNAF_BMNAFs is not None:
 
-                all_done = True
-
-                for j0, j1 in itertools.product(
-                    range(len(self.updating_MNAF_BMNAFs[0])),
-                    range(len(self.updating_MNAF_BMNAFs[0][0])),
-                ):
-                    updating = self.updating_MNAF_BMNAFs[0][j0][j1]
-                    fs_updating = dask.distributed.futures_of(updating)[0]
-                    if not fs_updating.done():
-                        all_done = False
-                        break
-
-                if all_done:
-                    oldest_i0 = self.updating_MNAF_BMNAFs[1]
-                    self.NAF_MNAFs_queue.remove(oldest_i0)
-                    oldest_NAF_MNAFs = self.NAF_MNAFs_persist[oldest_i0]
-
-                    for NAF_MNAFs_j0 in oldest_NAF_MNAFs:
-                        for NAF_MNAF in NAF_MNAFs_j0:
-                            NAF_MNAF.cancel()
-                    del self.NAF_MNAFs_persist[oldest_i0]
-
-                    self.updating_MNAF_BMNAFs = None
+                self._clean_updating()
 
             else:
 
@@ -378,10 +352,9 @@ class SwiftlyBackward:
                     oldest_i0, oldest_NAF_MNAFs
                 )
                 self.updating_MNAF_BMNAFs = (update_MNAF_BMNAFs, oldest_i0)
+
                 return update_MNAF_BMNAFs
 
-        # if len(self.NAF_MNAFs_persist) > self.max_i0_NAF_MNAFs_persit:
-        #     self._update_and_clean_NAF_MNAF()
         return new_NAF_MNAFs
 
     def finish(self):
@@ -390,32 +363,10 @@ class SwiftlyBackward:
         :return: approx_facet_tasks
         """
 
-        # update the remain updating MNAF_BMNAFs and NAF_MNAFs
+        # update the remain updating MNAF_BMNAFs and clean NAF_MNAFs
         while self.updating_MNAF_BMNAFs is not None:
 
-            all_done = True
-
-            for j0, j1 in itertools.product(
-                range(len(self.updating_MNAF_BMNAFs[0])),
-                range(len(self.updating_MNAF_BMNAFs[0][0])),
-            ):
-                updating = self.updating_MNAF_BMNAFs[0][j0][j1]
-                fs_updating = dask.distributed.futures_of(updating)[0]
-                if not fs_updating.done():
-                    all_done = False
-                    break
-
-            if all_done:
-                oldest_i0 = self.updating_MNAF_BMNAFs[1]
-                self.NAF_MNAFs_queue.remove(oldest_i0)
-                oldest_NAF_MNAFs = self.NAF_MNAFs_persist[oldest_i0]
-
-                for NAF_MNAFs_j0 in oldest_NAF_MNAFs:
-                    for NAF_MNAF in NAF_MNAFs_j0:
-                        NAF_MNAF.cancel()
-                del self.NAF_MNAFs_persist[oldest_i0]
-
-                self.updating_MNAF_BMNAFs = None
+            self._clean_updating()
 
         self._update_and_clean_NAF_MNAF()
 

@@ -32,7 +32,7 @@ log = logging.getLogger("fourier-logger")
 log.setLevel(logging.INFO)
 
 
-def demo_api(queue_size, fundamental_params):
+def demo_api(queue_size, fundamental_params, lru_forward, lru_backward):
     """demo for api
 
     :param queue_size: size of queue
@@ -105,8 +105,8 @@ def demo_api(queue_size, fundamental_params):
         for subgrid in i0_subgrid:
             subgrid_configs.append(subgrid)
 
-    fwd = SwiftlyForward(swiftlyconfig, facet_tasks)
-    bwd = SwiftlyBackward(swiftlyconfig)
+    fwd = SwiftlyForward(swiftlyconfig, facet_tasks, lru_forward)
+    bwd = SwiftlyBackward(swiftlyconfig, lru_backward)
     task_queue = TaskQueue(queue_size)
     for subgrid_config in subgrid_configs:
         subgrid_task = fwd.get_subgrid_task(subgrid_config)
@@ -180,7 +180,12 @@ def main(args):
         ), mem_sampler.sample(
             "managed", measure="managed"
         ):
-            demo_api(args.queue_size, SWIFT_CONFIGS[config_key])
+            demo_api(
+                args.queue_size,
+                SWIFT_CONFIGS[config_key],
+                args.lru_forward,
+                args.lru_backward,
+            )
 
         mem_sampler.to_pandas().to_csv(
             "mem-api-%s-queue-%d.csv" % (config_key, args.queue_size)
@@ -201,6 +206,18 @@ if __name__ == "__main__":
         type=int,
         default=20,
         help="the size of queue",
+    )
+    dfft_parser.add_argument(
+        "--lru_forward",
+        type=int,
+        default=1,
+        help="max columns pin NMBF_BFs",
+    )
+    dfft_parser.add_argument(
+        "--lru_backward",
+        type=int,
+        default=1,
+        help="max columns pin NAF_MNAFs",
     )
     parsed_args = dfft_parser.parse_args()
     main(parsed_args)
