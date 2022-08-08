@@ -298,26 +298,15 @@ class SwiftlyBackward:
 
         task_finished = self.update_max_i0_MNAF_BMNAFs(new_NAF_MNAFs)
 
-        print(
-            "NOW",
-            f"{subgrid_config.i0}/{subgrid_config.i1}",
-            "NAF_MNAFs_persist",
-            [i0 for i0, _ in self.NAF_MNAFs_persist_queue],
-            "updating_persist",
-            [i0 for i0, _, _ in self.updating_MNAF_BMNAFs_persist_queue],
-        )
-
         return task_finished
 
     def _clean_updating(self):
         """
         clean NAF_MNAFs_persist when update done
         """
-        for (
-            updating_i0,
-            updating_MNAF_BMNAFs_task,
-            _,
-        ) in self.updating_MNAF_BMNAFs_persist_queue:
+        for idx, (_, updating_MNAF_BMNAFs_task, old_NAF_MNAFs) in enumerate(
+            self.updating_MNAF_BMNAFs_persist_queue
+        ):
 
             all_done = True
             for j0, j1 in itertools.product(
@@ -331,16 +320,11 @@ class SwiftlyBackward:
                     break
 
             if all_done:
+                del self.updating_MNAF_BMNAFs_persist_queue[idx]
 
-                for idx, (i0, MNAF_BMNAFs, old_NAF_MNAFs) in enumerate(
-                    self.updating_MNAF_BMNAFs_persist_queue
-                ):
-                    if i0 == updating_i0:
-                        del self.updating_MNAF_BMNAFs_persist_queue[idx]
-
-                        for task_j0 in old_NAF_MNAFs:
-                            for task in task_j0:
-                                task.cancel()
+                for task_j0 in old_NAF_MNAFs:
+                    for task in task_j0:
+                        task.cancel()
 
     def update_max_i0_MNAF_BMNAFs(self, new_NAF_MNAFs):
         """if persist NAF_MNAFs is larger than max value
@@ -394,14 +378,6 @@ class SwiftlyBackward:
             dask.compute(update_MNAF_BMNAFs, sync=False)
 
         while len(self.updating_MNAF_BMNAFs_persist_queue) > 0:
-            print(
-                "NOW",
-                "finish",
-                "NAF_MNAFs_persist",
-                [i0 for i0, _ in self.NAF_MNAFs_persist_queue],
-                "updating_persist",
-                [i0 for i0, _, _ in self.updating_MNAF_BMNAFs_persist_queue],
-            )
             self._clean_updating()
 
     def finish(self):
@@ -437,7 +413,7 @@ class SwiftlyBackward:
         :return: new NAF_MNAF tasks
         """
 
-        if self.NAF_MNAFs_persist_queue == []:
+        if not self.NAF_MNAFs_persist_queue:
             old_NAF_MNAFs = [
                 [None for _ in range(self.core_config.distriFFT.nfacet)]
                 for _ in range(self.core_config.distriFFT.nfacet)
@@ -467,7 +443,7 @@ class SwiftlyBackward:
             ]
         )[0]
 
-        if self.NAF_MNAFs_persist_queue == []:
+        if not self.NAF_MNAFs_persist_queue:
             self.NAF_MNAFs_persist_queue.append((i0, new_NAF_MNAFs))
         elif self.NAF_MNAFs_persist_queue[-1][0] == i0:
             self.NAF_MNAFs_persist_queue[-1] = (i0, new_NAF_MNAFs)
