@@ -192,14 +192,6 @@ class SwiftlyForward:
         :return: off0 NMBF_BFs dict
         """
 
-        while len(self.NMBF_BFs_off0_persist) > self.max_off0_NMBF_BFs_persist:
-            oldest_off0 = self.NMBF_BFs_off0_queue.pop(0)
-            oldest_NMBF_BFs = self.NMBF_BFs_off0_persist[oldest_off0]
-
-            for oldest_NMBF_BF in oldest_NMBF_BFs:
-                oldest_NMBF_BF.cancel()
-            del self.NMBF_BFs_off0_persist[oldest_off0]
-
         if self.NMBF_BFs_off0_persist.get(off0, None) is None:
             self.NMBF_BFs_off0_persist[off0] = dask.persist(
                 [
@@ -215,6 +207,11 @@ class SwiftlyForward:
                 ]
             )[0]
             self.NMBF_BFs_off0_queue.append(off0)
+
+        if len(self.NMBF_BFs_off0_persist) > self.max_off0_NMBF_BFs_persist:
+            oldest_off0 = self.NMBF_BFs_off0_queue.pop(0)
+            del self.NMBF_BFs_off0_persist[oldest_off0]
+
         return self.NMBF_BFs_off0_persist[off0]
 
 
@@ -227,7 +224,6 @@ class SwiftlyBackward:
         facets_config_list,
         facet_mask_off_dict=None,
         lru_backward=1,
-        lru_same_off0_backward=35,
     ) -> None:
         self.core_config = swiftly_config
 
@@ -263,15 +259,9 @@ class SwiftlyBackward:
 
         self.MNAF_BMNAFs_persist = self._get_MNAF_BMNAFs()
 
-        self.NAF_MNAFs_persist_queue = []
-        self.updating_MNAF_BMNAFs_persist_queue = []
-
-        self.max_i0_NAF_MNAFs_persit = lru_backward
-
-        self.single_max_persist_subgrid_cronb = (
-            lru_backward * lru_same_off0_backward
-        )
-        self.now_subgrid_cronb_number = 0
+        self.max_off0_NAF_MNAFs_persit = lru_backward
+        self.NAF_MNAFs_persist = {}
+        self.NAF_MNAFs_queue = []
 
     def add_new_subgrid_task(self, subgrid_config, new_subgrid_task):
         """add new subgrid task
@@ -292,87 +282,23 @@ class SwiftlyBackward:
             new_subgrid_task,
         )
 
-        new_NAF_MNAFs = self.update_off0_NAF_MNAFs(off0, off1, NAF_NAF_tasks)
-
-        task_finished = self.update_max_off0_MNAF_BMNAFs(new_NAF_MNAFs)
+        task_finished = self.update_off0_NAF_MNAFs(off0, off1, NAF_NAF_tasks)
 
         return task_finished
-
-    def _clean_updating(self):
-        """
-        clean NAF_MNAFs_persist when update done
-        """
-        for idx, (_, updating_MNAF_BMNAFs_task, old_NAF_MNAFs) in enumerate(
-            self.updating_MNAF_BMNAFs_persist_queue
-        ):
-
-            all_done = True
-            for updating in updating_MNAF_BMNAFs_task:
-                fs_updating = dask.distributed.futures_of(updating)[0]
-                if not fs_updating.done():
-                    all_done = False
-                    break
-
-            if all_done:
-                del self.updating_MNAF_BMNAFs_persist_queue[idx]
-                for task_ in old_NAF_MNAFs:
-                    task_.cancel()
-
-    def update_max_off0_MNAF_BMNAFs(self, new_NAF_MNAFs):
-        """if persist NAF_MNAFs is larger than max value
-            update all NAF_MNAFs and clean with sync method
-
-        :param new_NAF_MNAFs: new NAF_MNAFs
-        :return: same new NAF_MNAFs
-        """
-        return_task = [new_NAF_MNAFs]
-        if (
-            len(self.NAF_MNAFs_persist_queue) >= self.max_i0_NAF_MNAFs_persit
-        ) and (
-            self.now_subgrid_cronb_number
-            >= self.single_max_persist_subgrid_cronb
-        ):
-
-            self._clean_updating()
-
-            for idx, (old_off0, old_NAF_MNAFs) in enumerate(
-                self.NAF_MNAFs_persist_queue
-            ):
-                update_MNAF_BMNAFs = self.update_MNAF_BMNAFs(
-                    old_off0, old_NAF_MNAFs
-                )
-
-                self.updating_MNAF_BMNAFs_persist_queue.append(
-                    (old_off0, update_MNAF_BMNAFs, old_NAF_MNAFs)
-                )
-                # TODO need to confirm with arg lru_same_off0_backward
-                del self.NAF_MNAFs_persist_queue[idx]
-                self.now_subgrid_cronb_number = 0
-                return_task.append(update_MNAF_BMNAFs)
-
-        return return_task
 
     def _update_and_clean_NAF_MNAF(self):
         """
         update and clean all NAF_MNAFs_persist items
         """
 
-        # updating all MNAF_BMNAFs_persist
-        for idx, (old_off0, old_NAF_MNAFs) in enumerate(
-            self.NAF_MNAFs_persist_queue
-        ):
+        while len(self.NAF_MNAFs_persist) > 0:
+            oldest_off0 = self.NAF_MNAFs_queue.pop(0)
+            oldest_NAF_MNAFs = self.NAF_MNAFs_persist[oldest_off0]
             update_MNAF_BMNAFs = self.update_MNAF_BMNAFs(
-                old_off0, old_NAF_MNAFs
+                oldest_off0, oldest_NAF_MNAFs
             )
-            self.updating_MNAF_BMNAFs_persist_queue.append(
-                (old_off0, update_MNAF_BMNAFs, old_NAF_MNAFs)
-            )
-            del self.NAF_MNAFs_persist_queue[idx]
-
+            del self.NAF_MNAFs_persist[oldest_off0]
             dask.compute(update_MNAF_BMNAFs, sync=False)
-
-        while len(self.updating_MNAF_BMNAFs_persist_queue) > 0:
-            self._clean_updating()
 
     def finish(self):
         """finish facet
@@ -397,21 +323,18 @@ class SwiftlyBackward:
         return approx_facet_tasks
 
     def update_off0_NAF_MNAFs(self, off0, off1, new_NAF_NAF_tasks):
-        """update the off0 NAF_MNAFs
+        """update off0 NAF_MNAFs and clean NAF_MNAFs_persist
 
         :param off0: off0
         :param off1: off1
-        :param new_NAF_NAF_tasks: new NAF_NAF tasks
-        :return: new NAF_MNAF tasks
+        :param new_NAF_NAF_tasks: new NAF_NAF
+        :return: NAF_MNAFs or list of NAF_MNAFs and update_MNAF_BMNAFs
         """
 
-        if not self.NAF_MNAFs_persist_queue:
-            old_NAF_MNAFs = [None for _ in self.facets_j_list]
+        old_NAF_NAF_tasks = self.NAF_MNAFs_persist.get(off0, None)
 
-        elif self.NAF_MNAFs_persist_queue[-1][0] == off0:
-            old_NAF_MNAFs = self.NAF_MNAFs_persist_queue[-1][1]
-        else:
-            old_NAF_MNAFs = [None for _ in self.facets_j_list]
+        if old_NAF_NAF_tasks is None:
+            old_NAF_NAF_tasks = [None for _ in self.facets_j_list]
 
         new_NAF_MNAFs = dask.persist(
             [
@@ -423,22 +346,31 @@ class SwiftlyBackward:
                     off1,
                 )
                 for new_NAF_NAF, old_NAF_MNAF in zip(
-                    new_NAF_NAF_tasks, old_NAF_MNAFs
+                    new_NAF_NAF_tasks, old_NAF_NAF_tasks
                 )
             ]
         )[0]
 
-        if not self.NAF_MNAFs_persist_queue:
-            self.NAF_MNAFs_persist_queue.append((off0, new_NAF_MNAFs))
-        elif self.NAF_MNAFs_persist_queue[-1][0] == off0:
-            self.NAF_MNAFs_persist_queue[-1] = (off0, new_NAF_MNAFs)
-        else:
-            self.NAF_MNAFs_persist_queue.append((off0, new_NAF_MNAFs))
+        return_task = [new_NAF_MNAFs]
 
-        self.now_subgrid_cronb_number += 1
-        # self.NAF_MNAFs_persist[i0] = new_NAF_MNAFs
-        # self.NAF_MNAFs_queue.append(i0)
-        return new_NAF_MNAFs
+        self.NAF_MNAFs_persist[off0] = new_NAF_MNAFs
+
+        if not self.NAF_MNAFs_queue:
+            self.NAF_MNAFs_queue.append(off0)
+        elif self.NAF_MNAFs_queue[-1] != off0:
+            self.NAF_MNAFs_queue.append(off0)
+
+        if len(self.NAF_MNAFs_persist) > self.max_off0_NAF_MNAFs_persit:
+            oldest_off0 = self.NAF_MNAFs_queue.pop(0)
+            oldest_NAF_MNAFs = self.NAF_MNAFs_persist[oldest_off0]
+            update_MNAF_BMNAFs = self.update_MNAF_BMNAFs(
+                oldest_off0, oldest_NAF_MNAFs
+            )
+            del self.NAF_MNAFs_persist[oldest_off0]
+
+            return_task.append(update_MNAF_BMNAFs)
+
+        return return_task
 
     def update_MNAF_BMNAFs(self, off0, new_NAF_MNAFs):
         """update MNAF_BMNAFs

@@ -96,21 +96,13 @@ def demo_api(queue_size, fundamental_params, lru_forward, lru_backward):
         for facet_config in facets_config_list
     ]
 
-    # Temporary use of full data i0 number
-    lru_same_off0_backward = swiftlyconfig.distriFFT.nsubgrid
-
     fwd = SwiftlyForward(
         swiftlyconfig, facet_tasks, subgrid_mask_off_dict, lru_forward
     )
     bwd = SwiftlyBackward(
-        swiftlyconfig,
-        facets_config_list,
-        facet_mask_off_dict,
-        lru_backward,
-        lru_same_off0_backward,
+        swiftlyconfig, facets_config_list, facet_mask_off_dict, lru_backward
     )
     task_queue = TaskQueue(queue_size)
-
     for subgrid_config in subgrid_config_list:
         subgrid_task = fwd.get_subgrid_task(subgrid_config)
         new_subgrid_task = dask.delayed(process_subgrid)(
