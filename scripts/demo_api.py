@@ -3,7 +3,7 @@
 """
 demo using api
 """
-
+import itertools
 import logging
 import os
 
@@ -49,66 +49,69 @@ def demo_api(queue_size, fundamental_params, lru_forward, lru_backward):
     swiftlyconfig = SwiftlyConfig(**fundamental_params)
 
     subgrid_config_list = [
-        [
-            SubgridConfig(i0, i1)
-            for i1 in range(swiftlyconfig.distriFFT.nsubgrid)
-        ]
-        for i0 in range(swiftlyconfig.distriFFT.nsubgrid)
+        SubgridConfig(off0, off1)
+        for off0, off1 in itertools.product(
+            swiftlyconfig.distriFFT.subgrid_off,
+            swiftlyconfig.distriFFT.subgrid_off,
+        )
     ]
 
     facets_config_list = [
-        [FacetConfig(j0, j1) for j1 in range(swiftlyconfig.distriFFT.nfacet)]
-        for j0 in range(swiftlyconfig.distriFFT.nfacet)
+        FacetConfig(off0, off1)
+        for off0, off1 in itertools.product(
+            swiftlyconfig.distriFFT.facet_off,
+            swiftlyconfig.distriFFT.facet_off,
+        )
     ]
 
-    facets_mask_task_list = [
-        [
-            (
-                client.scatter(
-                    swiftlyconfig.base_arrays.facet_B[j0], broadcast=True
-                ),
-                client.scatter(
-                    swiftlyconfig.base_arrays.facet_B[j1], broadcast=True
-                ),
-            )
-            for j0 in range(swiftlyconfig.distriFFT.nfacet)
-        ]
-        for j1 in range(swiftlyconfig.distriFFT.nfacet)
-    ]
+    # Temporary use of compete indexes to create test data
+    subgrid_mask_off_dict = {}
+    for idx, off in enumerate(swiftlyconfig.distriFFT.subgrid_off):
+        subgrid_mask_off_dict[off] = swiftlyconfig.base_arrays.subgrid_A[idx]
 
-    facet_data = [
-        [
+    facet_mask_off_dict = {}
+    for idx, off in enumerate(swiftlyconfig.distriFFT.facet_off):
+        facet_mask_off_dict[off] = swiftlyconfig.base_arrays.facet_B[idx]
+
+    # just for demo we scatter mask in caller
+    facet_mask_off_dict_scatter = {}
+    for off, facet_mask in facet_mask_off_dict.items():
+        facet_mask_off_dict_scatter[off] = client.scatter(
+            facet_mask, broadcast=True
+        )
+
+    facet_tasks = [
+        (
+            facet_config,
             dask.delayed(make_facet)(
                 swiftlyconfig.distriFFT.N,
                 swiftlyconfig.distriFFT.yB_size,
-                swiftlyconfig.distriFFT.facet_off[j0],
-                facets_mask_task_list[j0][j1][0],
-                swiftlyconfig.distriFFT.facet_off[j1],
-                facets_mask_task_list[j0][j1][1],
+                facet_config.off0,
+                facet_mask_off_dict_scatter[facet_config.off0],
+                facet_config.off1,
+                facet_mask_off_dict_scatter[facet_config.off1],
                 sources,
-            )
-            for j1 in range(swiftlyconfig.distriFFT.nfacet)
-        ]
-        for j0 in range(swiftlyconfig.distriFFT.nfacet)
+            ),
+        )
+        for facet_config in facets_config_list
     ]
 
-    facet_tasks = [
-        [
-            (facets_config_list[j0][j1], facet_data[j0][j1])
-            for j1 in range(swiftlyconfig.distriFFT.nfacet)
-        ]
-        for j0 in range(swiftlyconfig.distriFFT.nfacet)
-    ]
+    # Temporary use of full data i0 number
+    lru_same_off0_backward = swiftlyconfig.distriFFT.nsubgrid
 
-    subgrid_configs = []
-    for i0_subgrid in subgrid_config_list:
-        for subgrid in i0_subgrid:
-            subgrid_configs.append(subgrid)
-
-    fwd = SwiftlyForward(swiftlyconfig, facet_tasks, lru_forward)
-    bwd = SwiftlyBackward(swiftlyconfig, lru_backward)
+    fwd = SwiftlyForward(
+        swiftlyconfig, facet_tasks, subgrid_mask_off_dict, lru_forward
+    )
+    bwd = SwiftlyBackward(
+        swiftlyconfig,
+        facets_config_list,
+        facet_mask_off_dict,
+        lru_backward,
+        lru_same_off0_backward,
+    )
     task_queue = TaskQueue(queue_size)
-    for subgrid_config in subgrid_configs:
+
+    for subgrid_config in subgrid_config_list:
         subgrid_task = fwd.get_subgrid_task(subgrid_config)
         new_subgrid_task = dask.delayed(process_subgrid)(
             subgrid_config, subgrid_task
@@ -117,11 +120,13 @@ def demo_api(queue_size, fundamental_params, lru_forward, lru_backward):
             subgrid_config, new_subgrid_task
         )
         task_queue.process(
-            "task", (subgrid_config.i0, subgrid_config.i1), task_finished
+            "task", (subgrid_config.off0, subgrid_config.off1), task_finished
         )
         task_queue.empty_done()
         log.info(
-            "process i0: %d, i1: %d", subgrid_config.i0, subgrid_config.i1
+            "process subgrid off0: %d, off1: %d",
+            subgrid_config.off0,
+            subgrid_config.off1,
         )
     task_queue.wait_all_done()
 
@@ -129,25 +134,26 @@ def demo_api(queue_size, fundamental_params, lru_forward, lru_backward):
 
     # check
     check_task = [
-        [
-            dask.delayed(check_facet)(
-                swiftlyconfig.distriFFT.N,
-                swiftlyconfig.distriFFT.facet_off[j0],
-                facets_mask_task_list[j0][j1][0],
-                swiftlyconfig.distriFFT.facet_off[j1],
-                facets_mask_task_list[j0][j1][1],
-                new_facet_tasks[j0][j1],
-                sources,
-            )
-            for j1, facet_config in enumerate(facet_config_j0)
-        ]
-        for j0, facet_config_j0 in enumerate(facets_config_list)
+        dask.delayed(check_facet)(
+            swiftlyconfig.distriFFT.N,
+            facet_config.off0,
+            facet_mask_off_dict_scatter[facet_config.off0],
+            facet_config.off1,
+            facet_mask_off_dict_scatter[facet_config.off1],
+            new_facet,
+            sources,
+        )
+        for new_facet, facet_config in zip(new_facet_tasks, facets_config_list)
     ]
 
-    error = dask.compute(check_task)[0]
-    for error_i0 in error:
-        for error_i1 in error_i0:
-            log.info("error: %e", error_i1)
+    facet_error = dask.compute(check_task)[0]
+    for facet_config, error in zip(facets_config_list, facet_error):
+        log.info(
+            "error facet, off0/off1:%d/%d: %e",
+            facet_config.off0,
+            facet_config.off1,
+            error,
+        )
 
 
 def main(args):

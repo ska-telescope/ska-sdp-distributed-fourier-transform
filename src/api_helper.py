@@ -65,7 +65,11 @@ def check_subgrid(N, sg_off0, sg_A0, sg_off1, sg_A1, approx_subgrid, sources):
 
 
 def sum_and_finish_subgrid(
-    distributedFFT, NMBF_NMBF_tasks, base_arrays, i0, i1, facets_light_j_off
+    distributedFFT,
+    NMBF_NMBF_tasks,
+    facets_j_list,
+    subgrid_mask0,
+    subgrid_mask1,
 ):
     """sum faect contribution and finsh subgrid"""
     # Initialise facet sum
@@ -73,46 +77,47 @@ def sum_and_finish_subgrid(
         (distributedFFT.xM_size, distributedFFT.xM_size), dtype=complex
     )
 
-    for facets_config_j0 in facets_light_j_off:
-        for j0, j1 in facets_config_j0:
-            NMBF_NMBF = NMBF_NMBF_tasks[j0][j1]
-            summed_facet += distributedFFT.add_facet_contribution(
-                distributedFFT.add_facet_contribution(
-                    NMBF_NMBF, base_arrays.facet_off[j0], axis=0
-                ),
-                base_arrays.facet_off[j1],
-                axis=1,
-            )
+    for (facet_off0, facet_off1), NMBF_NMBF in zip(
+        facets_j_list, NMBF_NMBF_tasks
+    ):
+        summed_facet += distributedFFT.add_facet_contribution(
+            distributedFFT.add_facet_contribution(
+                NMBF_NMBF, facet_off0, axis=0
+            ),
+            facet_off1,
+            axis=1,
+        )
     # Finish
-    return distributedFFT.finish_subgrid(
-        summed_facet,
-        [base_arrays.subgrid_A[i0], base_arrays.subgrid_A[i1]],
-    )
+    if (subgrid_mask0 is not None) and (subgrid_mask1 is not None):
+        approx_subgrid = distributedFFT.finish_subgrid(
+            summed_facet,
+            [subgrid_mask0, subgrid_mask1],
+        )
+    else:
+        approx_subgrid = distributedFFT.finish_subgrid(
+            summed_facet,
+        )
+    return approx_subgrid
 
 
-def prepare_and_split_subgrid(
-    distributedFFT, Fn, facets_light_j_off, subgrid, base_arrays_task
-):
+def prepare_and_split_subgrid(distributedFFT, Fn, facets_j_off, subgrid):
     """prepare NAF_NAF"""
     # Prepare subgrid
     prepared_subgrid = distributedFFT.prepare_subgrid(subgrid)
 
     # Extract subgrid facet contributions
-    facet_ixs = []
-    for facets_config_i0 in facets_light_j_off:
-        for facets_config in facets_config_i0:
-            facet_ixs.append((facets_config[0], facets_config[1]))
+
     NAF_AFs = {
-        j0: distributedFFT.extract_subgrid_contrib_to_facet(
-            prepared_subgrid, base_arrays_task.facet_off[j0], Fn, axis=0
+        off0: distributedFFT.extract_subgrid_contrib_to_facet(
+            prepared_subgrid, off0, Fn, axis=0
         )
-        for j0 in set(j0 for j0, j1 in facet_ixs)
+        for off0 in set(off0 for off0, off1 in facets_j_off)
     }
     NAF_NAFs = [
         distributedFFT.extract_subgrid_contrib_to_facet(
-            NAF_AFs[j0], base_arrays_task.facet_off[j1], Fn, axis=1
+            NAF_AFs[off0], off1, Fn, axis=1
         )
-        for j0, j1 in facet_ixs
+        for off0, off1 in facets_j_off
     ]
     return NAF_NAFs
 
@@ -144,31 +149,28 @@ def accumulate_facet(
     MNAF_BMNAF,
     Fb,
     facet_m0_trunc,
-    base_arrays_task,
-    j1,
-    i0,
+    facet_mask1,
+    off0,
 ):
     """update MNAF_BMNAF"""
-    NAF_BMNAF = distributedFFT.finish_facet(
-        NAF_MNAF, base_arrays_task.facet_B[j1], Fb, axis=1
-    )
+    NAF_BMNAF = distributedFFT.finish_facet(NAF_MNAF, facet_mask1, Fb, axis=1)
     if MNAF_BMNAF is None:
         return distributedFFT.add_subgrid_contribution(
-            NAF_BMNAF, distributedFFT.subgrid_off[i0], facet_m0_trunc, axis=0
+            NAF_BMNAF, off0, facet_m0_trunc, axis=0
         )
     # TODO: add_subgrid_contribution should add
     # directly to NAF_MNAF here at some point.
     MNAF_BMNAF = MNAF_BMNAF + distributedFFT.add_subgrid_contribution(
-        NAF_BMNAF, distributedFFT.subgrid_off[i0], facet_m0_trunc, axis=0
+        NAF_BMNAF, off0, facet_m0_trunc, axis=0
     )
     return MNAF_BMNAF
 
 
-def finish_facet(distriFFT, MNAF_BMNAFs, base_arrays_task, Fb, j0):
+def finish_facet(distriFFT, MNAF_BMNAFs, Fb, facet_mask0):
     """wrapper of finish_facet"""
     return distriFFT.finish_facet(
         MNAF_BMNAFs,
-        base_arrays_task.facet_B[j0],
+        facet_mask0,
         Fb,
         axis=0,
     )
