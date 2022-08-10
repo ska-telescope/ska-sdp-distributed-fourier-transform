@@ -286,11 +286,13 @@ class SwiftlyBackward:
 
         return task_finished
 
-    def _update_and_clean_NAF_MNAF(self):
-        """
-        update and clean all NAF_MNAFs_persist items
+    def finish(self):
+        """finish facet
+
+        :return: approx_facet_tasks
         """
 
+        # update the remain updating MNAF_BMNAFs and clean NAF_MNAFs
         while len(self.NAF_MNAFs_persist) > 0:
             oldest_off0 = self.NAF_MNAFs_queue.pop(0)
             oldest_NAF_MNAFs = self.NAF_MNAFs_persist[oldest_off0]
@@ -299,15 +301,6 @@ class SwiftlyBackward:
             )
             del self.NAF_MNAFs_persist[oldest_off0]
             dask.compute(update_MNAF_BMNAFs, sync=False)
-
-    def finish(self):
-        """finish facet
-
-        :return: approx_facet_tasks
-        """
-
-        # update the remain updating MNAF_BMNAFs and clean NAF_MNAFs
-        self._update_and_clean_NAF_MNAF()
 
         approx_facet_tasks = [
             dask.delayed(finish_facet)(
