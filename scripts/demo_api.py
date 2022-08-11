@@ -11,7 +11,7 @@ import dask
 import dask.array
 import dask.distributed
 import numpy
-from distributed import Client, performance_report
+from distributed import performance_report
 from distributed.diagnostics import MemorySampler
 
 from scripts.utils import get_and_write_transfer
@@ -21,9 +21,8 @@ from src.api import (
     SwiftlyBackward,
     SwiftlyConfig,
     SwiftlyForward,
-    TaskQueue,
 )
-from src.api_helper import check_facet, make_facet
+from src.api_helper import check_facet, make_facet, sparse_mask
 from src.fourier_transform.dask_wrapper import set_up_dask
 from src.fourier_transform_dask import cli_parser
 from src.swift_configs import SWIFT_CONFIGS
@@ -39,30 +38,12 @@ def demo_api(queue_size, fundamental_params, lru_forward, lru_backward):
     :param fundamental_params: fundamental swift config
     """
 
-    client = Client.current()
-
     def process_subgrid(subgrid_config, subgrid_task):
         """return self for test"""
         return subgrid_task
 
     sources = [(1, 1, 0)]
     swiftlyconfig = SwiftlyConfig(**fundamental_params)
-
-    subgrid_config_list = [
-        SubgridConfig(off0, off1)
-        for off0, off1 in itertools.product(
-            swiftlyconfig.distriFFT.subgrid_off,
-            swiftlyconfig.distriFFT.subgrid_off,
-        )
-    ]
-
-    facets_config_list = [
-        FacetConfig(off0, off1)
-        for off0, off1 in itertools.product(
-            swiftlyconfig.distriFFT.facet_off,
-            swiftlyconfig.distriFFT.facet_off,
-        )
-    ]
 
     # Temporary use of compete indexes to create test data
     subgrid_mask_off_dict = {}
@@ -73,12 +54,31 @@ def demo_api(queue_size, fundamental_params, lru_forward, lru_backward):
     for idx, off in enumerate(swiftlyconfig.distriFFT.facet_off):
         facet_mask_off_dict[off] = swiftlyconfig.base_arrays.facet_B[idx]
 
-    # just for demo we scatter mask in caller
-    facet_mask_off_dict_scatter = {}
-    for off, facet_mask in facet_mask_off_dict.items():
-        facet_mask_off_dict_scatter[off] = client.scatter(
-            facet_mask, broadcast=True
+    subgrid_config_list = [
+        SubgridConfig(
+            off0,
+            off1,
+            sparse_mask(subgrid_mask_off_dict[off0]),
+            sparse_mask(subgrid_mask_off_dict[off1]),
         )
+        for off0, off1 in itertools.product(
+            swiftlyconfig.distriFFT.subgrid_off,
+            swiftlyconfig.distriFFT.subgrid_off,
+        )
+    ]
+
+    facets_config_list = [
+        FacetConfig(
+            off0,
+            off1,
+            sparse_mask(facet_mask_off_dict[off0]),
+            sparse_mask(facet_mask_off_dict[off1]),
+        )
+        for off0, off1 in itertools.product(
+            swiftlyconfig.distriFFT.facet_off,
+            swiftlyconfig.distriFFT.facet_off,
+        )
+    ]
 
     facet_tasks = [
         (
@@ -87,40 +87,32 @@ def demo_api(queue_size, fundamental_params, lru_forward, lru_backward):
                 swiftlyconfig.distriFFT.N,
                 swiftlyconfig.distriFFT.yB_size,
                 facet_config.off0,
-                facet_mask_off_dict_scatter[facet_config.off0],
+                facet_config.mask0,
                 facet_config.off1,
-                facet_mask_off_dict_scatter[facet_config.off1],
+                facet_config.mask1,
                 sources,
             ),
         )
         for facet_config in facets_config_list
     ]
 
-    fwd = SwiftlyForward(
-        swiftlyconfig, facet_tasks, subgrid_mask_off_dict, lru_forward
-    )
+    fwd = SwiftlyForward(swiftlyconfig, facet_tasks, lru_forward, queue_size)
     bwd = SwiftlyBackward(
-        swiftlyconfig, facets_config_list, facet_mask_off_dict, lru_backward
+        swiftlyconfig, facets_config_list, lru_backward, queue_size
     )
-    task_queue = TaskQueue(queue_size)
+
     for subgrid_config in subgrid_config_list:
         subgrid_task = fwd.get_subgrid_task(subgrid_config)
         new_subgrid_task = dask.delayed(process_subgrid)(
             subgrid_config, subgrid_task
         )
-        task_finished = bwd.add_new_subgrid_task(
-            subgrid_config, new_subgrid_task
-        )
-        task_queue.process(
-            "task", (subgrid_config.off0, subgrid_config.off1), task_finished
-        )
-        task_queue.empty_done()
+        bwd.add_new_subgrid_task(subgrid_config, new_subgrid_task)
+
         log.info(
             "process subgrid off0: %d, off1: %d",
             subgrid_config.off0,
             subgrid_config.off1,
         )
-    task_queue.wait_all_done()
 
     new_facet_tasks = bwd.finish()
 
@@ -129,9 +121,9 @@ def demo_api(queue_size, fundamental_params, lru_forward, lru_backward):
         dask.delayed(check_facet)(
             swiftlyconfig.distriFFT.N,
             facet_config.off0,
-            facet_mask_off_dict_scatter[facet_config.off0],
+            facet_config.mask0,
             facet_config.off1,
-            facet_mask_off_dict_scatter[facet_config.off1],
+            facet_config.mask1,
             new_facet,
             sources,
         )

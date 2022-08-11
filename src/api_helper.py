@@ -15,6 +15,9 @@ from src.fourier_transform.fourier_algorithm import (
 
 def make_subgrid(N, xA_size, sg_off0, sg_A0, sg_off1, sg_A1, sources):
     """make subgrid"""
+    if isinstance(sg_A0, list) and isinstance(sg_A1, list):
+        sg_A0 = make_mask_from_slice(sg_A0[0], sg_A0[1])
+        sg_A1 = make_mask_from_slice(sg_A1[0], sg_A1[1])
     return make_subgrid_from_sources(
         sources, N, xA_size, [sg_off0, sg_off1], [sg_A0, sg_A1]
     )
@@ -25,6 +28,10 @@ def make_facet(
 ):
     """make facet"""
     # Create facet
+    if isinstance(facet_B0, list) and isinstance(facet_B1, list):
+        facet_B0 = make_mask_from_slice(facet_B0[0], facet_B0[1])
+        facet_B1 = make_mask_from_slice(facet_B1[0], facet_B1[1])
+
     return make_facet_from_sources(
         sources, N, yB_size, [facet_off0, facet_off1], [facet_B0, facet_B1]
     )
@@ -37,6 +44,11 @@ def check_facet(
     check facet using sources
     """
     # Re-generate facet to compare against
+
+    if isinstance(facet_B0, list) and isinstance(facet_B1, list):
+        facet_B0 = make_mask_from_slice(facet_B0[0], facet_B0[1])
+        facet_B1 = make_mask_from_slice(facet_B1[0], facet_B1[1])
+
     yB_size = approx_facet.shape[0]
     facet = make_facet(
         N, yB_size, facet_off0, facet_B0, facet_off1, facet_B1, sources
@@ -58,6 +70,9 @@ def check_subgrid(N, sg_off0, sg_A0, sg_off1, sg_A1, approx_subgrid, sources):
     check subgrid using sources
     """
     # Compare against subgrid (normalised)
+    if isinstance(sg_A0, list) and isinstance(sg_A1, list):
+        sg_A0 = make_mask_from_slice(sg_A0[0], sg_A0[1])
+        sg_A1 = make_mask_from_slice(sg_A1[0], sg_A1[1])
     subgrid = make_subgrid_from_sources(
         sources, N, approx_subgrid.shape[0], [sg_off0, sg_off1], [sg_A0, sg_A1]
     )
@@ -89,6 +104,13 @@ def sum_and_finish_subgrid(
         )
     # Finish
     if (subgrid_mask0 is not None) and (subgrid_mask1 is not None):
+        if isinstance(subgrid_mask0, list) and isinstance(subgrid_mask1, list):
+            subgrid_mask0 = make_mask_from_slice(
+                subgrid_mask0[0], subgrid_mask0[1]
+            )
+            subgrid_mask1 = make_mask_from_slice(
+                subgrid_mask1[0], subgrid_mask1[1]
+            )
         approx_subgrid = distributedFFT.finish_subgrid(
             summed_facet,
             [subgrid_mask0, subgrid_mask1],
@@ -153,6 +175,9 @@ def accumulate_facet(
     off0,
 ):
     """update MNAF_BMNAF"""
+    if isinstance(facet_mask1, list):
+        facet_mask1 = make_mask_from_slice(facet_mask1[0], facet_mask1[1])
+
     NAF_BMNAF = distributedFFT.finish_facet(NAF_MNAF, facet_mask1, Fb, axis=1)
     if MNAF_BMNAF is None:
         return distributedFFT.add_subgrid_contribution(
@@ -166,14 +191,22 @@ def accumulate_facet(
     return MNAF_BMNAF
 
 
-def finish_facet(distriFFT, MNAF_BMNAFs, Fb, facet_mask0):
+def finish_facet(distriFFT, MNAF_BMNAF, Fb, facet_mask0):
     """wrapper of finish_facet"""
-    return distriFFT.finish_facet(
-        MNAF_BMNAFs,
-        facet_mask0,
-        Fb,
-        axis=0,
-    )
+    if MNAF_BMNAF is not None:
+        if isinstance(facet_mask0, list):
+            facet_mask0 = make_mask_from_slice(facet_mask0[0], facet_mask0[1])
+        approx_facet = distriFFT.finish_facet(
+            MNAF_BMNAF,
+            facet_mask0,
+            Fb,
+            axis=0,
+        )
+    else:
+        approx_facet = numpy.zeros(
+            (distriFFT.yB_size, distriFFT.yB_size), dtype=complex
+        )
+    return approx_facet
 
 
 def extract_column(
@@ -191,3 +224,49 @@ def extract_column(
         Fb_task,
         axis=1,
     )
+
+
+def sparse_mask(mask_array):
+    """sparse mask use slice
+
+    :param mask_array: mask
+    :return: [slice list and mask size]
+    """
+    res_slice_list = []
+
+    last_value = None
+    start_ = None
+    end_ = None
+
+    for idx, value in enumerate(mask_array):
+
+        if last_value is None and value == 0:
+            start_ = idx
+
+        elif last_value == 0 and value == 1:
+            end_ = idx
+            res_slice_list.append(slice(start_, end_))
+
+        elif last_value == 1 and value == 0:
+            start_ = idx
+
+        elif last_value == 0 and value == 0 and idx == len(mask_array) - 1:
+            end_ = None
+            res_slice_list.append(slice(start_, end_))
+
+        last_value = value
+
+    return [res_slice_list, len(mask_array)]
+
+
+def make_mask_from_slice(slice_list, mask_size):
+    """make mask from sparse_mask result
+
+    :param slice_list: slice list
+    :param mask_size: mask size
+    :return: mask
+    """
+    mask = numpy.ones((mask_size,))
+    for sl in slice_list:
+        mask[sl] = 0
+    return mask
