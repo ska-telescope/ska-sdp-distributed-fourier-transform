@@ -4,7 +4,6 @@
 Some helper function for Distributed Fourier Transform API
 """
 
-
 import numpy
 
 from src.fourier_transform.fourier_algorithm import (
@@ -82,7 +81,7 @@ def check_subgrid(N, sg_off0, sg_A0, sg_off1, sg_A1, approx_subgrid, sources):
 def sum_and_finish_subgrid(
     distributedFFT,
     NMBF_NMBF_tasks,
-    facets_j_list,
+    facets_config_list,
     subgrid_mask0,
     subgrid_mask1,
 ):
@@ -92,14 +91,12 @@ def sum_and_finish_subgrid(
         (distributedFFT.xM_size, distributedFFT.xM_size), dtype=complex
     )
 
-    for (facet_off0, facet_off1), NMBF_NMBF in zip(
-        facets_j_list, NMBF_NMBF_tasks
-    ):
+    for facets_config, NMBF_NMBF in zip(facets_config_list, NMBF_NMBF_tasks):
         summed_facet += distributedFFT.add_facet_contribution(
             distributedFFT.add_facet_contribution(
-                NMBF_NMBF, facet_off0, axis=0
+                NMBF_NMBF, facets_config.off0, axis=0
             ),
-            facet_off1,
+            facets_config.off1,
             axis=1,
         )
     # Finish
@@ -122,7 +119,7 @@ def sum_and_finish_subgrid(
     return approx_subgrid
 
 
-def prepare_and_split_subgrid(distributedFFT, Fn, facets_j_off, subgrid):
+def prepare_and_split_subgrid(distributedFFT, Fn, facets_config_list, subgrid):
     """prepare NAF_NAF"""
     # Prepare subgrid
     prepared_subgrid = distributedFFT.prepare_subgrid(subgrid)
@@ -133,13 +130,15 @@ def prepare_and_split_subgrid(distributedFFT, Fn, facets_j_off, subgrid):
         off0: distributedFFT.extract_subgrid_contrib_to_facet(
             prepared_subgrid, off0, Fn, axis=0
         )
-        for off0 in set(off0 for off0, off1 in facets_j_off)
+        for off0 in set(
+            facet_config.off0 for facet_config in facets_config_list
+        )
     }
     NAF_NAFs = [
         distributedFFT.extract_subgrid_contrib_to_facet(
-            NAF_AFs[off0], off1, Fn, axis=1
+            NAF_AFs[facet_config.off0], facet_config.off1, Fn, axis=1
         )
-        for off0, off1 in facets_j_off
+        for facet_config in facets_config_list
     ]
     return NAF_NAFs
 
@@ -226,37 +225,33 @@ def extract_column(
     )
 
 
-def sparse_mask(mask_array):
-    """sparse mask use slice
+def make_full_cover_config(N, chunk_size, class_name):
+    """Generate a fully covered config list
 
-    :param mask_array: mask
-    :return: [slice list and mask size]
+    :param N: N
+    :param chunk_size: facet size or subgrid size
+    :param class_name: SubgridConfig or FacetConfig
+    :return: config list
     """
-    res_slice_list = []
+    offsets = chunk_size * numpy.arange(int(numpy.ceil(N / chunk_size)))
+    border = (offsets + numpy.hstack([offsets[1:], [N + offsets[0]]])) // 2
+    config_list = []
+    for idx0, off0 in enumerate(offsets):
+        for idx1, off1 in enumerate(offsets):
+            left0 = (border[idx0 - 1] - off0 + chunk_size // 2) % N
+            right0 = border[idx0] - off0 + chunk_size // 2
 
-    last_value = None
-    start_ = None
-    end_ = None
-
-    for idx, value in enumerate(mask_array):
-
-        if last_value is None and value == 0:
-            start_ = idx
-
-        elif last_value == 0 and value == 1:
-            end_ = idx
-            res_slice_list.append(slice(start_, end_))
-
-        elif last_value == 1 and value == 0:
-            start_ = idx
-
-        elif last_value == 0 and value == 0 and idx == len(mask_array) - 1:
-            end_ = None
-            res_slice_list.append(slice(start_, end_))
-
-        last_value = value
-
-    return [res_slice_list, len(mask_array)]
+            left1 = (border[idx1 - 1] - off1 + chunk_size // 2) % N
+            right1 = border[idx1] - off1 + chunk_size // 2
+            config_list.append(
+                class_name(
+                    off0,
+                    off1,
+                    [[slice(left0, right0)], chunk_size],
+                    [[slice(left1, right1)], chunk_size],
+                )
+            )
+    return config_list
 
 
 def make_mask_from_slice(slice_list, mask_size):
@@ -266,7 +261,7 @@ def make_mask_from_slice(slice_list, mask_size):
     :param mask_size: mask size
     :return: mask
     """
-    mask = numpy.ones((mask_size,))
+    mask = numpy.zeros((mask_size,))
     for sl in slice_list:
-        mask[sl] = 0
+        mask[sl] = 1
     return mask

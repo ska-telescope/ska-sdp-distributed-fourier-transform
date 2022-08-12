@@ -16,6 +16,7 @@ from src.api_helper import (
     accumulate_facet,
     extract_column,
     finish_facet,
+    make_full_cover_config,
     prepare_and_split_subgrid,
     sum_and_finish_subgrid,
 )
@@ -88,14 +89,6 @@ class SwiftlyForward:
         self.core_config = swiftly_config
         self.facet_tasks = facet_tasks
 
-        self.facets_j_list = [
-            (
-                facets_config.off0,
-                facets_config.off1,
-            )
-            for facets_config, _ in facet_tasks
-        ]
-
         self.BF_Fs_persist = None
 
         self.Fb_task = self.core_config.dask_client.scatter(
@@ -128,11 +121,8 @@ class SwiftlyForward:
 
         approx_subgrid = self._gen_subgrid(subgrid_config, NMBF_BFs_off0)
         self.task_queue.process(
-            "approx_subgrid",
-            (subgrid_config.off0, subgrid_config.off1),
             [approx_subgrid],
         )
-        self.task_queue.empty_done()
         return approx_subgrid
 
     def _gen_subgrid(self, subgrid_config, NMBF_BFs_off0):
@@ -159,7 +149,7 @@ class SwiftlyForward:
         subgrid_task = dask.delayed(sum_and_finish_subgrid)(
             self.distriFFT_obj_task,
             NMBF_NMBF_tasks,
-            self.facets_j_list,
+            [facet_config for facet_config, _ in self.facet_tasks],
             subgrid_config.mask0,
             subgrid_config.mask1,
         )
@@ -241,17 +231,9 @@ class SwiftlyBackward:
             self.core_config.distriFFT, broadcast=True
         )
 
-        self.facets_j_list = [
-            (
-                facets_config.off0,
-                facets_config.off1,
-            )
-            for facets_config in facets_config_list
-        ]
-
         self.facets_config_list = facets_config_list
 
-        self.MNAF_BMNAFs_persist = [None for _ in self.facets_j_list]
+        self.MNAF_BMNAFs_persist = [None for _ in self.facets_config_list]
 
         self.task_queue = TaskQueue(queue_size)
         self.lru = LRUCache(lru_backward)
@@ -271,18 +253,15 @@ class SwiftlyBackward:
         )(
             self.distriFFT_obj_task,
             self.Fn_task,
-            self.facets_j_list,
+            self.facets_config_list,
             new_subgrid_task,
         )
 
         task_finished = self.update_off0_NAF_MNAFs(off0, off1, NAF_NAF_tasks)
 
         self.task_queue.process(
-            "add_new_subgrid_task",
-            (subgrid_config.off0, subgrid_config.off1),
             task_finished,
         )
-        self.task_queue.empty_done()
 
         return task_finished
 
@@ -297,10 +276,7 @@ class SwiftlyBackward:
             MNAF_BMNAFs_persit = self.update_MNAF_BMNAFs(
                 oldest_off0, oldest_NAF_MNAFs
             )
-            self.task_queue.process(
-                "updating remain MNAF_BMNAFs", (-1, -1), MNAF_BMNAFs_persit
-            )
-            self.task_queue.empty_done()
+            self.task_queue.process(MNAF_BMNAFs_persit)
 
         approx_facet_tasks = [
             dask.delayed(finish_facet)(
@@ -314,8 +290,8 @@ class SwiftlyBackward:
             )
         ]
 
-        self.task_queue.process("finish_facet", (-1, -1), approx_facet_tasks)
-        self.task_queue.empty_done()
+        self.task_queue.process(approx_facet_tasks)
+
         self.task_queue.wait_all_done()
 
         return approx_facet_tasks
@@ -331,7 +307,7 @@ class SwiftlyBackward:
 
         old_NAF_NAF_tasks = self.lru.get(off0)
         if old_NAF_NAF_tasks is None:
-            old_NAF_NAF_tasks = [None for _ in self.facets_j_list]
+            old_NAF_NAF_tasks = [None for _ in self.facets_config_list]
 
         new_NAF_MNAFs = dask.persist(
             [
@@ -396,79 +372,51 @@ class TaskQueue:
         :param max_task: max queue size
         """
         self.task_queue = []
-        self.meta_queue = []
         self.max_task = max_task
-        self.done_tasks = []
 
-    def process(self, msg, coord, task_list):
+    def process(self, task_list):
         """process in queue
 
-        :param msg: msg of sub graph
-        :param coord: i0/i1 coord
         :param task_list: task_list
         """
-
+        done_tasks = []
         while len(self.task_queue) >= self.max_task:
             no_done_task = []
-            no_done_meta = []
             dask.distributed.wait(
                 self.task_queue, return_when="FIRST_COMPLETED"
             )
-            for mt, tk in zip(self.meta_queue, self.task_queue):
+            for tk in self.task_queue:
                 if tk.done():
-                    self.done_tasks.append((mt, tk))
+                    done_tasks.append(tk)
                 else:
                     no_done_task.append(tk)
-                    no_done_meta.append(mt)
             self.task_queue = no_done_task
-            self.meta_queue = no_done_meta
 
         if isinstance(task_list[0], list):
             for one_task_list in task_list:
                 handle_task_list = dask.compute(one_task_list, sync=False)[0]
-                idx = 0
-
                 for handle_task in handle_task_list:
                     self.task_queue.append(handle_task)
-                    self.meta_queue.append(
-                        (
-                            idx,
-                            len(handle_task_list),
-                            msg,
-                            coord,
-                        )
-                    )
-                    idx += 1
+
         else:
             handle_task_list = dask.compute(task_list, sync=False)[0]
-            idx = 0
             for handle_task in handle_task_list:
                 self.task_queue.append(handle_task)
-                self.meta_queue.append(
-                    (
-                        idx,
-                        len(handle_task_list),
-                        msg,
-                        coord,
-                    )
-                )
-                idx += 1
 
-    def empty_done(self):
-        """empty tasks which is done"""
-        self.done_tasks = []
+        return done_tasks
 
     def wait_all_done(self):
         """
         wait for all task done
         """
-
+        done_tasks = []
         dask.distributed.wait(self.task_queue)
-        for mt, tk in zip(self.meta_queue, self.task_queue):
+        for tk in self.task_queue:
             if tk.done():
-                self.done_tasks.append((mt, tk))
+                done_tasks.append(tk)
             else:
                 raise RuntimeError("some thing error, no complete")
+        return done_tasks
 
 
 class LRUCache:
@@ -482,41 +430,49 @@ class LRUCache:
         :param cache_size: lru cache size
         """
         self.cache_size = cache_size
+        # The front of the queue is the least frequently used
+        # and the end of the queue is the most frequently used
         self.queue = []
         self.hash_map = {}
 
     def get(self, key):
-        """get a value and update queue
+        """Get a value from the cache and
+        update the position of the key in the queue
 
         :param key: key
         :return: value or None
         """
         res = self.hash_map.get(key, None)
         if res is not None:
+            # If this key can be found,
+            # place it at the end of the queue
             self.queue.remove(key)
             self.queue.append(key)
         return res
 
     def set(self, key, value):
-        """set in update
+        """Add a new value to the cache, update it if it already exists,
+        and update the position of the queue, removing the least used
+        (queue head) from the cache and queue when the cache is full
 
         :param key: key
         :param value: value
-        :return: oldest key and value
+        :return: least_key key and least_value
         """
         self.hash_map[key] = value
+
+        # If this key is in the queue,
+        # update it to the end of the queue
         if key in self.queue:
             self.queue.remove(key)
         self.queue.append(key)
 
-        oldest_key = None
-        oldest_value = None
-        if len(self.hash_map) > self.cache_size:
-
-            oldest_key = self.queue.pop(0)
-            oldest_value = self.hash_map.pop(oldest_key)
-
-        return oldest_key, oldest_value
+        if len(self.hash_map) <= self.cache_size:
+            return None, None
+        least_recently_used_key = self.queue.pop(0)
+        return least_recently_used_key, self.hash_map.pop(
+            least_recently_used_key
+        )
 
     def pop_all(self):
         """pop all value from cache
@@ -524,6 +480,30 @@ class LRUCache:
         :yield: key value
         """
         while len(self.hash_map) > 0:
-            oldest_key = self.queue.pop(0)
-            oldest_value = self.hash_map.pop(oldest_key)
-            yield oldest_key, oldest_value
+            least_recently_used_key = self.queue.pop(0)
+            least_recently_used_value = self.hash_map.pop(
+                least_recently_used_key
+            )
+            yield least_recently_used_key, least_recently_used_value
+
+
+def make_full_subgrid_cover(swiftlyconfig):
+    """
+    make subgrid config list
+    """
+    return make_full_cover_config(
+        swiftlyconfig.distriFFT.N,
+        swiftlyconfig.distriFFT.xA_size,
+        SubgridConfig,
+    )
+
+
+def make_full_facet_cover(swiftlyconfig):
+    """
+    make facet config list
+    """
+    return make_full_cover_config(
+        swiftlyconfig.distriFFT.N,
+        swiftlyconfig.distriFFT.yB_size,
+        FacetConfig,
+    )

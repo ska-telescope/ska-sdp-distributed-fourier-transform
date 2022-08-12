@@ -3,7 +3,7 @@
 """
 demo using api
 """
-import itertools
+
 import logging
 import os
 
@@ -16,13 +16,13 @@ from distributed.diagnostics import MemorySampler
 
 from scripts.utils import get_and_write_transfer
 from src.api import (
-    FacetConfig,
-    SubgridConfig,
     SwiftlyBackward,
     SwiftlyConfig,
     SwiftlyForward,
+    make_full_facet_cover,
+    make_full_subgrid_cover,
 )
-from src.api_helper import check_facet, make_facet, sparse_mask
+from src.api_helper import check_facet, make_facet
 from src.fourier_transform.dask_wrapper import set_up_dask
 from src.fourier_transform_dask import cli_parser
 from src.swift_configs import SWIFT_CONFIGS
@@ -45,40 +45,8 @@ def demo_api(queue_size, fundamental_params, lru_forward, lru_backward):
     sources = [(1, 1, 0)]
     swiftlyconfig = SwiftlyConfig(**fundamental_params)
 
-    # Temporary use of compete indexes to create test data
-    subgrid_mask_off_dict = {}
-    for idx, off in enumerate(swiftlyconfig.distriFFT.subgrid_off):
-        subgrid_mask_off_dict[off] = swiftlyconfig.base_arrays.subgrid_A[idx]
-
-    facet_mask_off_dict = {}
-    for idx, off in enumerate(swiftlyconfig.distriFFT.facet_off):
-        facet_mask_off_dict[off] = swiftlyconfig.base_arrays.facet_B[idx]
-
-    subgrid_config_list = [
-        SubgridConfig(
-            off0,
-            off1,
-            sparse_mask(subgrid_mask_off_dict[off0]),
-            sparse_mask(subgrid_mask_off_dict[off1]),
-        )
-        for off0, off1 in itertools.product(
-            swiftlyconfig.distriFFT.subgrid_off,
-            swiftlyconfig.distriFFT.subgrid_off,
-        )
-    ]
-
-    facets_config_list = [
-        FacetConfig(
-            off0,
-            off1,
-            sparse_mask(facet_mask_off_dict[off0]),
-            sparse_mask(facet_mask_off_dict[off1]),
-        )
-        for off0, off1 in itertools.product(
-            swiftlyconfig.distriFFT.facet_off,
-            swiftlyconfig.distriFFT.facet_off,
-        )
-    ]
+    subgrid_config_list = make_full_subgrid_cover(swiftlyconfig)
+    facets_config_list = make_full_facet_cover(swiftlyconfig)
 
     facet_tasks = [
         (

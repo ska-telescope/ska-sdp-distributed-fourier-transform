@@ -2,20 +2,20 @@
 End-to-end api test
 """
 
-import itertools
 import logging
+import random
 
 import dask
 import pytest
 
 from src.api import (
-    FacetConfig,
-    SubgridConfig,
     SwiftlyBackward,
     SwiftlyConfig,
     SwiftlyForward,
+    make_full_facet_cover,
+    make_full_subgrid_cover,
 )
-from src.api_helper import check_facet, make_facet, sparse_mask
+from src.api_helper import check_facet, make_facet
 from src.fourier_transform.dask_wrapper import set_up_dask
 
 log = logging.getLogger("fourier-logger")
@@ -36,57 +36,31 @@ TEST_PARAMS = {
 
 
 @pytest.mark.parametrize(
-    "queue_size,lru_forward,lru_backward",
+    "queue_size,lru_forward,lru_backward,shuffle",
     [
-        (100, 1, 1),
-        (200, 1, 1),
-        (100, 2, 1),
-        (200, 2, 1),
-        (100, 1, 2),
-        (200, 1, 2),
+        (100, 1, 1, True),
+        (200, 1, 1, True),
+        (100, 2, 1, True),
+        (200, 2, 1, True),
+        (100, 1, 2, True),
+        (200, 1, 2, True),
+        (100, 1, 1, False),
+        (200, 1, 1, False),
+        (100, 2, 1, False),
+        (200, 2, 1, False),
+        (100, 1, 2, False),
+        (200, 1, 2, False),
     ],
 )
-def test_swiftly_api(queue_size, lru_forward, lru_backward):
+def test_swiftly_api(queue_size, lru_forward, lru_backward, shuffle):
     """test major with api"""
     client = set_up_dask()
 
     sources = [(1, 1, 0)]
     swiftlyconfig = SwiftlyConfig(**TEST_PARAMS)
 
-    # Temporary use of compete indexes to create test data
-    subgrid_mask_off_dict = {}
-    for idx, off in enumerate(swiftlyconfig.distriFFT.subgrid_off):
-        subgrid_mask_off_dict[off] = swiftlyconfig.base_arrays.subgrid_A[idx]
-
-    facet_mask_off_dict = {}
-    for idx, off in enumerate(swiftlyconfig.distriFFT.facet_off):
-        facet_mask_off_dict[off] = swiftlyconfig.base_arrays.facet_B[idx]
-
-    subgrid_config_list = [
-        SubgridConfig(
-            off0,
-            off1,
-            sparse_mask(subgrid_mask_off_dict[off0]),
-            sparse_mask(subgrid_mask_off_dict[off1]),
-        )
-        for off0, off1 in itertools.product(
-            swiftlyconfig.distriFFT.subgrid_off,
-            swiftlyconfig.distriFFT.subgrid_off,
-        )
-    ]
-
-    facets_config_list = [
-        FacetConfig(
-            off0,
-            off1,
-            sparse_mask(facet_mask_off_dict[off0]),
-            sparse_mask(facet_mask_off_dict[off1]),
-        )
-        for off0, off1 in itertools.product(
-            swiftlyconfig.distriFFT.facet_off,
-            swiftlyconfig.distriFFT.facet_off,
-        )
-    ]
+    subgrid_config_list = make_full_subgrid_cover(swiftlyconfig)
+    facets_config_list = make_full_facet_cover(swiftlyconfig)
 
     facet_tasks = [
         (
@@ -108,6 +82,9 @@ def test_swiftly_api(queue_size, lru_forward, lru_backward):
     bwd = SwiftlyBackward(
         swiftlyconfig, facets_config_list, lru_backward, queue_size
     )
+    if shuffle:
+
+        random.shuffle(subgrid_config_list)
 
     for subgrid_config in subgrid_config_list:
         subgrid_task = fwd.get_subgrid_task(subgrid_config)
