@@ -66,7 +66,7 @@ def make_demo_sparse_off(swiftlyconfig):
     off_list.append((N - yB, off1))
 
     # down
-    off1 = N - yB // 2
+    off1 = N - yB
     off_list.append((yB // 2, off1))
     off_list.append((N - yB // 2, off1))
 
