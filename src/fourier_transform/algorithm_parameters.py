@@ -587,10 +587,20 @@ class StreamingDistributedFFT(BaseParameters):
 
         :return: finished (approximate) facet element
         """
-        return extract_mid(
-            fft(MiNjSi_sum, axis), self.yB_size, axis
-        ) * broadcast(
-            Fb * facet_B_mask_elem,
-            len(MiNjSi_sum.shape),
-            axis,
-        )
+        if facet_B_mask_elem is not None:
+            approx_facet = extract_mid(
+                fft(MiNjSi_sum, axis), self.yB_size, axis
+            ) * broadcast(
+                Fb * facet_B_mask_elem,
+                len(MiNjSi_sum.shape),
+                axis,
+            )
+        else:
+            approx_facet = extract_mid(
+                fft(MiNjSi_sum, axis), self.yB_size, axis
+            ) * broadcast(
+                Fb,
+                len(MiNjSi_sum.shape),
+                axis,
+            )
+        return approx_facet

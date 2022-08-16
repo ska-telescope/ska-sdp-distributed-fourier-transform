@@ -226,3 +226,37 @@ def human_readable_size(size, decimal_places=3):
             break
         size /= 1024.0
     return f"{size:.{decimal_places}f}{unit}"
+
+
+def get_and_write_transfer(dask_client, key):
+    """get transfer
+
+    :param dask_client: client
+    :param key: key for write csv
+    """
+    dict_outgoing = dask_client.run(
+        lambda dask_worker: dask_worker.outgoing_transfer_log
+    )
+    dict_incoming = dask_client.run(
+        lambda dask_worker: dask_worker.incoming_transfer_log
+    )
+
+    sum_getitem_incoming = 0.0
+    for di_key in dict_incoming.keys():
+        for di_key2 in dict_incoming[di_key]:
+            # if "getitem" in str(di_key2["keys"]):
+            sum_getitem_incoming += di_key2["total"]
+    log.info(f"sum_getitem_incoming transfer bytes: {sum_getitem_incoming}")
+    sum_getitem_outgoing = 0.0
+    for do_key in dict_outgoing.keys():
+        for do_key2 in dict_outgoing[do_key]:
+            # if "getitem" in str(do_key2["keys"]):
+            sum_getitem_outgoing += do_key2["total"]
+    log.info(f"sum_getitem_outgoing transfer bytes: {sum_getitem_outgoing}")
+    tmp_size_1 = human_readable_size(sum_getitem_incoming)
+    tmp_size_2 = human_readable_size(sum_getitem_outgoing)
+    write_task = write_network_transfer_info(
+        "transfer_info_full_step.txt",
+        f"{key},{tmp_size_1},{tmp_size_2}",
+    )
+    dask_client.compute(write_task, sync=True)
