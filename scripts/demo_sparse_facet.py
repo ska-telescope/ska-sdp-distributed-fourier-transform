@@ -31,6 +31,87 @@ log = logging.getLogger("fourier-logger")
 log.setLevel(logging.INFO)
 
 
+def calc_off0_per_row(blocksize, nblock, N):
+    """
+    get one row off0 list base on nblock
+    """
+    off_list = []
+    if nblock % 2 == 0:
+        offset0 = blocksize // 2
+        for i in range(nblock // 2):
+            off_right = offset0 + i * blocksize
+            off_left = N - off_right
+            off_list.append(off_right)
+            off_list.append(off_left)
+    else:
+        offset0 = 0
+        off_list.append(offset0)
+        for i in range(1, int(numpy.ceil(nblock / 2))):
+            off_right = offset0 + i * blocksize
+            off_left = N - off_right
+            off_list.append(off_right)
+            off_list.append(off_left)
+    return off_list
+
+
+def calc_nblock_and_off1(blocksize, want_size, N):
+    """
+    get nblock per off1
+    """
+    n_rows = int(numpy.ceil(want_size / blocksize))
+    off1_nblock_list = []
+    if n_rows % 2 == 0:
+        offset0 = blocksize // 2
+        for i in range(n_rows // 2):
+            off1_up = offset0 + i * blocksize
+            off1_down = N - off1_up
+            if i == 0:
+                largest = want_size
+            else:
+                largest = 2 * numpy.sqrt(
+                    (want_size / 2) ** 2 - (off1_up - blocksize / 2) ** 2
+                )
+            nblock = int(numpy.ceil(largest / blocksize))
+            off1_nblock_list.append((nblock, off1_up))
+            off1_nblock_list.append((nblock, off1_down))
+
+    else:
+        offset0 = 0
+        off1_nblock_list.append((n_rows, offset0))
+
+        for i in range(1, int(numpy.ceil(n_rows / 2))):
+            off1_up = offset0 + i * blocksize
+            off1_down = N - off1_up
+
+            largest = 2 * numpy.sqrt(
+                (want_size / 2) ** 2 - (off1_up - blocksize / 2) ** 2
+            )
+            nblock = int(numpy.ceil(largest / blocksize))
+            off1_nblock_list.append((nblock, off1_up))
+            off1_nblock_list.append((nblock, off1_down))
+    return off1_nblock_list
+
+
+def fov_sparse_cover_off_mask(swiftlyconfig, ifov_pixel, x=0, y=0):
+    """get fov sparse cover off and mask list"""
+    N = swiftlyconfig.distriFFT.N
+    blocksize = swiftlyconfig.distriFFT.yB_size
+    off0_off1_list = []
+    for nblock, off1 in calc_nblock_and_off1(blocksize, ifov_pixel, N):
+
+        for off0 in calc_off0_per_row(blocksize, nblock, N):
+
+            off0_off1_list.append((off0 + x, off1 + y))
+    mask_list = [
+        (
+            [[slice(None, None, None)], blocksize],
+            [[slice(None, None, None)], blocksize],
+        )
+        for _ in off0_off1_list
+    ]
+    return off0_off1_list, mask_list
+
+
 def make_sparse_facet_cover_from_list(off_list, mask_list):
     """make facet_config from off and mask list
 
@@ -95,7 +176,9 @@ def demo_api(queue_size, fundamental_params, lru_forward, lru_backward):
     # facets_config_list = make_full_facet_cover(swiftlyconfig)
 
     # demo sparse facet
-    off_list, mask_list = make_demo_sparse_off(swiftlyconfig)
+    ifov_pixel = int(2.12 * swiftlyconfig.distriFFT.yB_size)
+
+    off_list, mask_list = fov_sparse_cover_off_mask(swiftlyconfig, ifov_pixel)
     facets_config_list = make_sparse_facet_cover_from_list(off_list, mask_list)
 
     facet_tasks = [
