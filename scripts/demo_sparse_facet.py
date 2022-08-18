@@ -31,81 +31,99 @@ log = logging.getLogger("fourier-logger")
 log.setLevel(logging.INFO)
 
 
-def calc_off0_per_row(blocksize, nblock, N):
+def calc_off0_per_row(facet_size, nfacet, N):
     """
-    get one row off0 list base on nblock
+    calculate off0 list in a row base on nfacet
+
+    @param facet_size: facet_size
+    @param nfacet: number of facet
+    @param N: N pixelx
+    @return: off_list
+
     """
     off_list = []
-    if nblock % 2 == 0:
-        offset0 = blocksize // 2
-        for i in range(nblock // 2):
-            off_right = offset0 + i * blocksize
+    if nfacet % 2 == 0:
+        offset0 = facet_size // 2
+        for i in range(nfacet // 2):
+            off_right = offset0 + i * facet_size
             off_left = N - off_right
             off_list.append(off_right)
             off_list.append(off_left)
     else:
         offset0 = 0
         off_list.append(offset0)
-        for i in range(1, int(numpy.ceil(nblock / 2))):
-            off_right = offset0 + i * blocksize
+        for i in range(1, int(numpy.ceil(nfacet / 2))):
+            off_right = offset0 + i * facet_size
             off_left = N - off_right
             off_list.append(off_right)
             off_list.append(off_left)
     return off_list
 
 
-def calc_nblock_and_off1(blocksize, want_size, N):
+def calc_nfacet_and_off1(facet_size, fov_size, N):
     """
-    get nblock per off1
+    calculate nfacet and off1
+
+    @param facet_size: facet size
+    @param fov_size: the facet size we wanted
+    @param N: N pixels
+    @return: off1_nfacet_list
     """
-    n_rows = int(numpy.ceil(want_size / blocksize))
-    off1_nblock_list = []
+    n_rows = int(numpy.ceil(fov_size / facet_size))
+    off1_nfacet_list = []
     if n_rows % 2 == 0:
-        offset0 = blocksize // 2
+        offset0 = facet_size // 2
         for i in range(n_rows // 2):
-            off1_up = offset0 + i * blocksize
+            off1_up = offset0 + i * facet_size
             off1_down = N - off1_up
             if i == 0:
-                largest = want_size
+                largest = fov_size
             else:
                 largest = 2 * numpy.sqrt(
-                    (want_size / 2) ** 2 - (off1_up - blocksize / 2) ** 2
+                    (fov_size / 2) ** 2 - (off1_up - facet_size / 2) ** 2
                 )
-            nblock = int(numpy.ceil(largest / blocksize))
-            off1_nblock_list.append((nblock, off1_up))
-            off1_nblock_list.append((nblock, off1_down))
+            nfacet = int(numpy.ceil(largest / facet_size))
+            off1_nfacet_list.append((nfacet, off1_up))
+            off1_nfacet_list.append((nfacet, off1_down))
 
     else:
         offset0 = 0
-        off1_nblock_list.append((n_rows, offset0))
+        off1_nfacet_list.append((n_rows, offset0))
 
         for i in range(1, int(numpy.ceil(n_rows / 2))):
-            off1_up = offset0 + i * blocksize
+            off1_up = offset0 + i * facet_size
             off1_down = N - off1_up
 
             largest = 2 * numpy.sqrt(
-                (want_size / 2) ** 2 - (off1_up - blocksize / 2) ** 2
+                (fov_size / 2) ** 2 - (off1_up - facet_size / 2) ** 2
             )
-            nblock = int(numpy.ceil(largest / blocksize))
-            off1_nblock_list.append((nblock, off1_up))
-            off1_nblock_list.append((nblock, off1_down))
-    return off1_nblock_list
+            nfacet = int(numpy.ceil(largest / facet_size))
+            off1_nfacet_list.append((nfacet, off1_up))
+            off1_nfacet_list.append((nfacet, off1_down))
+    return off1_nfacet_list
 
 
 def fov_sparse_cover_off_mask(swiftlyconfig, ifov_pixel, x=0, y=0):
-    """get fov sparse cover off and mask list"""
-    N = swiftlyconfig.distriFFT.N
-    blocksize = swiftlyconfig.distriFFT.yB_size
-    off0_off1_list = []
-    for nblock, off1 in calc_nblock_and_off1(blocksize, ifov_pixel, N):
+    """calculate fov sparse cover off and mask list
 
-        for off0 in calc_off0_per_row(blocksize, nblock, N):
+    @param swiftlyconfig: Switftlyconfig
+    @param ifov_pixel: the
+    @param x:  Fov offset in x axis
+    @param y: Fov offset in y axis
+    @return: off0_off1_list, mask_list
+    """
+    N = swiftlyconfig.distriFFT.N
+    facet_size = swiftlyconfig.distriFFT.yB_size
+    off0_off1_list = []
+    for nfacet, off1 in calc_nfacet_and_off1(facet_size, ifov_pixel, N):
+
+        for off0 in calc_off0_per_row(facet_size, nfacet, N):
 
             off0_off1_list.append((off0 + x, off1 + y))
     mask_list = [
         (
-            [[slice(None, None, None)], blocksize],
-            [[slice(None, None, None)], blocksize],
+            [[slice(None, None, None)], facet_size],
+            [[slice(None, None, None)], facet_size],
         )
         for _ in off0_off1_list
     ]
@@ -128,9 +146,10 @@ def make_sparse_facet_cover_from_list(off_list, mask_list):
 
 
 def make_demo_sparse_off(swiftlyconfig):
-    """only use 4x4 facet and get 7 facet on centre
-    32k[1]-n10k-1k"""
-
+    """
+    Generate all necessary sparse facet parameters,
+    supporting configurations if Fov assigned less than the original Fov
+    """
     N = swiftlyconfig.distriFFT.N
     yB = swiftlyconfig.distriFFT.yB_size
 
