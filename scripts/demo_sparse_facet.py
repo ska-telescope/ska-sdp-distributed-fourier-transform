@@ -52,7 +52,7 @@ def calc_off0_per_row(facet_size, nfacet, N):
     else:
         offset0 = 0
         off_list.append(offset0)
-        for i in range(1, int(numpy.ceil(nfacet / 2))):
+        for i in range(1, (nfacet + 1) // 2):
             off_right = offset0 + i * facet_size
             off_left = N - off_right
             off_list.append(off_right)
@@ -90,7 +90,7 @@ def calc_nfacet_and_off1(facet_size, fov_size, N):
         offset0 = 0
         off1_nfacet_list.append((n_rows, offset0))
 
-        for i in range(1, int(numpy.ceil(n_rows / 2))):
+        for i in range(1, (n_rows + 1) // 2):
             off1_up = offset0 + i * facet_size
             off1_down = N - off1_up
 
@@ -201,7 +201,7 @@ def demo_api(queue_size, fundamental_params, lru_forward, lru_backward):
     # facets_config_list = make_full_facet_cover(swiftlyconfig)
 
     # demo sparse facet
-    ifov_pixel = int(2.84 * swiftlyconfig.distriFFT.yB_size)
+    ifov_pixel = int(2.12 * swiftlyconfig.distriFFT.yB_size)
 
     off_list, mask_list = fov_sparse_cover_off_mask(swiftlyconfig, ifov_pixel)
     facets_config_list = make_sparse_facet_cover_from_list(off_list, mask_list)
