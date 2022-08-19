@@ -127,6 +127,12 @@ def fov_sparse_cover_off_mask(swiftlyconfig, ifov_pixel, x=0, y=0):
         )
         for _ in off0_off1_list
     ]
+
+    Nx = swiftlyconfig.distriFFT.Nx
+    for off0, off1 in off0_off1_list:
+        if off0 % (N // Nx) != 0 or off1 % (N // Nx) != 0:
+            raise ValueError("Can't not support offset % (N//Nx) != 0")
+
     return off0_off1_list, mask_list
 
 
@@ -195,7 +201,7 @@ def demo_api(queue_size, fundamental_params, lru_forward, lru_backward):
     # facets_config_list = make_full_facet_cover(swiftlyconfig)
 
     # demo sparse facet
-    ifov_pixel = int(2.12 * swiftlyconfig.distriFFT.yB_size)
+    ifov_pixel = int(2.84 * swiftlyconfig.distriFFT.yB_size)
 
     off_list, mask_list = fov_sparse_cover_off_mask(swiftlyconfig, ifov_pixel)
     facets_config_list = make_sparse_facet_cover_from_list(off_list, mask_list)
