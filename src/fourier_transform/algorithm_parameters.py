@@ -85,6 +85,9 @@ class BaseParameters:
         self.xM_size = fundamental_constants["xM_size"]
         self.yN_size = fundamental_constants["yN_size"]
 
+        self.subgrid_off_step = self.Nx
+        self.facet_off_step = self.N // self.Nx
+
         self.check_params()
 
         # Commonly used relative coordinates and derived values
