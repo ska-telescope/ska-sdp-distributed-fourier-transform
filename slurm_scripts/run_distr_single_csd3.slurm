@@ -1,12 +1,10 @@
 #!/bin/bash
 #!
 #! Dask job script for CSD3
+#! Full step scaling test, inputting queue sizes and fixing configuration
+#! so submit via "sbatch run_distr_single_csd3.slurm $queue_size
 #!
 #!#############################################################
-#!#### Modify the options in this section as appropriate ######
-#!#############################################################
-
-#! sbatch directives begin here ###############################
 #! Name of the job:
 #SBATCH -J DFT
 #! Which project should be charged:
@@ -55,8 +53,6 @@ echo ${SLURM_JOB_NODELIST}
 
 #! Create a hostfile:
 scontrol show hostname $SLURM_JOB_NODELIST | uniq > hostfile.$JOBID
-#HOST=$(hostnames)
-#echo $HOST > hostfile.$JOBID
 
 # Run the scheduler on a large memory node
 scheduler=$(head -1 hostfile.$JOBID)
@@ -81,8 +77,6 @@ echo "Scheduler and workers now running"
 # Run command
 # Input the queue size
 config=32k[1]-n16k-1k
-#config=16k[1]-n8k-1k
-#CMD="DASK_SCHEDULER=${scheduler}:8786 python src/fourier_transform_dask.py --use_hdf5 False --generate_random_sources False --swift_config $1 | tee -a distr_fft_single_$1.log"
 CMD="DASK_SCHEDULER=${scheduler}:8786 python scripts/performance_full_steps.py --swift_config $config --queue_size $1 | tee -a distr_fft_single_$1.log"
 
 echo "About to execute $CMD"
