@@ -48,7 +48,9 @@ def wait_for_tasks(work_tasks, timeout=None, return_when="ALL_COMPLETED"):
     """
 
     # Wait for any task to finish
-    dask.distributed.wait([task for _, task in work_tasks], timeout, return_when)
+    dask.distributed.wait(
+        [task for _, task in work_tasks], timeout, return_when
+    )
 
     # Remove finished tasks from work queue, return
     new_work_tasks = []
@@ -67,7 +69,9 @@ def wait_for_tasks(work_tasks, timeout=None, return_when="ALL_COMPLETED"):
     return new_work_tasks
 
 
-def sum_and_finish_subgrid(distr_fft, base_arrays, i0, i1, facet_ixs, NMBF_NMBFs):
+def sum_and_finish_subgrid(
+    distr_fft, base_arrays, i0, i1, facet_ixs, NMBF_NMBFs
+):
     """
     Combined function with Sum and Generate Subgrid
 
@@ -81,7 +85,9 @@ def sum_and_finish_subgrid(distr_fft, base_arrays, i0, i1, facet_ixs, NMBF_NMBFs
     :return: i0,i1 index, the shape of approx_subgrid
     """
 
-    summed_facet = numpy.zeros((distr_fft.xM_size, distr_fft.xM_size), dtype=complex)
+    summed_facet = numpy.zeros(
+        (distr_fft.xM_size, distr_fft.xM_size), dtype=complex
+    )
 
     for (j0, j1), NMBF_NMBF in zip(facet_ixs, NMBF_NMBFs):
         summed_facet += distr_fft.add_facet_contribution(
@@ -128,7 +134,9 @@ def prepare_and_split_subgrid(distr_fft, Fn, i0, i1, facet_ixs, subgrid):
     return NAF_NAFs
 
 
-def make_facet(N, yB_size, facet_off0, facet_B0, facet_off1, facet_B1, sources):
+def make_facet(
+    N, yB_size, facet_off0, facet_B0, facet_off1, facet_B1, sources
+):
     """
     Generates a facet from a source list
 
@@ -171,7 +179,9 @@ def check_subgrid(N, sg_off0, sg_A0, sg_off1, sg_A1, approx_subgrid, sources):
     return numpy.sqrt(numpy.average(numpy.abs(subgrid - approx_subgrid) ** 2))
 
 
-def check_facet(N, facet_off0, facet_B0, facet_off1, facet_B1, approx_facet, sources):
+def check_facet(
+    N, facet_off0, facet_B0, facet_off1, facet_B1, approx_facet, sources
+):
     """
     Compare against subgrid (normalised)
     :param N: image size
@@ -187,7 +197,9 @@ def check_facet(N, facet_off0, facet_B0, facet_off1, facet_B1, approx_facet, sou
 
     # Re-generate facet to compare against
     yB_size = approx_facet.shape[0]
-    facet = make_facet(N, yB_size, facet_off0, facet_B0, facet_off1, facet_B1, sources)
+    facet = make_facet(
+        N, yB_size, facet_off0, facet_B0, facet_off1, facet_B1, sources
+    )
 
     # Compare against result
     return numpy.sqrt(numpy.average(numpy.abs(facet - approx_facet) ** 2))
@@ -223,7 +235,11 @@ def run_distributed_fft(
     )
     BF_F_size = cpx_size * nfacet2 * distr_fft.yB_size * distr_fft.yP_size
     NMBF_BF_size = (
-        max_work_columns * cpx_size * nfacet2 * distr_fft.yP_size * distr_fft.xM_yN_size
+        max_work_columns
+        * cpx_size
+        * nfacet2
+        * distr_fft.yP_size
+        * distr_fft.xM_yN_size
     )
     NMBF_NMBF_size = (
         max_work_tasks
@@ -234,7 +250,9 @@ def run_distributed_fft(
     )
     log.info("BF_F (facets): %.3f GB", BF_F_size / 1e9)
     log.info("NMBF_BF (subgrid columns):    %.3f     GB", NMBF_BF_size / 1e9)
-    log.info("NMBF_NMBF (subgrid contributions): %.3f GB", NMBF_NMBF_size / 1e9)
+    log.info(
+        "NMBF_NMBF (subgrid contributions): %.3f GB", NMBF_NMBF_size / 1e9
+    )
     log.info("Sum: %.3f GB", (BF_F_size + NMBF_BF_size + NMBF_NMBF_size) / 1e9)
 
     # Make facets containing just one source
@@ -298,7 +316,9 @@ def run_distributed_fft(
             # numpy.zeros((xP_size, yB_size), dtype=complex) here.
             MNAF_BMNAF_tasks = dask.persist(
                 [
-                    dask.delayed(lambda BF_F: numpy.zeros_like(BF_F))(BF_F_task)
+                    dask.delayed(lambda BF_F: numpy.zeros_like(BF_F))(
+                        BF_F_task
+                    )
                     for BF_F_task in BF_F_tasks
                 ]
             )[0]
@@ -337,9 +357,9 @@ def run_distributed_fft(
                 # hack as mentioned above.
                 NAF_MNAF_tasks = dask.persist(
                     [
-                        dask.delayed(lambda NMBF_BF: numpy.zeros_like(NMBF_BF))(
-                            NMBF_BF_task
-                        )
+                        dask.delayed(
+                            lambda NMBF_BF: numpy.zeros_like(NMBF_BF)
+                        )(NMBF_BF_task)
                         for NMBF_BF_task in NMBF_BF_tasks
                     ]
                 )[0]
@@ -394,7 +414,9 @@ def run_distributed_fft(
                         ),
                         sync=False,
                     )[0]
-                    work_tasks.append((f"Subgrid {i0}/{i1} error: {{}}", check_task))
+                    work_tasks.append(
+                        (f"Subgrid {i0}/{i1} error: {{}}", check_task)
+                    )
                     del check_task
 
                     # - backward: Prepare and split subgrid
@@ -434,7 +456,9 @@ def run_distributed_fft(
                             f"Facet {j0}/{j1} subgrid {i0}/{i1} accumulated",
                             NAF_MNAF_task,
                         )
-                        for (j0, j1), NAF_MNAF_task in zip(facet_ixs, NAF_MNAF_tasks)
+                        for (j0, j1), NAF_MNAF_task in zip(
+                            facet_ixs, NAF_MNAF_tasks
+                        )
                     ]
 
                 # Step 2 backward: Accumulate facet
@@ -446,8 +470,11 @@ def run_distributed_fft(
 
                     # TODO: add_subgrid_contribution should add
                     # directly to NAF_MNAF here at some point.
-                    MNAF_BMNAF = MNAF_BMNAF + distr_fft.add_subgrid_contribution(
-                        NAF_BMNAF, distr_fft.subgrid_off[i0], m, axis=0
+                    MNAF_BMNAF = (
+                        MNAF_BMNAF
+                        + distr_fft.add_subgrid_contribution(
+                            NAF_BMNAF, distr_fft.subgrid_off[i0], m, axis=0
+                        )
                     )
                     return MNAF_BMNAF
 
@@ -478,7 +505,9 @@ def run_distributed_fft(
                     use_dask=True,
                     nout=1,
                 )
-                for MNAF_BMNAF_task, (j0, j1) in zip(MNAF_BMNAF_tasks, facet_ixs)
+                for MNAF_BMNAF_task, (j0, j1) in zip(
+                    MNAF_BMNAF_tasks, facet_ixs
+                )
             ]
             # Again, explicitly drop reference to prevent accumulated
             # facet data to stay around for longer than required
@@ -558,13 +587,17 @@ def main(args):
             for di_key2 in dict_incoming[di_key]:
                 if "getitem" in str(di_key2["keys"]):
                     sum_getitem_incoming += di_key2["total"]
-        log.info(f"sum_getitem_incoming transfer bytes: {sum_getitem_incoming}")
+        log.info(
+            f"sum_getitem_incoming transfer bytes: {sum_getitem_incoming}"
+        )
         sum_getitem_outgoing = 0.0
         for do_key in dict_outgoing.keys():
             for do_key2 in dict_outgoing[do_key]:
                 if "getitem" in str(do_key2["keys"]):
                     sum_getitem_outgoing += do_key2["total"]
-        log.info(f"sum_getitem_outgoing transfer bytes: {sum_getitem_outgoing}")
+        log.info(
+            f"sum_getitem_outgoing transfer bytes: {sum_getitem_outgoing}"
+        )
         tmp_size_1 = human_readable_size(sum_getitem_incoming)
         tmp_size_2 = (human_readable_size(sum_getitem_outgoing),)
         write_task = write_network_transfer_info(
