@@ -1,5 +1,5 @@
 
-Repository Structure
+Main Repository Structure
 ====================
 
 The following diagram demonstrates the folder structure in the
@@ -9,6 +9,8 @@ The following diagram demonstrates the folder structure in the
     |__ .make
     |__ docs
     |__ notebook
+    |__ scripts
+    |__ slurm_scripts
     |__ src
     |   |__ fourier_transform
     |           algorithm_parameters.py
@@ -17,6 +19,9 @@ The following diagram demonstrates the folder structure in the
     |       fourier_transform_dask.py
     |       utils.py
     |       swift_configs.py
+    |       api.py
+    |       api_helper.py
+    |       generate_hdf5.py
     |__ tests
         <repository-related-files; e.g. poetry.lock, gitignore, Makefile, etc>
 
@@ -43,4 +48,14 @@ The following diagram demonstrates the folder structure in the
 
 - **src/swift_configs.py:** contains a dictionary of example configurations, which can be directly used with the code
 
+- **src/generate_hdf5.py:** contains functions that involve generating data and storing them using HDF5 data format.
+  This is used in cases where the initial data size is too big for the machine to handle.
+
+- **src/api.py:** contains the basic data structure of the algorithm for the object-oriented API.
+  Includes core parameters, the facet and subgrid class.
+
+- **src/api_helper.py:** contains several helper functions for the API implementation.
+
 Please refer to the :ref:`api` page for the details of functions and classes of the algorithm.
+
+Please refer to the :ref:`scripts` page for the details of custom scripts.

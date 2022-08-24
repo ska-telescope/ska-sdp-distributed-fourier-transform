@@ -17,3 +17,12 @@ API
 
 .. automodapi::    src.utils
    :no-inheritance-diagram:
+
+.. automodapi::    src.api
+   :no-inheritance-diagram:
+
+.. automodapi::    src.api_helper
+   :no-inheritance-diagram:
+
+.. automodapi::    src.generate_hdf5
+   :no-inheritance-diagram:
