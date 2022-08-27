@@ -13,8 +13,8 @@ import dask.distributed
 import numpy
 from distributed import performance_report
 from distributed.diagnostics import MemorySampler
+from utils import get_and_write_transfer
 
-from scripts.utils import get_and_write_transfer
 from ska_sdp_exec_swiftly import (
     SWIFT_CONFIGS,
     FacetConfig,

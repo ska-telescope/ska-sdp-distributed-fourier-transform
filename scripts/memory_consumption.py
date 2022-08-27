@@ -17,8 +17,8 @@ import numpy
 from dask.distributed import wait
 from distributed import performance_report
 from distributed.diagnostics import MemorySampler
+from utils import sum_and_finish_subgrid, wait_for_tasks
 
-from scripts.utils import sum_and_finish_subgrid, wait_for_tasks
 from ska_sdp_exec_swiftly import (
     SWIFT_CONFIGS,
     BaseArrays,

@@ -17,8 +17,8 @@ import dask.distributed
 import numpy
 from distributed import performance_report
 from distributed.diagnostics import MemorySampler
+from utils import human_readable_size, write_network_transfer_info
 
-from scripts.utils import human_readable_size, write_network_transfer_info
 from ska_sdp_exec_swiftly import (
     SWIFT_CONFIGS,
     BaseArrays,
