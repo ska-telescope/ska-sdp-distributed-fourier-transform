@@ -106,11 +106,11 @@ def subgrid_and_facet(target_distr_fft, base_arrays):
 @pytest.mark.parametrize(
     "args, expected_config_key",
     [
-        ([], "1k[1]-512-256"),
+        ([], "1k[1]-n512-256"),
         (["--swift_config", "3k[1]-n1536-512"], "3k[1]-n1536-512"),
         (
-            ["--swift_config", "1k[1]-512-256,3k[1]-n1536-512"],
-            "1k[1]-512-256,3k[1]-n1536-512",
+            ["--swift_config", "1k[1]-n512-256,3k[1]-n1536-512"],
+            "1k[1]-n512-256,3k[1]-n1536-512",
         ),
     ],
 )
@@ -131,7 +131,7 @@ def test_main_wrong_arg():
     """
     parser = cli_parser()
     args = parser.parse_args(
-        ["--swift_config", "1k[1]-512-256,non-existent-key"]
+        ["--swift_config", "1k[1]-n512-256,non-existent-key"]
     )
     expected_message = (
         "Provided argument (non-existent-key) does not match any "

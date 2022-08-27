@@ -876,7 +876,7 @@ def cli_parser():
     parser.add_argument(
         "--swift_config",
         type=str,
-        default="1k[1]-512-256",
+        default="1k[1]-n512-256",
         help="Dictionary key from swift_configs.py corresponding "
         "to the configuration we want to run the algorithm for."
         "If coma-separated list of strings, then the code "
