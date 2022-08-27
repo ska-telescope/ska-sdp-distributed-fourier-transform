@@ -21,18 +21,18 @@ import numpy
 from distributed import performance_report
 from matplotlib import pylab
 
-from src.fourier_transform.algorithm_parameters import (
-    BaseArrays,
-    StreamingDistributedFFT,
-)
-from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
-from src.fourier_transform.fourier_algorithm import (
+from .dask_wrapper import set_up_dask, tear_down_dask
+from .fourier_transform import (
     make_subgrid_and_facet,
     make_subgrid_and_facet_from_hdf5,
     make_subgrid_and_facet_from_sources,
 )
-from src.swift_configs import SWIFT_CONFIGS
-from src.utils import (
+from .fourier_transform.algorithm_parameters import (
+    BaseArrays,
+    StreamingDistributedFFT,
+)
+from .swift_configs import SWIFT_CONFIGS
+from .utils import (
     add_two,
     errors_facet_to_subgrid_2d,
     errors_facet_to_subgrid_2d_dask,

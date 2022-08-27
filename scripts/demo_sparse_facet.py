@@ -15,17 +15,18 @@ from distributed import performance_report
 from distributed.diagnostics import MemorySampler
 
 from scripts.utils import get_and_write_transfer
-from src.api import (
+from ska_sdp_exec_swiftly import (
+    SWIFT_CONFIGS,
     FacetConfig,
     SwiftlyBackward,
     SwiftlyConfig,
     SwiftlyForward,
+    check_facet,
+    cli_parser,
+    make_facet,
     make_full_subgrid_cover,
+    set_up_dask,
 )
-from src.api_helper import check_facet, make_facet
-from src.fourier_transform.dask_wrapper import set_up_dask
-from src.fourier_transform_dask import cli_parser
-from src.swift_configs import SWIFT_CONFIGS
 
 log = logging.getLogger("fourier-logger")
 log.setLevel(logging.INFO)

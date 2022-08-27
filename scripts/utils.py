@@ -14,7 +14,7 @@ import dask
 import numpy
 from distributed import Lock
 
-from src.utils import single_write_hdf5_task
+from ska_sdp_exec_swiftly import single_write_hdf5_task
 
 log = logging.getLogger("fourier-logger")
 log.setLevel(logging.INFO)

@@ -19,15 +19,16 @@ from distributed import performance_report
 from distributed.diagnostics import MemorySampler
 
 from scripts.utils import sum_and_finish_subgrid, wait_for_tasks
-from src.fourier_transform.algorithm_parameters import (
+from ska_sdp_exec_swiftly import (
+    SWIFT_CONFIGS,
     BaseArrays,
     StreamingDistributedFFT,
+    cli_parser,
+    make_subgrid_and_facet,
+    set_up_dask,
+    tear_down_dask,
 )
-from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
-from src.fourier_transform.fourier_algorithm import make_subgrid_and_facet
-from src.fourier_transform_dask import cli_parser
-from src.swift_configs import SWIFT_CONFIGS
-from src.utils import generate_input_data
+from ska_sdp_exec_swiftly.utils import generate_input_data
 
 log = logging.getLogger("fourier-logger")
 log.setLevel(logging.INFO)
