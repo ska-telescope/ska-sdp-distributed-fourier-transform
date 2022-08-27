@@ -6,7 +6,7 @@ SHELL := /bin/bash
 SPHINXOPTS    =
 SPHINXBUILD   = python -msphinx
 SPHINXPROJ    = skeleton
-SOURCEDIR     = src/
+SOURCEDIR     = src/ska_sdp_exec_swiftly/
 BUILDDIR      = ../build
 
 # Internal variables.
