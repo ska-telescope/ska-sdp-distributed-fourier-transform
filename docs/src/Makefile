@@ -4,9 +4,9 @@ SHELL := /bin/bash
 
 # You can set these variables from the command line.
 SPHINXOPTS    =
-SPHINXBUILD   = python -msphinx
+SPHINXBUILD   = PYTHONPATH="../src" sphinx-build python -msphinx
 SPHINXPROJ    = skeleton
-SOURCEDIR     = src/ska_sdp_exec_swiftly/
+SOURCEDIR     = src/
 BUILDDIR      = ../build
 
 # Internal variables.
