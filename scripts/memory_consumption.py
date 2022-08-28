@@ -3,7 +3,7 @@
 
 """
     Test script for memory consumption (ORC-1247)
-    Created by Feng Wang
+    Created by Feng Wang, Yangfan Xie And Celeste Lu
     Currently it only tests the prepare facet step
 
 """

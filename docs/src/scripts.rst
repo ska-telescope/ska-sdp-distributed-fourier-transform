@@ -8,7 +8,8 @@ Details of how to run each of them as follows.
 Memory Consumption Analysis
 ++++++++++++++++++++++
 
-(Description of script and usage here)
+The script is used to investigate the memory consumption for
+the fundamental Distributed Fourier Transform implementation.
 
 .. argparse::
    :filename: ../../scripts/memory_consumption.py
@@ -18,7 +19,9 @@ Memory Consumption Analysis
 Performance Queue
 ++++++++++++++++++++++
 
-(Description of script and usage here)
+The script is used to investigate the computing performance and memory consumption for
+the Improved Distributed Fourier Transform implementation that has queue support. It should be
+noted that ths script only implemented Facet->Subgrid.
 
 .. argparse::
    :filename: ../../scripts/performance_queue.py
@@ -28,7 +31,9 @@ Performance Queue
 Performance Full Steps
 ++++++++++++++++++++++
 
-(Description of script and usage here)
+The script is used to investigate the computing performance and memory consumption for
+the Improved Distributed Fourier Transform implementation that has queue support. The
+script is full function test script that supports Facet->Subgrid and Subgrid->Facet.
 
 .. argparse::
    :filename: ../../scripts/performance_full_steps.py
@@ -39,7 +44,10 @@ Performance Full Steps
 API Demo
 ++++++++++++++++++++++
 
-(Description of script and usage here)
+To better support streaming computing using Distributed Fourier Transform, an Object-Oriented new API was
+proposed and implemented. The API has the following features.
+1. The core parameters + algorithm. Just the algorithm, no Dask, no assumptions about facet/subgrid layout.
+2. Descriptions of facets / subgrids. Each would have sizes, offsets and potentially a mask.
 
 .. argparse::
    :filename: ../../scripts/demo_api.py
@@ -49,7 +57,9 @@ API Demo
 Sparse Facet Demo
 ++++++++++++++++++++++
 
-(Description of script and usage here)
+Based on the support of Object-Oriented API, the script demonstrates the exciting feature of sparse facet
+in Distributed Fourier Transform that could support the Fourier Transform of arbitrary facet in
+some specific configurations.
 
 .. argparse::
    :filename: ../../scripts/demo_sparse_facet.py
