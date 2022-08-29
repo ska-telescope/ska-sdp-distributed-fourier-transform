@@ -12,7 +12,7 @@ It generates arbitrary grid chunks while minimising memory residency,
 data transfer and compute work.
 
 The code is written in Python. For details of the algorithm, please refer
-to the "Description of the Algorithm" page.
+to the :ref:`algorithm` page.
 
 
 Installation Instructions
@@ -26,7 +26,6 @@ To install the repository, use git::
 Please ensure you have all the dependency packages installed. T
 he installation is managed through `poetry <https://python-poetry.org/docs/>`_.
 Refer to their page for instructions.
-
 
 Running from the command line
 =============================
@@ -44,6 +43,18 @@ the keys as coma-separated arguments `<config_key1>,<config_key2>`.
 Specify the `DASK_SCHEDULER` environment variable to use a specific
 Dask cluster for your run.
 
+There are a few other scripts that help investigate the algorithm
+for specific purposes and use cases. Please see :ref:`scripts` page
+for details of their usage.
+
+Running from the slurm cluster
+=============================
+
+We have provided some example slurm scripts to help run the program on slurm clusters.
+Please refer to the slurm_scripts directory. The examples are based on two machines:
+1. `CSD3 <https://docs.hpc.cam.ac.uk/hpc/>`_  at University of Cambridge, UK
+2. AstroLab at Guangzhou University, China
+You may need to modify them to suit the specific machine that you are using.
 
 .. toctree::
    :maxdepth: 2
@@ -53,3 +64,4 @@ Dask cluster for your run.
    structure
    api
    dask
+   scripts
