@@ -52,7 +52,7 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx_automodapi.automodapi",
     "sphinx_automodapi.smart_resolver",
-    'sphinxarg.ext',
+#    'sphinxarg.ext',
 ]
 
 autodoc_mock_imports = [
