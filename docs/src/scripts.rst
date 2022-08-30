@@ -12,7 +12,7 @@ The script is used to investigate the memory consumption for
 the fundamental Distributed Fourier Transform implementation.
 
 .. argparse::
-   :filename: ../../scripts/memory_consumption.py
+   :filename: scripts/memory_consumption.py
    :func: cli_parser
    :prog: memory_consumption.py
 
@@ -24,7 +24,7 @@ the improved Distributed Fourier Transform implementation that has queue support
 noted that ths script only implemented Facet->Subgrid.
 
 .. argparse::
-   :filename: ../../scripts/performance_queue.py
+   :filename: scripts/performance_queue.py
    :func: cli_parser
    :prog: performance_queue.py
 
@@ -36,7 +36,7 @@ the Improved Distributed Fourier Transform implementation that has queue support
 script is full function test script that supports Facet->Subgrid and Subgrid->Facet.
 
 .. argparse::
-   :filename: ../../scripts/performance_full_steps.py
+   :filename: cripts/performance_full_steps.py
    :func: cli_parser
    :prog: performance_full_steps.py
 
@@ -50,7 +50,7 @@ proposed and implemented. The API has the following features.
 2. Descriptions of facets / subgrids. Each would have sizes, offsets and potentially a mask.
 
 .. argparse::
-   :filename: ../../scripts/demo_api.py
+   :filename: scripts/demo_api.py
    :func: cli_parser
    :prog: demo_api.py
 
@@ -62,6 +62,6 @@ in Distributed Fourier Transform that could support the Fourier Transform of arb
 some specific configurations.
 
 .. argparse::
-   :filename: ../../scripts/demo_sparse_facet.py
+   :filename: scripts/demo_sparse_facet.py
    :func: cli_parser
    :prog: demo_sparse_facet.py

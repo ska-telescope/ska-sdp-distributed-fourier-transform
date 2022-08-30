@@ -21,9 +21,10 @@ import os
 import sys
 from unittest import mock
 
+# Define build directories
 sys.path.insert(0, os.path.abspath("../.."))
-#sys.path.insert(0, os.path.abspath("../../src"))
-#sys.path.insert(0, os.path.abspath("../../scripts"))
+sys.path.insert(0, os.path.abspath("../../src"))
+sys.path.insert(0, os.path.abspath("../../scripts"))
 
 
 def setup(app):
