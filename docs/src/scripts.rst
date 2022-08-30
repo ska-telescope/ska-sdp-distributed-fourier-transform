@@ -20,7 +20,7 @@ Performance Queue
 ++++++++++++++++++++++
 
 The script is used to investigate the computing performance and memory consumption for
-the Improved Distributed Fourier Transform implementation that has queue support. It should be
+the improved Distributed Fourier Transform implementation that has queue support. It should be
 noted that ths script only implemented Facet->Subgrid.
 
 .. argparse::
@@ -44,9 +44,9 @@ script is full function test script that supports Facet->Subgrid and Subgrid->Fa
 API Demo
 ++++++++++++++++++++++
 
-To better support streaming computing using Distributed Fourier Transform, an Object-Oriented new API was
+To better support streaming computing using Distributed Fourier Transform, an object-oriented new API was
 proposed and implemented. The API has the following features.
-1. The core parameters + algorithm. Just the algorithm, no Dask, no assumptions about facet/subgrid layout.
+1. The core parameters and the core algorithm that do not rely on Dask implementation or take assumptions about the facet and subgrid layout
 2. Descriptions of facets / subgrids. Each would have sizes, offsets and potentially a mask.
 
 .. argparse::
