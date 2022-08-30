@@ -13,12 +13,8 @@ import h5py
 import numpy
 from distributed import Lock
 
-from src.fourier_transform.dask_wrapper import (
-    dask_wrapper,
-    set_up_dask,
-    tear_down_dask,
-)
-from src.fourier_transform.fourier_algorithm import make_subgrid_from_sources
+from .dask_wrapper import dask_wrapper, set_up_dask, tear_down_dask
+from .fourier_transform import make_subgrid_from_sources
 
 log = logging.getLogger("fourier-data-generater-logger")
 log.setLevel(logging.INFO)

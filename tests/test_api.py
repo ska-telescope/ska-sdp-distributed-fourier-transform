@@ -8,15 +8,16 @@ import random
 import dask
 import pytest
 
-from src.api import (
+from ska_sdp_exec_swiftly import (
     SwiftlyBackward,
     SwiftlyConfig,
     SwiftlyForward,
+    check_facet,
+    make_facet,
     make_full_facet_cover,
     make_full_subgrid_cover,
+    set_up_dask,
 )
-from src.api_helper import check_facet, make_facet
-from src.fourier_transform.dask_wrapper import set_up_dask
 
 log = logging.getLogger("fourier-logger")
 log.setLevel(logging.WARNING)

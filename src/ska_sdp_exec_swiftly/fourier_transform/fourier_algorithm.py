@@ -9,7 +9,7 @@ import dask
 import h5py
 import numpy
 
-from src.fourier_transform.dask_wrapper import dask_wrapper
+from ska_sdp_exec_swiftly.dask_wrapper import dask_wrapper
 
 
 def create_slice(fill_val, axis_val, dims, axis):
@@ -145,7 +145,7 @@ def coordinates(n):
 
 
 @dask_wrapper
-def _ith_subgrid_facet_element(
+def ith_subgrid_facet_element(
     true_image, offset_i, true_usable_size, mask_element, axis=(0, 1), **kwargs
 ):  # pylint: disable=unused-argument
     """
@@ -217,7 +217,7 @@ def make_subgrid_and_facet(
             facet = facet.tolist()
 
         for i in range(base_arrays.nsubgrid):
-            subgrid[i] = _ith_subgrid_facet_element(
+            subgrid[i] = ith_subgrid_facet_element(
                 G,
                 -base_arrays.subgrid_off[i],
                 base_arrays.xA_size,
@@ -228,7 +228,7 @@ def make_subgrid_and_facet(
             )
 
         for j in range(base_arrays.nfacet):
-            facet[j] = _ith_subgrid_facet_element(
+            facet[j] = ith_subgrid_facet_element(
                 FG,
                 -base_arrays.facet_off[j],
                 base_arrays.yB_size,
@@ -265,7 +265,7 @@ def make_subgrid_and_facet(
         for i0, i1 in itertools.product(
             range(base_arrays.nsubgrid), range(base_arrays.nsubgrid)
         ):
-            subgrid[i0][i1] = _ith_subgrid_facet_element(
+            subgrid[i0][i1] = ith_subgrid_facet_element(
                 G,
                 (
                     -base_arrays.subgrid_off[i0],
@@ -283,7 +283,7 @@ def make_subgrid_and_facet(
         for j0, j1 in itertools.product(
             range(base_arrays.nfacet), range(base_arrays.nfacet)
         ):
-            facet[j0][j1] = _ith_subgrid_facet_element(
+            facet[j0][j1] = ith_subgrid_facet_element(
                 FG,
                 (
                     -base_arrays.facet_off[j0],

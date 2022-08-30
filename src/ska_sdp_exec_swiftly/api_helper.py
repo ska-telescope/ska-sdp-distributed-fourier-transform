@@ -6,7 +6,7 @@ Some helper function for Distributed Fourier Transform API
 
 import numpy
 
-from src.fourier_transform.fourier_algorithm import (
+from .fourier_transform.fourier_algorithm import (
     make_facet_from_sources,
     make_subgrid_from_sources,
 )
