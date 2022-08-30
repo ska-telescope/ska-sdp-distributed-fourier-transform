@@ -20,8 +20,9 @@ import numpy
 import scipy.signal
 import scipy.special
 
-from src.fourier_transform.dask_wrapper import dask_wrapper
-from src.fourier_transform.fourier_algorithm import (
+from ska_sdp_exec_swiftly.dask_wrapper import dask_wrapper
+
+from .fourier_algorithm import (
     broadcast,
     coordinates,
     create_slice,

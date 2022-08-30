@@ -3,26 +3,26 @@
 API
 ===
 
-.. automodapi::    src.fourier_transform.algorithm_parameters
+.. automodapi::    ska_sdp_exec_swiftly.api
    :no-inheritance-diagram:
 
-.. automodapi::    src.fourier_transform.fourier_algorithm
+.. automodapi::    ska_sdp_exec_swiftly.api_helper
    :no-inheritance-diagram:
 
-.. automodapi::    src.fourier_transform.dask_wrapper
+.. automodapi::    ska_sdp_exec_swiftly.fourier_transform.algorithm_parameters
    :no-inheritance-diagram:
 
-.. automodapi::    src.fourier_transform_dask
+.. automodapi::    ska_sdp_exec_swiftly.fourier_transform.fourier_algorithm
    :no-inheritance-diagram:
 
-.. automodapi::    src.utils
+.. automodapi::    ska_sdp_exec_swiftly.dask_wrapper
    :no-inheritance-diagram:
 
-.. automodapi::    src.api
+.. automodapi::    ska_sdp_exec_swiftly.utils
    :no-inheritance-diagram:
 
-.. automodapi::    src.api_helper
+.. automodapi::    ska_sdp_exec_swiftly.fourier_transform_dask
    :no-inheritance-diagram:
 
-.. automodapi::    src.generate_hdf5
+.. automodapi::    ska_sdp_exec_swiftly.generate_hdf5
    :no-inheritance-diagram:

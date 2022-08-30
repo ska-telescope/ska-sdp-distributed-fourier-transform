@@ -15,8 +15,8 @@ import numpy
 from distributed import Lock
 from matplotlib import patches, pylab
 
-from src.fourier_transform.dask_wrapper import dask_wrapper
-from src.fourier_transform.fourier_algorithm import (
+from .dask_wrapper import dask_wrapper
+from .fourier_transform.fourier_algorithm import (
     coordinates,
     extract_mid,
     fft,

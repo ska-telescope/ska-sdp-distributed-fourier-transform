@@ -15,8 +15,7 @@ import h5py
 import numpy
 from distributed import performance_report
 from distributed.diagnostics import MemorySampler
-
-from scripts.utils import (
+from utils import (
     batch_all_i1_NMBF_NMBF,
     batch_NMBF_NMBF_sum_finish_subgrid,
     human_readable_size,
@@ -24,17 +23,20 @@ from scripts.utils import (
     write_approx_subgrid,
     write_network_transfer_info,
 )
-from src.fourier_transform.algorithm_parameters import (
+
+from ska_sdp_exec_swiftly import (
+    SWIFT_CONFIGS,
     BaseArrays,
     StreamingDistributedFFT,
-)
-from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
-from src.fourier_transform.fourier_algorithm import (
+    cli_parser,
     make_subgrid_and_facet_from_hdf5,
+    set_up_dask,
+    tear_down_dask,
 )
-from src.fourier_transform_dask import cli_parser
-from src.swift_configs import SWIFT_CONFIGS
-from src.utils import error_task_facet_to_subgrid_2d, generate_input_data
+from ska_sdp_exec_swiftly.utils import (
+    error_task_facet_to_subgrid_2d,
+    generate_input_data,
+)
 
 log = logging.getLogger("fourier-logger")
 log.setLevel(logging.INFO)

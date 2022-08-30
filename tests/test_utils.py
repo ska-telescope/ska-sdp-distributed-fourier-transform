@@ -10,14 +10,16 @@ import h5py
 import numpy
 import pytest
 
-from src.fourier_transform.algorithm_parameters import BaseArrays
-from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
-from src.fourier_transform.fourier_algorithm import (
+from ska_sdp_exec_swiftly.dask_wrapper import set_up_dask, tear_down_dask
+from ska_sdp_exec_swiftly.fourier_transform.algorithm_parameters import (
+    BaseArrays,
+)
+from ska_sdp_exec_swiftly.fourier_transform.fourier_algorithm import (
     make_subgrid_and_facet,
     make_subgrid_and_facet_from_hdf5,
 )
-from src.generate_hdf5 import generate_data_hdf5
-from src.utils import (
+from ska_sdp_exec_swiftly.generate_hdf5 import generate_data_hdf5
+from ska_sdp_exec_swiftly.utils import (
     error_task_facet_to_subgrid_2d,
     error_task_subgrid_to_facet_2d,
     fundamental_errors,

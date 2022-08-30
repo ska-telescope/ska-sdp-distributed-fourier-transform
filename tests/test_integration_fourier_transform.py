@@ -14,17 +14,17 @@ import numpy
 import pytest
 from numpy.testing import assert_array_almost_equal
 
-from src.fourier_transform.algorithm_parameters import (
+from ska_sdp_exec_swiftly.dask_wrapper import set_up_dask, tear_down_dask
+from ska_sdp_exec_swiftly.fourier_transform.algorithm_parameters import (
     BaseArrays,
     StreamingDistributedFFT,
 )
-from src.fourier_transform.dask_wrapper import set_up_dask, tear_down_dask
-from src.fourier_transform.fourier_algorithm import (
+from ska_sdp_exec_swiftly.fourier_transform.fourier_algorithm import (
     fft,
     ifft,
     make_subgrid_and_facet,
 )
-from src.fourier_transform_dask import (
+from ska_sdp_exec_swiftly.fourier_transform_dask import (
     cli_parser,
     facet_to_subgrid_2d_method_1,
     facet_to_subgrid_2d_method_2,
@@ -33,7 +33,7 @@ from src.fourier_transform_dask import (
     run_distributed_fft,
     subgrid_to_facet_algorithm,
 )
-from src.generate_hdf5 import generate_data_hdf5
+from ska_sdp_exec_swiftly.generate_hdf5 import generate_data_hdf5
 
 log = logging.getLogger("fourier-logger")
 log.setLevel(logging.WARNING)
@@ -106,11 +106,11 @@ def subgrid_and_facet(target_distr_fft, base_arrays):
 @pytest.mark.parametrize(
     "args, expected_config_key",
     [
-        ([], "1k[1]-512-256"),
+        ([], "1k[1]-n512-256"),
         (["--swift_config", "3k[1]-n1536-512"], "3k[1]-n1536-512"),
         (
-            ["--swift_config", "1k[1]-512-256,3k[1]-n1536-512"],
-            "1k[1]-512-256,3k[1]-n1536-512",
+            ["--swift_config", "1k[1]-n512-256,3k[1]-n1536-512"],
+            "1k[1]-n512-256,3k[1]-n1536-512",
         ),
     ],
 )
@@ -131,7 +131,7 @@ def test_main_wrong_arg():
     """
     parser = cli_parser()
     args = parser.parse_args(
-        ["--swift_config", "1k[1]-512-256,non-existent-key"]
+        ["--swift_config", "1k[1]-n512-256,non-existent-key"]
     )
     expected_message = (
         "Provided argument (non-existent-key) does not match any "
