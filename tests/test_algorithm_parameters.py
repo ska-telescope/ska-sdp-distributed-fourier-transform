@@ -28,7 +28,7 @@ def test_base_params_fundamental():
     result = BaseParameters(**TEST_PARAMS)
 
     for k, v in TEST_PARAMS.items():
-        assert result.__getattribute__(k) == v
+        assert getattr(result, k) == v
 
 
 def test_base_params_derived():
@@ -51,7 +51,7 @@ def test_base_params_derived():
     result = BaseParameters(**TEST_PARAMS)
 
     for k, v in expected_derived.items():
-        assert result.__getattribute__(k) == v
+        assert getattr(result, k) == v
 
     assert (result.facet_off == expected_facet_off).all()
     assert (result.subgrid_off == expected_subgrid_off).all()
