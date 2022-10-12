@@ -36,16 +36,13 @@ def test_base_params_derived():
     obtain derived attributes of the class.
     """
     expected_derived = {
-        "xM_yP_size": 128,
-        "xM_yN_size": 80,
-        "xMxN_yP_size": 150,
-        "xN_yP_size": 22,
-        "nsubgrid": 6,
-        "nfacet": 4,
+        "xM_yN_size": 128,
+        "nsubgrid": 5,
+        "nfacet": 3,
     }
 
-    expected_facet_off = numpy.array([0, 256, 512, 768])
-    expected_subgrid_off = numpy.array([0, 188, 376, 564, 752, 940])
+    expected_facet_off = numpy.array([0, 416, 832])
+    expected_subgrid_off = numpy.array([0, 228, 456, 684, 912])
 
     result = BaseParameters(**TEST_PARAMS)
 
@@ -102,7 +99,6 @@ def test_base_arrays_pure_arrays():
     array_class = BaseArrays(**TEST_PARAMS)
     fb = array_class.Fb  # noqa: F841
     fn = array_class.Fn  # noqa: F841
-    facet_m0_trunc = array_class.facet_m0_trunc  # noqa: F841
     pswf = array_class.pswf  # noqa: F841
 
 
@@ -114,19 +110,19 @@ def test_facet_to_subgrid_basic():
 
     # Basic layout parameters
     N = TEST_PARAMS["N"]
-    Nx = TEST_PARAMS["Nx"] * 8  # allow more facet offsets
-    Ny = N // Nx
     yB_size = TEST_PARAMS["yB_size"]
-    assert yB_size % Ny == 0
 
     # Instantiate classes
     array_class = BaseArrays(**TEST_PARAMS)
     dft = StreamingDistributedFFT(**TEST_PARAMS)
     arr_pars = {"Fb": array_class.Fb, "Fn": array_class.Fn}
+    Nx = array_class.Nx
+    Ny = array_class.Ny
+    assert yB_size % Ny == 0
 
     # Test with different values and facet offsets
     for val, facet_off in itertools.product(
-        [0, 1, 0.1], numpy.arange(-yB_size // 2 + Ny, yB_size // 2, Ny)
+        [0, 1, 0.1], numpy.arange(-5 * Ny, 5 * Ny // 2, Ny)
     ):
 
         # Set value at centre of image (might be off-centre for
@@ -136,7 +132,7 @@ def test_facet_to_subgrid_basic():
         prepped = dft.prepare_facet(facet, facet_off, axis=0, **arr_pars)
 
         # Now generate subgrids at different (valid) subgrid offsets.
-        for sg_off in numpy.arange(0, N, Nx):
+        for sg_off in numpy.arange(0, 10 * Nx, Nx):
             subgrid_contrib = dft.extract_facet_contrib_to_subgrid(
                 prepped, sg_off, axis=0, **arr_pars
             )
@@ -157,16 +153,16 @@ def test_facet_to_subgrid_dft_1d():
 
     # Basic layout parameters
     N = TEST_PARAMS["N"]
-    Nx = TEST_PARAMS["Nx"] * 8  # allow more facet offsets
-    Ny = N // Nx
     xA_size = TEST_PARAMS["xA_size"]
     yB_size = TEST_PARAMS["yB_size"]
-    assert yB_size % Ny == 0
 
     # Instantiate classes
     array_class = BaseArrays(**TEST_PARAMS)
     dft = StreamingDistributedFFT(**TEST_PARAMS)
     arr_pars = {"Fb": array_class.Fb, "Fn": array_class.Fn}
+    Nx = array_class.Nx
+    Ny = array_class.Ny
+    assert yB_size % Ny == 0
 
     # Test with different values and facet offsets
     for sources, facet_off in itertools.product(
@@ -178,7 +174,7 @@ def test_facet_to_subgrid_dft_1d():
             [(1, 20), (2, 5), (3, -4)],
             [(0, i) for i in range(-20, 20)],
         ],
-        numpy.arange(-yB_size // 2 + Ny, yB_size // 2, Ny),
+        numpy.arange(-yB_size // 2 + 6 * Ny, yB_size // 2, Ny),
     ):
 
         # Set sources in facet
@@ -210,16 +206,16 @@ def test_facet_to_subgrid_dft_2d():
 
     # Basic layout parameters
     N = TEST_PARAMS["N"]
-    Nx = TEST_PARAMS["Nx"] * 8  # allow more facet offsets
-    Ny = N // Nx
     xA_size = TEST_PARAMS["xA_size"]
     yB_size = TEST_PARAMS["yB_size"]
-    assert yB_size % Ny == 0
 
     # Instantiate classes
     array_class = BaseArrays(**TEST_PARAMS)
     dft = StreamingDistributedFFT(**TEST_PARAMS)
     arr_pars = {"Fb": array_class.Fb, "Fn": array_class.Fn}
+    Nx = array_class.Nx
+    Ny = array_class.Ny
+    assert yB_size % Ny == 0
 
     # Test with different values and facet offsets
     for sources, facet_offs in itertools.product(
@@ -267,18 +263,16 @@ def test_subgrid_to_facet_basic():
     """
 
     # Basic layout parameters
-    N = TEST_PARAMS["N"]
-    Nx = N // TEST_PARAMS["yP_size"]
-    Ny = N // TEST_PARAMS["xM_size"]
     xA_size = TEST_PARAMS["xA_size"]
-    xM_size = TEST_PARAMS["xM_size"]
     yB_size = TEST_PARAMS["yB_size"]
-    assert yB_size % Ny == 0
 
     # Instantiate classes
     array_class = BaseArrays(**TEST_PARAMS)
     dft = StreamingDistributedFFT(**TEST_PARAMS)
     arr_pars = {"Fb": array_class.Fb, "Fn": array_class.Fn}
+    Nx = array_class.Nx
+    Ny = array_class.Ny
+    assert yB_size % Ny == 0
     sg_offs = Nx * numpy.arange(-9, 8)
     facet_offs = numpy.hstack(
         [[-yB_size // 2 + Ny, yB_size // 2], Ny * numpy.arange(-9, 8)]
@@ -318,17 +312,16 @@ def test_subgrid_to_facet_dft():
 
     # Basic layout parameters
     N = TEST_PARAMS["N"]
-    Nx = N // TEST_PARAMS["yP_size"]
-    Ny = N // TEST_PARAMS["xM_size"]
     xA_size = TEST_PARAMS["xA_size"]
-    xM_size = TEST_PARAMS["xM_size"]
     yB_size = TEST_PARAMS["yB_size"]
-    assert yB_size % Ny == 0
 
     # Instantiate classes
     array_class = BaseArrays(**TEST_PARAMS)
     dft = StreamingDistributedFFT(**TEST_PARAMS)
     arr_pars = {"Fb": array_class.Fb, "Fn": array_class.Fn}
+    Nx = array_class.Nx
+    Ny = array_class.Ny
+    assert yB_size % Ny == 0
 
     # Parameters to try
     source_lists = [

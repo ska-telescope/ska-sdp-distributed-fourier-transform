@@ -24,12 +24,10 @@ from src.fourier_transform.dask_wrapper import dask_wrapper
 from src.fourier_transform.fourier_algorithm import (
     broadcast,
     coordinates,
-    create_slice,
     extract_mid,
     fft,
     ifft,
     pad_mid,
-    roll_and_extract_mid_axis,
 )
 
 
@@ -92,6 +90,24 @@ class BaseParameters:
             raise ValueError
         if not self.N % self.xM_size == 0:
             raise ValueError
+
+    @property
+    def Nx(self):
+        """
+        Returns the base subgrid offset.
+
+        All subgrid offsets must be divisible by this value.
+        """
+        return self.N // self.yN_size
+
+    @property
+    def Ny(self):
+        """
+        Returns the base facet offset.
+
+        All facet offsets must be divisible by this value.
+        """
+        return self.N // self.xM_size
 
     def calculate_facet_off(self):
         """
@@ -315,7 +331,6 @@ class StreamingDistributedFFT(BaseParameters):
 
         :return: contribution of facet to subgrid
         """
-        dims = len(BF.shape)
 
         scaled_subgrid_off_elem = subgrid_off_elem * self.yN_size // self.N
         return numpy.roll(

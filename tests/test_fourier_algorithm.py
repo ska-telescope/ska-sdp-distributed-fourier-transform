@@ -845,21 +845,19 @@ def test_make_subgrid_and_facet_from_sources_function():
     Test the function make_facet_and_subgrid_from_sources
     """
 
-    image_size = 1024
-    xA_size = 188
-    yB_size = 256
 
     TEST_PARAMS = {
-        "W": 13.25,
-        "fov": 0.75,
-        "N": image_size,
-        "Nx": 4,
-        "yB_size": yB_size,
-        "yN_size": 320,
-        "yP_size": 512,
-        "xA_size": xA_size,
+        "W": 13.5625,
+        "fov": 1.0,
+        "N": 1024,
+        "yB_size": 416,
+        "yN_size": 512,
+        "xA_size": 228,
         "xM_size": 256,
     }
+    image_size = TEST_PARAMS['N']
+    xA_size = TEST_PARAMS['xA_size']
+    yB_size = TEST_PARAMS['yB_size']
 
     base_arrays = BaseArrays(**TEST_PARAMS)
 

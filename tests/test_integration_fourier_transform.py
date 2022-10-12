@@ -42,10 +42,8 @@ TEST_PARAMS = {
     "W": 13.5625,
     "fov": 1.0,
     "N": 1024,
-    "Nx": 4,
     "yB_size": 416,
     "yN_size": 512,
-    "yP_size": 512,
     "xA_size": 228,
     "xM_size": 256,
 }
