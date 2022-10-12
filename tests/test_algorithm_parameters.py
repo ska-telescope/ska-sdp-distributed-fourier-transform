@@ -122,11 +122,7 @@ def test_facet_to_subgrid_basic():
     # Instantiate classes
     array_class = BaseArrays(**TEST_PARAMS)
     dft = StreamingDistributedFFT(**TEST_PARAMS)
-    arr_pars = {
-        "Fb": array_class.Fb,
-        "Fn": array_class.Fn,
-        "facet_m0_trunc": array_class.facet_m0_trunc,
-    }
+    arr_pars = {"Fb": array_class.Fb, "Fn": array_class.Fn}
 
     # Test with different values and facet offsets
     for val, facet_off in itertools.product(
@@ -137,7 +133,7 @@ def test_facet_to_subgrid_basic():
         # the facet depending on offset)
         facet = numpy.zeros(yB_size)
         facet[yB_size // 2 - facet_off] = val
-        prepped = dft.prepare_facet(facet, axis=0, **arr_pars)
+        prepped = dft.prepare_facet(facet, facet_off, axis=0, **arr_pars)
 
         # Now generate subgrids at different (valid) subgrid offsets.
         for sg_off in numpy.arange(0, N, Nx):
@@ -145,9 +141,9 @@ def test_facet_to_subgrid_basic():
                 prepped, sg_off, axis=0, **arr_pars
             )
             subgrid_acc = dft.add_facet_contribution(
-                subgrid_contrib, facet_off, axis=0
+                subgrid_contrib, facet_off, axis=0, **arr_pars
             )
-            subgrid = dft.finish_subgrid(subgrid_acc)
+            subgrid = dft.finish_subgrid(subgrid_acc, sg_off)
 
             # Now the entire subgrid should have (close to) a
             # constant value
@@ -170,11 +166,7 @@ def test_facet_to_subgrid_dft_1d():
     # Instantiate classes
     array_class = BaseArrays(**TEST_PARAMS)
     dft = StreamingDistributedFFT(**TEST_PARAMS)
-    arr_pars = {
-        "Fb": array_class.Fb,
-        "Fn": array_class.Fn,
-        "facet_m0_trunc": array_class.facet_m0_trunc,
-    }
+    arr_pars = {"Fb": array_class.Fb, "Fn": array_class.Fn}
 
     # Test with different values and facet offsets
     for sources, facet_off in itertools.product(
@@ -194,7 +186,7 @@ def test_facet_to_subgrid_dft_1d():
 
         # We assume all sources are on the facet
         assert numpy.sum(facet) == sum(src[0] for src in sources)
-        prepped = dft.prepare_facet(facet, axis=0, **arr_pars)
+        prepped = dft.prepare_facet(facet, facet_off, axis=0, **arr_pars)
 
         # Now generate subgrids at different (valid) subgrid offsets.
         for sg_off in [0, Nx, -Nx, N]:
@@ -202,9 +194,9 @@ def test_facet_to_subgrid_dft_1d():
                 prepped, sg_off, axis=0, **arr_pars
             )
             subgrid_acc = dft.add_facet_contribution(
-                subgrid_contrib, facet_off, axis=0
+                subgrid_contrib, facet_off, axis=0, **arr_pars
             )
-            subgrid = dft.finish_subgrid(subgrid_acc)
+            subgrid = dft.finish_subgrid(subgrid_acc, sg_off)
 
             # Now check against DFT
             expected = make_subgrid_from_sources(sources, N, xA_size, [sg_off])
@@ -227,11 +219,7 @@ def test_facet_to_subgrid_dft_2d():
     # Instantiate classes
     array_class = BaseArrays(**TEST_PARAMS)
     dft = StreamingDistributedFFT(**TEST_PARAMS)
-    arr_pars = {
-        "Fb": array_class.Fb,
-        "Fn": array_class.Fn,
-        "facet_m0_trunc": array_class.facet_m0_trunc,
-    }
+    arr_pars = {"Fb": array_class.Fb, "Fn": array_class.Fn}
 
     # Test with different values and facet offsets
     for sources, facet_offs in itertools.product(
@@ -247,8 +235,10 @@ def test_facet_to_subgrid_dft_2d():
 
         # We assume all sources are on the facet
         assert numpy.sum(facet) == sum(src[0] for src in sources)
-        prepped0 = dft.prepare_facet(facet, axis=0, **arr_pars)
-        prepped = dft.prepare_facet(prepped0, axis=1, **arr_pars)
+        prepped0 = dft.prepare_facet(facet, facet_offs[0], axis=0, **arr_pars)
+        prepped = dft.prepare_facet(
+            prepped0, facet_offs[1], axis=1, **arr_pars
+        )
 
         # Now generate subgrids at different (valid) subgrid offsets.
         for sg_offs in [[0, 0], [0, Nx], [Nx, 0], [-Nx, -Nx]]:
@@ -259,12 +249,12 @@ def test_facet_to_subgrid_dft_2d():
                 subgrid_contrib0, sg_offs[1], axis=1, **arr_pars
             )
             subgrid_acc0 = dft.add_facet_contribution(
-                subgrid_contrib, facet_offs[0], axis=0
+                subgrid_contrib, facet_offs[0], axis=0, **arr_pars
             )
             subgrid_acc = dft.add_facet_contribution(
-                subgrid_acc0, facet_offs[1], axis=1
+                subgrid_acc0, facet_offs[1], axis=1, **arr_pars
             )
-            subgrid = dft.finish_subgrid(subgrid_acc)
+            subgrid = dft.finish_subgrid(subgrid_acc, sg_offs)
 
             # Now check against DFT
             expected = make_subgrid_from_sources(sources, N, xA_size, sg_offs)
@@ -278,8 +268,8 @@ def test_subgrid_to_facet_basic():
 
     # Basic layout parameters
     N = TEST_PARAMS["N"]
-    Nx = TEST_PARAMS["Nx"] * 8  # allow more facet offsets
-    Ny = N // Nx
+    Nx = N // TEST_PARAMS["yP_size"]
+    Ny = N // TEST_PARAMS["xM_size"]
     xA_size = TEST_PARAMS["xA_size"]
     xM_size = TEST_PARAMS["xM_size"]
     yB_size = TEST_PARAMS["yB_size"]
@@ -288,21 +278,23 @@ def test_subgrid_to_facet_basic():
     # Instantiate classes
     array_class = BaseArrays(**TEST_PARAMS)
     dft = StreamingDistributedFFT(**TEST_PARAMS)
-    arr_pars = {
-        "Fb": array_class.Fb,
-        "Fn": array_class.Fn,
-        "facet_m0_trunc": array_class.facet_m0_trunc,
-    }
+    arr_pars = {"Fb": array_class.Fb, "Fn": array_class.Fn}
+    sg_offs = Nx * numpy.arange(-9, 8)
+    facet_offs = numpy.hstack(
+        [[-yB_size // 2 + Ny, yB_size // 2], Ny * numpy.arange(-9, 8)]
+    )
 
     # Test linearity with different values, and start with subgrids at
     # different (valid) subgrid offsets.
-    for val, sg_off in itertools.product([0, 1, 0.1], numpy.arange(0, N, Nx)):
+    for val, sg_off in itertools.product([0, 1, 0.1], sg_offs):
 
         # Constant-value subgrid
-        prepped = dft.prepare_subgrid((val / xA_size) * numpy.ones(xA_size))
+        prepped = dft.prepare_subgrid(
+            (val / xA_size) * numpy.ones(xA_size), sg_off
+        )
 
         # Check different facet offsets
-        for facet_off in numpy.arange(-yB_size // 2 + Ny, yB_size // 2, Ny):
+        for facet_off in facet_offs:
             extracted = dft.extract_subgrid_contrib_to_facet(
                 prepped, facet_off, axis=0, **arr_pars
             )
@@ -310,7 +302,7 @@ def test_subgrid_to_facet_basic():
                 extracted, sg_off, axis=0, **arr_pars
             )
             facet = dft.finish_facet(
-                accumulated, numpy.ones(xM_size), axis=0, **arr_pars
+                accumulated, facet_off, numpy.ones(yB_size), axis=0, **arr_pars
             )
 
             # Check that we have value at centre of image
@@ -326,8 +318,8 @@ def test_subgrid_to_facet_dft():
 
     # Basic layout parameters
     N = TEST_PARAMS["N"]
-    Nx = TEST_PARAMS["Nx"] * 8  # allow more facet offsets
-    Ny = N // Nx
+    Nx = N // TEST_PARAMS["yP_size"]
+    Ny = N // TEST_PARAMS["xM_size"]
     xA_size = TEST_PARAMS["xA_size"]
     xM_size = TEST_PARAMS["xM_size"]
     yB_size = TEST_PARAMS["yB_size"]
@@ -336,23 +328,23 @@ def test_subgrid_to_facet_dft():
     # Instantiate classes
     array_class = BaseArrays(**TEST_PARAMS)
     dft = StreamingDistributedFFT(**TEST_PARAMS)
-    arr_pars = {
-        "Fb": array_class.Fb,
-        "Fn": array_class.Fn,
-        "facet_m0_trunc": array_class.facet_m0_trunc,
-    }
+    arr_pars = {"Fb": array_class.Fb, "Fn": array_class.Fn}
+
+    # Parameters to try
+    source_lists = [
+        [(1, 0)],
+        [(2, 1)],
+        [(1, -3)],
+        [(-0.1, 5)],
+    ]
+    sg_offs = Nx * numpy.arange(-9, 8)
+    facet_offs = numpy.hstack(
+        [[-yB_size // 2 + Ny, yB_size // 2], Ny * numpy.arange(-9, 8)]
+    )
 
     # Test linearity with different values, and start with subgrids at
     # different (valid) subgrid offsets.
-    for sources, sg_off in itertools.product(
-        [
-            [(1, 0)],
-            [(2, 1)],
-            [(1, -3)],
-            [(-0.1, 5)],
-        ],
-        numpy.arange(0, N, Nx),
-    ):
+    for sources, sg_off in itertools.product(source_lists, sg_offs):
 
         # Generate subgrid. As we are only filling the grid partially
         # here, we have to scale it.
@@ -361,10 +353,10 @@ def test_subgrid_to_facet_dft():
             / xA_size
             * N
         )
-        prepped = dft.prepare_subgrid(subgrid)
+        prepped = dft.prepare_subgrid(subgrid, sg_off)
 
         # Check different facet offsets
-        for facet_off in numpy.arange(-yB_size // 2 + Ny, yB_size // 2, Ny):
+        for facet_off in facet_offs:
             extracted = dft.extract_subgrid_contrib_to_facet(
                 prepped, facet_off, axis=0, **arr_pars
             )
@@ -372,7 +364,7 @@ def test_subgrid_to_facet_dft():
                 extracted, sg_off, axis=0, **arr_pars
             )
             facet = dft.finish_facet(
-                accumulated, numpy.ones(xM_size), axis=0, **arr_pars
+                accumulated, facet_off, numpy.ones(yB_size), axis=0, **arr_pars
             )
 
             # Check that pixels in questions have correct value. As -

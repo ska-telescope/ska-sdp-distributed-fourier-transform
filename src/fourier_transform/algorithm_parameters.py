@@ -41,10 +41,7 @@ class BaseParameters:
               parameter (grid-space support)
     :param fov: field of view
     :param N: total image size
-    :param Nx: subgrid spacing: subgrid offsets need to be divisible by Nx
     :param yB_size: effective facet size
-    :param yP_size: padded facet size (pad facet with zeros
-                    at margins to reach this size)
     :param xA_size: effective subgrid size
     :param xM_size: padded subgrid size (pad subgrid with zeros
                     at margins to reach this size)
@@ -56,15 +53,7 @@ class BaseParameters:
     The class, in addition, derives the following,
     commonly used sizes (integers), and offset arrays:
 
-    :param xM_yP_size: (padded subgrid size * padded facet size) / N
     :param xM_yN_size: (padded subgrid size * padding) / N
-    :param xMxN_yP_size: length of the region to be cut out of the
-                         prepared facet data (i.e. len(facet_m0_trunc),
-                         where facet_m0_trunc is the mask truncated
-                         to a facet (image space))
-    :param xN_yP_size: remainder of the padded facet region after the cut-out
-                       region has been subtracted of it
-                       i.e. xMxN_yP_size - xM_yP_size
     :param nsubgrid: number of subgrids
     :param nfacet: number of facets
     :param facet_off: facet offset (numpy array)
@@ -78,33 +67,17 @@ class BaseParameters:
         self.W = fundamental_constants["W"]
         self.fov = fundamental_constants["fov"]
         self.N = fundamental_constants["N"]
-        self.Nx = fundamental_constants["Nx"]
         self.yB_size = fundamental_constants["yB_size"]
-        self.yP_size = fundamental_constants["yP_size"]
         self.xA_size = fundamental_constants["xA_size"]
         self.xM_size = fundamental_constants["xM_size"]
         self.yN_size = fundamental_constants["yN_size"]
 
         self.check_params()
 
-        # Commonly used relative coordinates and derived values
-
-        # Note from Peter: Note that this (xM_yP_size) is
-        #   xM_yN_size * yP_size / yN_size.
-        # So could replace by yN_size, which would be the
-        # more fundamental entity.
-        # TODO ^
-        self.xM_yP_size = self.xM_size * self.yP_size // self.N
-        # same note as above xM_yP_size; could be replaced with xM_size
+        # Derive subgrid <> facet contribution size
         self.xM_yN_size = self.xM_size * self.yN_size // self.N
 
-        xN_size = self.N * self.W / self.yN_size
-        self.xMxN_yP_size = self.xM_yP_size + int(
-            2 * numpy.ceil(xN_size * self.yP_size / self.N / 2)
-        )
-
-        self.xN_yP_size = self.xMxN_yP_size - self.xM_yP_size
-
+        # Subgrid counts and offsets assuming complete re-distribution
         self.nsubgrid = int(math.ceil(self.N / self.xA_size))
         self.nfacet = int(math.ceil(self.N / self.yB_size))
 
@@ -115,7 +88,9 @@ class BaseParameters:
         """
         Validate some of the parameters.
         """
-        if not (self.xM_size * self.yN_size) % self.N == 0:
+        if not self.N % self.yN_size == 0:
+            raise ValueError
+        if not self.N % self.xM_size == 0:
             raise ValueError
 
     def calculate_facet_off(self):
@@ -123,6 +98,7 @@ class BaseParameters:
         Calculate facet offset array
         """
         facet_off = self.yB_size * numpy.arange(self.nfacet)
+        assert numpy.all(facet_off % (self.N // self.xM_size) == 0)
         return facet_off
 
     def calculate_subgrid_off(self):
@@ -130,6 +106,7 @@ class BaseParameters:
         Calculate subgrid offset array
         """
         subgrid_off = self.xA_size * numpy.arange(self.nsubgrid)
+        assert numpy.all(subgrid_off % (self.N // self.yN_size) == 0)
         return subgrid_off
 
     def __str__(self):
@@ -138,17 +115,12 @@ class BaseParameters:
             f"W = {self.W}\n"
             f"fov = {self.fov}\n"
             f"N = {self.N}\n"
-            f"Nx = {self.Nx}\n"
             f"yB_size = {self.yB_size}\n"
-            f"yP_size = {self.yP_size}\n"
             f"xA_size = {self.xA_size}\n"
             f"xM_size = {self.xM_size}\n"
             f"yN_size = {self.yN_size}\n"
             f"\nDerived values: \n"
-            f"xM_yP_size = {self.xM_yP_size}\n"
             f"xM_yN_size = {self.xM_yN_size}\n"
-            f"xMxN_yP_size = {self.xMxN_yP_size}\n"
-            f"xN_yP_size = {self.xN_yP_size}\n"
             f"nsubgrid = {self.nsubgrid}\n"
             f"nfacet = {self.nfacet}\n"
             f"facet_off = {self.facet_off}\n"
@@ -195,7 +167,6 @@ class BaseArrays(BaseParameters):
         self.pswf = self.calculate_pswf()
         self.Fb = self.calculate_Fb()
         self.Fn = self.calculate_Fn()
-        self.facet_m0_trunc = self.calculate_facet_m0_trunc()
 
     def _generate_mask(self, mask_size, offsets):
         """
@@ -257,28 +228,6 @@ class BaseArrays(BaseParameters):
         ]
         return Fn
 
-    def calculate_facet_m0_trunc(self):
-        """
-        Calculate the mask truncated to a facet (image space)
-        """
-        temp_facet_m0_trunc = self.pswf * numpy.sinc(
-            coordinates(self.yN_size) * self.xM_size / self.N * self.yN_size
-        )
-        facet_m0_trunc = (
-            self.xM_size
-            * self.yP_size
-            / self.N
-            * extract_mid(
-                ifft(
-                    pad_mid(temp_facet_m0_trunc, self.yP_size, axis=0),
-                    axis=0,
-                ),
-                self.xMxN_yP_size,
-                axis=0,
-            ).real
-        )
-        return facet_m0_trunc
-
     def calculate_pswf(self):
         """
         Calculate 1D PSWF (prolate-spheroidal wave function) at the
@@ -321,7 +270,7 @@ class StreamingDistributedFFT(BaseParameters):
 
     # facet to subgrid algorithm
     @dask_wrapper
-    def prepare_facet(self, facet, Fb, axis, **kwargs):
+    def prepare_facet(self, facet, facet_off_elem, Fb, axis, **kwargs):
         """
         Calculate the inverse FFT of a padded facet element multiplied by Fb
         (Fb: Fourier transform of grid correction function)
@@ -339,19 +288,16 @@ class StreamingDistributedFFT(BaseParameters):
 
         BF = pad_mid(
             facet * broadcast(Fb, len(facet.shape), axis),
-            self.yP_size,
+            self.yN_size,
             axis,
         )
-        BF = ifft(BF, axis)
-        return BF
+        return ifft(numpy.roll(BF, facet_off_elem, axis=axis), axis)
 
     @dask_wrapper
     def extract_facet_contrib_to_subgrid(
         self,
         BF,
         subgrid_off_elem,
-        facet_m0_trunc,
-        Fn,
         axis,
         **kwargs,
     ):  # pylint: disable=too-many-arguments
@@ -360,7 +306,7 @@ class StreamingDistributedFFT(BaseParameters):
 
         :param BF: TODO: ? prepared facet
         :param subgrid_off_elem: single subgrid offset element
-        :param facet_m0_trunc: mask truncated to a facet (image space)
+        :param facet_off_elem: single subgrid offset element
         :param Fn: Fourier transform of gridding function
         :param axis: axis along which the operations are performed (0 or 1)
         :param kwargs: needs to contain the following if dask is used:
@@ -371,45 +317,20 @@ class StreamingDistributedFFT(BaseParameters):
         """
         dims = len(BF.shape)
 
-        # New-style configuration?
-        if self.yP_size == self.yN_size:
-
-            # In that case we can skip applying m, which simplifies
-            # the whole procedure quite a bit.
-            MBF_sum = roll_and_extract_mid_axis(
-                BF,
-                subgrid_off_elem * self.yP_size // self.N,
+        scaled_subgrid_off_elem = subgrid_off_elem * self.yN_size // self.N
+        return numpy.roll(
+            extract_mid(
+                numpy.roll(BF, -scaled_subgrid_off_elem, axis=axis),
                 self.xM_yN_size,
                 axis,
-            )
-
-        else:
-            BF_mid = roll_and_extract_mid_axis(
-                BF,
-                subgrid_off_elem * self.yP_size // self.N,
-                self.xMxN_yP_size,
-                axis,
-            )
-
-            MBF = broadcast(facet_m0_trunc, dims, axis) * BF_mid
-            MBF_sum = numpy.array(extract_mid(MBF, self.xM_yP_size, axis))
-            xN_yP_size = self.xMxN_yP_size - self.xM_yP_size
-            slc1 = create_slice(
-                slice(None), slice(xN_yP_size // 2), dims, axis
-            )
-            slc2 = create_slice(
-                slice(None), slice(-xN_yP_size // 2, None), dims, axis
-            )
-            MBF_sum[slc1] += MBF[slc2]
-            MBF_sum[slc2] += MBF[slc1]
-
-        return broadcast(Fn, len(BF.shape), axis) * extract_mid(
-            fft(MBF_sum, axis), self.xM_yN_size, axis
+            ),
+            scaled_subgrid_off_elem,
+            axis,
         )
 
     @dask_wrapper
     def add_facet_contribution(
-        self, facet_contrib, facet_off_elem, axis, **kwargs
+        self, facet_contrib, facet_off_elem, Fn, axis, **kwargs
     ):
         """
         Further transforms facet contributions, which then will be summed up.
@@ -423,9 +344,16 @@ class StreamingDistributedFFT(BaseParameters):
 
         :return: TODO??
         """
+
+        scaled_facet_off_elem = facet_off_elem * self.xM_size // self.N
+
+        FNMBF = broadcast(Fn, len(facet_contrib.shape), axis) * numpy.roll(
+            fft(facet_contrib, axis), -scaled_facet_off_elem, axis=axis
+        )
+
         return numpy.roll(
-            pad_mid(facet_contrib, self.xM_size, axis),
-            facet_off_elem * self.xM_size // self.N,
+            pad_mid(FNMBF, self.xM_size, axis),
+            scaled_facet_off_elem,
             axis=axis,
         )
 
@@ -433,6 +361,7 @@ class StreamingDistributedFFT(BaseParameters):
     def finish_subgrid(
         self,
         summed_facets,
+        subgrid_off_elem,
         subgrid_masks=None,
         **kwargs,
     ):
@@ -451,9 +380,22 @@ class StreamingDistributedFFT(BaseParameters):
         tmp = summed_facets
         dims = len(summed_facets.shape)
 
+        if not isinstance(subgrid_off_elem, list):
+            if dims != 1:
+                raise ValueError(
+                    "Subgrid offset must be given for every dimension!"
+                )
+            subgrid_off_elem = [subgrid_off_elem]
+
         # Loop operation over all axes
         for axis in range(dims):
-            tmp = extract_mid(ifft(tmp, axis=axis), self.xA_size, axis=axis)
+            tmp = extract_mid(
+                numpy.roll(
+                    ifft(tmp, axis=axis), -subgrid_off_elem[axis], axis=axis
+                ),
+                self.xA_size,
+                axis=axis,
+            )
 
             # Apply subgrid mask if requested
             if subgrid_masks is not None:
@@ -463,12 +405,13 @@ class StreamingDistributedFFT(BaseParameters):
 
     # subgrid to facet algorithm
     @dask_wrapper
-    def prepare_subgrid(self, subgrid, **kwargs):
+    def prepare_subgrid(self, subgrid, subgrid_off_elem, **kwargs):
         """
         Calculate the FFT of a padded subgrid element.
         No reason to do this per-axis, so always do it for all axes.
 
         :param subgrid: single subgrid array element
+        :param subgrid_off_elem: subgrid offsets (tuple)
         :param kwargs: needs to contain the following if dask is used:
                 use_dask: True
                 nout: <number of function outputs> --> 1
@@ -478,10 +421,25 @@ class StreamingDistributedFFT(BaseParameters):
 
         tmp = subgrid
         dims = len(subgrid.shape)
+        if dims == 1 and not isinstance(subgrid_off_elem, tuple):
+            subgrid_off_elem = (subgrid_off_elem,)
+        if len(subgrid_off_elem) != dims:
+            raise ValueError(
+                "Dimensionality mismatch between subgrid and offsets!"
+            )
 
         # Loop operation over all axes
         for axis in range(dims):
-            tmp = fft(pad_mid(tmp, self.xM_size, axis=axis), axis=axis)
+
+            # Pad & align with global zero modulo xM_size
+            tmp = numpy.roll(
+                pad_mid(tmp, self.xM_size, axis=axis),
+                subgrid_off_elem[axis],
+                axis=axis,
+            )
+
+            # Bring into image space
+            tmp = fft(tmp, axis=axis)
 
         return tmp
 
@@ -492,9 +450,9 @@ class StreamingDistributedFFT(BaseParameters):
         """
         Extract contribution of subgrid to a facet.
 
-        :param Fsi: Padded subgrid in image space
-        :param facet_off_elem: single facet offset element
-        :param Fn: Fourier transform of gridding function
+        :param Fsi: Prepared subgrid in image space (see prepare_facet)
+        :param facet_off_elem: facet offset
+        :param Fn: window function in image space
         :param axis: axis along which the operations are performed (0 or 1)
         :param kwargs: needs to contain the following if dask is used:
                 use_dask: True
@@ -503,33 +461,39 @@ class StreamingDistributedFFT(BaseParameters):
         :return: Contribution of subgrid to facet
 
         """
-        return broadcast(Fn, len(FSi.shape), axis) * extract_mid(
-            numpy.roll(
-                FSi,
-                -facet_off_elem * self.xM_size // self.N,
-                axis,
-            ),
+
+        # Align with image zero in image space
+        FSi = numpy.roll(
+            FSi,
+            -facet_off_elem * self.xM_size // self.N,
+            axis,
+        )
+
+        FNjSi = broadcast(Fn, len(FSi.shape), axis) * extract_mid(
+            FSi,
             self.xM_yN_size,
             axis,
+        )
+
+        return numpy.roll(
+            FNjSi, facet_off_elem * self.xM_size // self.N, axis=axis
         )
 
     # pylint: disable=too-many-arguments
     @dask_wrapper
     def add_subgrid_contribution(
         self,
-        NjSi,
+        subgrid_contrib,
         subgrid_off_elem,
-        facet_m0_trunc,
         axis,
         **kwargs,
     ):
         """
-        Further transform subgrid contributions, which are then summed up.
+        Sum up subgrid contributions to a facet.
 
-        :param dims: length of tuple to be produced by create_slice
-                     (i.e. number of dimensions); int
-        :param NjSi: TODO
-        :param subgrid_off_elem: single subgrid offset element
+        :param subgrid_contrib: Subgrid contribution to this facet (see
+                extract_subgrid_contrib_to_facet)
+        :param subgrid_off_elem: subgrid offset
         :param facet_m0_trunc: mask truncated to a facet (image space)
         :param axis: axis along which operations are performed (0 or 1)
         :param kwargs: needs to contain the following if dask is used:
@@ -540,36 +504,30 @@ class StreamingDistributedFFT(BaseParameters):
 
         """
 
-        # New-style configuration? That again allows us to skip applying m
-        if self.yP_size == self.yN_size:
-            NjSi_temp = ifft(NjSi, axis)
+        # Bring subgrid contribution into frequency space
+        NjSi_temp = ifft(subgrid_contrib, axis)
+        MiNjSi = numpy.roll(
+            NjSi_temp,
+            -subgrid_off_elem * self.yN_size // self.N,
+            axis=axis,
+        )
 
-        else:
-
-            dims = len(NjSi.shape)
-            xN_yP_size = self.xMxN_yP_size - self.xM_yP_size
-            NjSi_mid = ifft(pad_mid(NjSi, self.xM_yP_size, axis), axis)
-            NjSi_temp = pad_mid(NjSi_mid, self.xMxN_yP_size, axis)
-            slc1 = create_slice(
-                slice(None), slice(xN_yP_size // 2), dims, axis
-            )
-            slc2 = create_slice(
-                slice(None), slice(-xN_yP_size // 2, None), dims, axis
-            )
-            NjSi_temp[slc1] = NjSi_mid[slc2]
-            NjSi_temp[slc2] = NjSi_mid[slc1]
-            NjSi_temp = NjSi_temp * broadcast(
-                facet_m0_trunc, len(NjSi.shape), axis
-            )
-
+        # Finally put at the right place in the (full) frequency space
+        # at padded facet resolution
         return numpy.roll(
-            pad_mid(NjSi_temp, self.yP_size, axis),
-            subgrid_off_elem * self.yP_size // self.N,
+            pad_mid(
+                MiNjSi,
+                self.yN_size,
+                axis,
+            ),
+            subgrid_off_elem * self.yN_size // self.N,
             axis=axis,
         )
 
     @dask_wrapper
-    def finish_facet(self, MiNjSi_sum, facet_B_mask_elem, Fb, axis, **kwargs):
+    def finish_facet(
+        self, MiNjSi_sum, facet_off_elem, facet_B_mask_elem, Fb, axis, **kwargs
+    ):
         """
         Obtain finished facet.
 
@@ -578,6 +536,7 @@ class StreamingDistributedFFT(BaseParameters):
         (Fb: Fourier transform of grid correction function)
 
         :param MiNjSi_sum: sum of subgrid contributions to a facet
+        :param facet_off_elem: facet offset
         :param facet_B_mask_elem: a facet mask element
         :param Fb: Fourier transform of grid correction function
         :param axis: axis along which operations are performed (0 or 1)
@@ -588,7 +547,9 @@ class StreamingDistributedFFT(BaseParameters):
         :return: finished (approximate) facet element
         """
         return extract_mid(
-            fft(MiNjSi_sum, axis), self.yB_size, axis
+            numpy.roll(fft(MiNjSi_sum, axis), -facet_off_elem, axis=axis),
+            self.yB_size,
+            axis,
         ) * broadcast(
             Fb * facet_B_mask_elem,
             len(MiNjSi_sum.shape),

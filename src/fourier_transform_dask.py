@@ -82,8 +82,13 @@ def _generate_subgrid_contributions(
     for i0, i1 in itertools.product(
         range(distr_fft_class.nsubgrid), range(distr_fft_class.nsubgrid)
     ):
+        subgrid_offs = (
+            distr_fft_class.subgrid_off[i0],
+            distr_fft_class.subgrid_off[i1],
+        )
         AF_AF = distr_fft_class.prepare_subgrid(
             subgrid_2[i0][i1],
+            subgrid_offs,
             use_dask=use_dask,
             nout=1,
         )
@@ -191,6 +196,7 @@ def subgrid_to_facet_algorithm(
             NAF_BMNAF = distr_fft_class.finish_facet(
                 NAF_MNAF,
                 base_arrays.facet_B[j1],
+                distr_fft_class.facet_off[j1],
                 base_arrays.Fb,
                 axis=1,
                 use_dask=use_dask,
@@ -223,6 +229,7 @@ def subgrid_to_facet_algorithm(
         approx_facet[j0][j1] = distr_fft_class.finish_facet(
             MNAF_BMNAF,
             base_arrays.facet_B[j0],
+            distr_fft_class.facet_off[j0],
             base_arrays.Fb,
             axis=0,
             use_dask=use_dask,
