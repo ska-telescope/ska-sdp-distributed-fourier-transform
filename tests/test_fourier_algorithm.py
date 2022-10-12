@@ -8,15 +8,17 @@ import dask
 import numpy
 import pytest
 
-from src.fourier_transform.algorithm_parameters import BaseArrays
-from src.fourier_transform.fourier_algorithm import (
-    _ith_subgrid_facet_element,
+from ska_sdp_exec_swiftly.fourier_transform.algorithm_parameters import (
+    BaseArrays,
+)
+from ska_sdp_exec_swiftly.fourier_transform.fourier_algorithm import (
     broadcast,
     coordinates,
     create_slice,
     extract_mid,
     fft,
     ifft,
+    ith_subgrid_facet_element,
     make_facet_from_sources,
     make_subgrid_and_facet_from_sources,
     make_subgrid_from_sources,
@@ -513,7 +515,7 @@ def test_ith_subgrid_facet_element_axis_int(use_dask):
     true_size = 5
     mask = [0, 0, 1, 1, 1]  # length of mask = true_size
 
-    result = _ith_subgrid_facet_element(
+    result = ith_subgrid_facet_element(
         image, offset, true_size, mask, axis=0, use_dask=use_dask, nout=1
     )
     if use_dask:
@@ -555,7 +557,7 @@ def test_ith_subgrid_facet_element_axis_tuple(use_dask):
     true_size = 2
     mask = numpy.array([[0, 0], [0, 1]])
 
-    result = _ith_subgrid_facet_element(
+    result = ith_subgrid_facet_element(
         image, offset, true_size, mask, axis=(0, 1), use_dask=use_dask, nout=1
     )
     if use_dask:
@@ -845,7 +847,6 @@ def test_make_subgrid_and_facet_from_sources_function():
     Test the function make_facet_and_subgrid_from_sources
     """
 
-
     TEST_PARAMS = {
         "W": 13.5625,
         "fov": 1.0,
@@ -855,9 +856,9 @@ def test_make_subgrid_and_facet_from_sources_function():
         "xA_size": 228,
         "xM_size": 256,
     }
-    image_size = TEST_PARAMS['N']
-    xA_size = TEST_PARAMS['xA_size']
-    yB_size = TEST_PARAMS['yB_size']
+    image_size = TEST_PARAMS["N"]
+    xA_size = TEST_PARAMS["xA_size"]
+    yB_size = TEST_PARAMS["yB_size"]
 
     base_arrays = BaseArrays(**TEST_PARAMS)
 

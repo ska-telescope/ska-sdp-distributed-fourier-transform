@@ -20,8 +20,9 @@ import numpy
 import scipy.signal
 import scipy.special
 
-from src.fourier_transform.dask_wrapper import dask_wrapper
-from src.fourier_transform.fourier_algorithm import (
+from ska_sdp_exec_swiftly.dask_wrapper import dask_wrapper
+
+from .fourier_algorithm import (
     broadcast,
     coordinates,
     extract_mid,
@@ -69,6 +70,9 @@ class BaseParameters:
         self.xA_size = fundamental_constants["xA_size"]
         self.xM_size = fundamental_constants["xM_size"]
         self.yN_size = fundamental_constants["yN_size"]
+
+        self.subgrid_off_step = self.Nx
+        self.facet_off_step = self.N // self.Nx
 
         self.check_params()
 
@@ -561,12 +565,22 @@ class StreamingDistributedFFT(BaseParameters):
 
         :return: finished (approximate) facet element
         """
-        return extract_mid(
+
+        if facet_B_mask_elem is not None:
+            facet_mask = broadcast(
+                Fb * facet_B_mask_elem,
+                len(MiNjSi_sum.shape),
+                axis,
+            )
+        else:
+            facet_mask = broadcast(
+                Fb,
+                len(MiNjSi_sum.shape),
+                axis,
+            )
+
+        return facet_mask * extract_mid(
             numpy.roll(fft(MiNjSi_sum, axis), -facet_off_elem, axis=axis),
             self.yB_size,
-            axis,
-        ) * broadcast(
-            Fb * facet_B_mask_elem,
-            len(MiNjSi_sum.shape),
             axis,
         )

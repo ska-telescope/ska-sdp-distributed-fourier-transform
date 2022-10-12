@@ -7,16 +7,17 @@ import itertools
 import numpy
 import pytest
 
-from src.fourier_transform.algorithm_parameters import (
+from ska_sdp_exec_swiftly.fourier_transform.algorithm_parameters import (
     BaseArrays,
     BaseParameters,
     StreamingDistributedFFT,
 )
-from src.fourier_transform.fourier_algorithm import (
+from ska_sdp_exec_swiftly.fourier_transform.fourier_algorithm import (
     make_facet_from_sources,
     make_subgrid_from_sources,
 )
-from tests.test_integration_fourier_transform import TEST_PARAMS
+
+from .test_integration_fourier_transform import TEST_PARAMS
 
 
 def test_base_params_fundamental():
@@ -27,7 +28,7 @@ def test_base_params_fundamental():
     result = BaseParameters(**TEST_PARAMS)
 
     for k, v in TEST_PARAMS.items():
-        assert result.__getattribute__(k) == v
+        assert getattr(result, k) == v
 
 
 def test_base_params_derived():
@@ -47,7 +48,7 @@ def test_base_params_derived():
     result = BaseParameters(**TEST_PARAMS)
 
     for k, v in expected_derived.items():
-        assert result.__getattribute__(k) == v
+        assert getattr(result, k) == v
 
     assert (result.facet_off == expected_facet_off).all()
     assert (result.subgrid_off == expected_subgrid_off).all()

@@ -15,20 +15,19 @@ import dask
 import dask.array
 import dask.distributed
 import numpy
+from distributed import performance_report
 from distributed.diagnostics import MemorySampler
+from utils import human_readable_size, write_network_transfer_info
 
-from scripts.utils import human_readable_size, write_network_transfer_info
-from src.fourier_transform.algorithm_parameters import (
+from ska_sdp_exec_swiftly import (
+    SWIFT_CONFIGS,
     BaseArrays,
     StreamingDistributedFFT,
-)
-from src.fourier_transform.dask_wrapper import set_up_dask
-from src.fourier_transform.fourier_algorithm import (
+    cli_parser,
     make_facet_from_sources,
     make_subgrid_from_sources,
+    set_up_dask,
 )
-from src.fourier_transform_dask import cli_parser
-from src.swift_configs import SWIFT_CONFIGS
 
 log = logging.getLogger("fourier-logger")
 log.setLevel(logging.INFO)
@@ -56,7 +55,7 @@ def wait_for_tasks(work_tasks, timeout=None, return_when="ALL_COMPLETED"):
     for name, task in work_tasks:
         if task.done():
             # If there's "{}" in the name, we should retrieve the
-            # result and include it in the mesage.
+            # result and include it in the message.
             if "{}" in name:
                 log.info("%s", str(name.format(task.result())))
             else:
@@ -216,6 +215,8 @@ def run_distributed_fft(
     :param fundamental_params: dictionary of fundamental parmeters
                                chosen from swift_configs.py
     :param client: Dask client or None
+    :param max_work_tasks: Number of work tasks to execute the program
+                           (this corresponds to the queue sizes)
 
     :returns: memory profile
     """
@@ -562,12 +563,15 @@ def main(args):
 
     for config_key in swift_config_keys:
         log.info("Running for swift-config: %s", config_key)
-        ms_df = run_distributed_fft(
-            SWIFT_CONFIGS[config_key],
-            args.queue_size,
-            client=dask_client,
-        )
-        ms_df.to_csv(f"ms_{config_key}.csv")
+        with performance_report(
+            filename=f"dask_report_{config_key}_{args.queue_size}.html"
+        ):
+            ms_df = run_distributed_fft(
+                SWIFT_CONFIGS[config_key],
+                args.queue_size,
+                client=dask_client,
+            )
+            ms_df.to_csv(f"ms_{config_key}_{args.queue_size}.csv")
 
         dict_outgoing = dask_client.run(
             lambda dask_worker: dask_worker.outgoing_transfer_log
