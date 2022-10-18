@@ -81,11 +81,11 @@ def check_subgrid(N, sg_off0, sg_A0, sg_off1, sg_A1, approx_subgrid, sources):
 def sum_and_finish_subgrid(
     distributedFFT,
     NMBF_NMBF_tasks,
+    Fn,
     facets_config_list,
-    subgrid_mask0,
-    subgrid_mask1,
+    subgrid_config,
 ):
-    """sum faect contribution and finsh subgrid"""
+    """sum facet contribution and finsh subgrid"""
     # Initialise facet sum
     summed_facet = numpy.zeros(
         (distributedFFT.xM_size, distributedFFT.xM_size), dtype=complex
@@ -94,12 +94,15 @@ def sum_and_finish_subgrid(
     for facets_config, NMBF_NMBF in zip(facets_config_list, NMBF_NMBF_tasks):
         summed_facet += distributedFFT.add_facet_contribution(
             distributedFFT.add_facet_contribution(
-                NMBF_NMBF, facets_config.off0, axis=0
+                NMBF_NMBF, facets_config.off0, Fn, axis=0
             ),
             facets_config.off1,
+            Fn,
             axis=1,
         )
     # Finish
+    subgrid_mask0 = subgrid_config.mask0
+    subgrid_mask1 = subgrid_config.mask1
     if (subgrid_mask0 is not None) and (subgrid_mask1 is not None):
         if isinstance(subgrid_mask0, list) and isinstance(subgrid_mask1, list):
             subgrid_mask0 = make_mask_from_slice(
@@ -110,19 +113,23 @@ def sum_and_finish_subgrid(
             )
         approx_subgrid = distributedFFT.finish_subgrid(
             summed_facet,
+            [subgrid_config.off0, subgrid_config.off1],
             [subgrid_mask0, subgrid_mask1],
         )
     else:
         approx_subgrid = distributedFFT.finish_subgrid(
             summed_facet,
+            [subgrid_config.off0, subgrid_config.off1],
         )
     return approx_subgrid
 
 
-def prepare_and_split_subgrid(distributedFFT, Fn, facets_config_list, subgrid):
+def prepare_and_split_subgrid(
+    distributedFFT, subgrid, Fn, subgrid_offs, facets_config_list
+):
     """prepare NAF_NAF"""
     # Prepare subgrid
-    prepared_subgrid = distributedFFT.prepare_subgrid(subgrid)
+    prepared_subgrid = distributedFFT.prepare_subgrid(subgrid, subgrid_offs)
 
     # Extract subgrid facet contributions
 
@@ -143,9 +150,7 @@ def prepare_and_split_subgrid(distributedFFT, Fn, facets_config_list, subgrid):
     return NAF_NAFs
 
 
-def accumulate_column(
-    distributedFFT, NAF_NAF, NAF_MNAF, facet_m0_trunc, subgrid_off1
-):
+def accumulate_column(distributedFFT, NAF_NAF, NAF_MNAF, subgrid_off1):
     """update NAF_MNAF"""
     # TODO: add_subgrid_contribution should add
     # directly to NAF_MNAF here at some point.
@@ -153,13 +158,11 @@ def accumulate_column(
         return distributedFFT.add_subgrid_contribution(
             NAF_NAF,
             subgrid_off1,
-            facet_m0_trunc,
             axis=1,
         )
     return NAF_MNAF + distributedFFT.add_subgrid_contribution(
         NAF_NAF,
         subgrid_off1,
-        facet_m0_trunc,
         axis=1,
     )
 
@@ -169,34 +172,37 @@ def accumulate_facet(
     NAF_MNAF,
     MNAF_BMNAF,
     Fb,
-    facet_m0_trunc,
+    facet_off1,
     facet_mask1,
-    off0,
+    sg_off0,
 ):
     """update MNAF_BMNAF"""
     if isinstance(facet_mask1, list):
         facet_mask1 = make_mask_from_slice(facet_mask1[0], facet_mask1[1])
 
-    NAF_BMNAF = distributedFFT.finish_facet(NAF_MNAF, facet_mask1, Fb, axis=1)
+    NAF_BMNAF = distributedFFT.finish_facet(
+        NAF_MNAF, facet_off1, facet_mask1, Fb, axis=1
+    )
     if MNAF_BMNAF is None:
         return distributedFFT.add_subgrid_contribution(
-            NAF_BMNAF, off0, facet_m0_trunc, axis=0
+            NAF_BMNAF, sg_off0, axis=0
         )
     # TODO: add_subgrid_contribution should add
     # directly to NAF_MNAF here at some point.
     MNAF_BMNAF = MNAF_BMNAF + distributedFFT.add_subgrid_contribution(
-        NAF_BMNAF, off0, facet_m0_trunc, axis=0
+        NAF_BMNAF, sg_off0, axis=0
     )
     return MNAF_BMNAF
 
 
-def finish_facet(distriFFT, MNAF_BMNAF, Fb, facet_mask0):
+def finish_facet(distriFFT, MNAF_BMNAF, facet_off0, facet_mask0, Fb):
     """wrapper of finish_facet"""
     if MNAF_BMNAF is not None:
         if isinstance(facet_mask0, list):
             facet_mask0 = make_mask_from_slice(facet_mask0[0], facet_mask0[1])
         approx_facet = distriFFT.finish_facet(
             MNAF_BMNAF,
+            facet_off0,
             facet_mask0,
             Fb,
             axis=0,
@@ -208,18 +214,15 @@ def finish_facet(distriFFT, MNAF_BMNAF, Fb, facet_mask0):
     return approx_facet
 
 
-def extract_column(
-    distriFFT, BF_F, Fn_task, Fb_task, facet_m0_trunc_task, subgrid_off0
-):
+def extract_column(distriFFT, BF_F, Fb_task, subgrid_off0, facet_off1):
     """extract column task"""
     return distriFFT.prepare_facet(
         distriFFT.extract_facet_contrib_to_subgrid(
             BF_F,
             subgrid_off0,
-            facet_m0_trunc_task,
-            Fn_task,
             axis=0,
         ),
+        facet_off1,
         Fb_task,
         axis=1,
     )

@@ -387,7 +387,7 @@ class StreamingDistributedFFT(BaseParameters):
         """
         Obtain finished subgrid. Operation performed for all axes.
 
-        :param summed_facets: summed facets contributing to thins subgrid
+        :param summed_facets: summed facets contributing to this subgrid
         :param subgrid_masks: subgrid mask per axis (optional)
         :param kwargs: needs to contain the following if dask is used:
                 use_dask: True

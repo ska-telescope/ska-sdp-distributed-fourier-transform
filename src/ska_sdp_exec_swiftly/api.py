@@ -100,9 +100,6 @@ class SwiftlyForward:
         self.Fb_task = self.core_config.dask_client.scatter(
             self.core_config.base_arrays.Fb, broadcast=True
         )
-        self.facet_m0_trunc_task = self.core_config.dask_client.scatter(
-            self.core_config.base_arrays.facet_m0_trunc, broadcast=True
-        )
         self.Fn_task = self.core_config.dask_client.scatter(
             self.core_config.base_arrays.Fn, broadcast=True
         )
@@ -143,8 +140,6 @@ class SwiftlyForward:
             self.core_config.distriFFT.extract_facet_contrib_to_subgrid(
                 NMBF_BF,
                 subgrid_config.off1,
-                self.facet_m0_trunc_task,
-                self.Fn_task,
                 axis=1,
                 use_dask=True,
                 nout=1,
@@ -155,9 +150,9 @@ class SwiftlyForward:
         subgrid_task = dask.delayed(sum_and_finish_subgrid)(
             self.distriFFT_obj_task,
             NMBF_NMBF_tasks,
+            self.Fn_task,
             [facet_config for facet_config, _ in self.facet_tasks],
-            subgrid_config.mask0,
-            subgrid_config.mask1,
+            subgrid_config,
         )
 
         return subgrid_task
@@ -172,12 +167,13 @@ class SwiftlyForward:
                 [
                     self.core_config.distriFFT.prepare_facet(
                         facet_data,
+                        facet.off0,
                         self.Fb_task,
                         axis=0,
                         use_dask=True,
                         nout=1,
                     )
-                    for _, facet_data in self.facet_tasks
+                    for facet, facet_data in self.facet_tasks
                 ]
             )[0]
 
@@ -199,12 +195,11 @@ class SwiftlyForward:
                     dask.delayed(extract_column)(
                         self.distriFFT_obj_task,
                         BF_F,
-                        self.Fn_task,
                         self.Fb_task,
-                        self.facet_m0_trunc_task,
                         off0,
+                        facet.off1,
                     )
-                    for BF_F in BF_Fs
+                    for (facet, _), BF_F in zip(self.facet_tasks, BF_Fs)
                 ]
             )[0]
             self.lru.set(off0, NMBF_BFs)
@@ -226,9 +221,6 @@ class SwiftlyBackward:
 
         self.Fb_task = self.core_config.dask_client.scatter(
             self.core_config.base_arrays.Fb, broadcast=True
-        )
-        self.facet_m0_trunc_task = self.core_config.dask_client.scatter(
-            self.core_config.base_arrays.facet_m0_trunc, broadcast=True
         )
         self.Fn_task = self.core_config.dask_client.scatter(
             self.core_config.base_arrays.Fn, broadcast=True
@@ -258,9 +250,10 @@ class SwiftlyBackward:
             prepare_and_split_subgrid, nout=len(self.MNAF_BMNAFs_persist)
         )(
             self.distriFFT_obj_task,
-            self.Fn_task,
-            self.facets_config_list,
             new_subgrid_task,
+            self.Fn_task,
+            [off0, off1],
+            self.facets_config_list,
         )
 
         task_finished = self.update_off0_NAF_MNAFs(off0, off1, NAF_NAF_tasks)
@@ -288,8 +281,9 @@ class SwiftlyBackward:
             dask.delayed(finish_facet)(
                 self.distriFFT_obj_task,
                 MNAF_BMNAF,
-                self.Fb_task,
+                facet_config.off0,
                 facet_config.mask0,
+                self.Fb_task,
             )
             for facet_config, MNAF_BMNAF in zip(
                 self.facets_config_list, self.MNAF_BMNAFs_persist
@@ -321,7 +315,6 @@ class SwiftlyBackward:
                     self.distriFFT_obj_task,
                     new_NAF_NAF,
                     old_NAF_MNAF,
-                    self.facet_m0_trunc_task,
                     off1,
                 )
                 for new_NAF_NAF, old_NAF_MNAF in zip(
@@ -344,7 +337,7 @@ class SwiftlyBackward:
     def update_MNAF_BMNAFs(self, off0, new_NAF_MNAFs):
         """update MNAF_BMNAFs
 
-        :param off0: off0
+        :param off0: x offset of subgrid column
         :param new_NAF_MNAFs: new NAF_MNAF tasks
         :return: updated MNAF_BMNAFs
         """
@@ -355,7 +348,7 @@ class SwiftlyBackward:
                     new_NAF_MNAF,
                     MNAF_BMNAFs,
                     self.Fb_task,
-                    self.facet_m0_trunc_task,
+                    facet_config.off1,
                     facet_config.mask1,
                     off0,
                 )
