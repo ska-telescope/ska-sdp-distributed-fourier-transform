@@ -260,18 +260,24 @@ class BaseArrays(BaseParameters):
         alpha = 0
 
         # pylint: disable=no-member
-        pswf = scipy.special.pro_ang1(
-            alpha,
-            alpha,
-            numpy.pi * self.W / 2,
-            2 * coordinates(self.yN_size),
-        )[0]
+        pswf = numpy.empty(self.yN_size, dtype=float)
+        coords = 2 * coordinates(self.yN_size)
+
+        # Work around segfault that happens if we ask for large arrays.
+        # 500 seems to be (precisely?!) the size of the largest array we
+        # can safely fill.
+        step = 500
+        for i in range(1, self.yN_size, step):
+            pswf[i : i + step] = scipy.special.pro_ang1(
+                alpha,
+                alpha,
+                numpy.pi * self.W / 2,
+                coords[i : i + step],
+            )[0]
         pswf[0] = 0  # zap NaN
 
-        pswf = pswf.real
-        pswf /= numpy.prod(
-            numpy.arange(2 * alpha - 1, 0, -2, dtype=float)
-        )  # double factorial
+        # Normalise (double factorial of alpha)
+        pswf /= numpy.prod(numpy.arange(2 * alpha - 1, 0, -2, dtype=float))
 
         return pswf
 
