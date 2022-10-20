@@ -20,8 +20,6 @@ import numpy
 import scipy.signal
 import scipy.special
 
-from ska_sdp_exec_swiftly.dask_wrapper import dask_wrapper
-
 from .fourier_algorithm import (
     broadcast,
     coordinates,
@@ -295,8 +293,7 @@ class StreamingDistributedFFT(BaseParameters):
     """
 
     # facet to subgrid algorithm
-    @dask_wrapper
-    def prepare_facet(self, facet, facet_off_elem, Fb, axis, **kwargs):
+    def prepare_facet(self, facet, facet_off_elem, Fb, axis):
         """
         Calculate the inverse FFT of a padded facet element multiplied by Fb
         (Fb: Fourier transform of grid correction function)
@@ -305,9 +302,6 @@ class StreamingDistributedFFT(BaseParameters):
         :param Fb: Fourier transform of grid correction function
         :param axis: axis along which operations are performed (0 or 1)
         :param chunk: using chunk mode or not
-        :param kwargs: needs to contain the following if dask is used:
-                use_dask: True
-                nout: <number of function outputs> --> 1
 
         :return: TODO: BF? prepared facet
         """
@@ -319,13 +313,8 @@ class StreamingDistributedFFT(BaseParameters):
         )
         return ifft(numpy.roll(BF, facet_off_elem, axis=axis), axis)
 
-    @dask_wrapper
     def extract_facet_contrib_to_subgrid(
-        self,
-        BF,
-        subgrid_off_elem,
-        axis,
-        **kwargs,
+        self, BF, subgrid_off_elem, axis
     ):  # pylint: disable=too-many-arguments
         """
         Extract the facet contribution to a subgrid.
@@ -335,9 +324,6 @@ class StreamingDistributedFFT(BaseParameters):
         :param facet_off_elem: single subgrid offset element
         :param Fn: Fourier transform of gridding function
         :param axis: axis along which the operations are performed (0 or 1)
-        :param kwargs: needs to contain the following if dask is used:
-                use_dask: True
-                nout: <number of function outputs> --> 1
 
         :return: contribution of facet to subgrid
         """
@@ -353,19 +339,13 @@ class StreamingDistributedFFT(BaseParameters):
             axis,
         )
 
-    @dask_wrapper
-    def add_facet_contribution(
-        self, facet_contrib, facet_off_elem, Fn, axis, **kwargs
-    ):
+    def add_facet_contribution(self, facet_contrib, facet_off_elem, Fn, axis):
         """
         Further transforms facet contributions, which then will be summed up.
 
         :param facet_contrib: array-chunk of individual facet contributions
         :param facet_off_elem: facet offset for the facet_contrib array chunk
         :param axis: axis along which the operations are performed (0 or 1)
-        :param kwargs: needs to contain the following if dask is used:
-                use_dask: True
-                nout: <number of function outputs> --> 1
 
         :return: TODO??
         """
@@ -382,22 +362,14 @@ class StreamingDistributedFFT(BaseParameters):
             axis=axis,
         )
 
-    @dask_wrapper
     def finish_subgrid(
-        self,
-        summed_facets,
-        subgrid_off_elem,
-        subgrid_masks=None,
-        **kwargs,
+        self, summed_facets, subgrid_off_elem, subgrid_masks=None
     ):
         """
         Obtain finished subgrid. Operation performed for all axes.
 
         :param summed_facets: summed facets contributing to this subgrid
         :param subgrid_masks: subgrid mask per axis (optional)
-        :param kwargs: needs to contain the following if dask is used:
-                use_dask: True
-                nout: <number of function outputs> --> 1
 
         :return: approximate subgrid element
         """
@@ -429,17 +401,13 @@ class StreamingDistributedFFT(BaseParameters):
         return tmp
 
     # subgrid to facet algorithm
-    @dask_wrapper
-    def prepare_subgrid(self, subgrid, subgrid_off_elem, **kwargs):
+    def prepare_subgrid(self, subgrid, subgrid_off_elem):
         """
         Calculate the FFT of a padded subgrid element.
         No reason to do this per-axis, so always do it for all axes.
 
         :param subgrid: single subgrid array element
         :param subgrid_off_elem: subgrid offsets (tuple)
-        :param kwargs: needs to contain the following if dask is used:
-                use_dask: True
-                nout: <number of function outputs> --> 1
 
         :return: Padded subgrid in image space
         """
@@ -468,10 +436,7 @@ class StreamingDistributedFFT(BaseParameters):
 
         return tmp
 
-    @dask_wrapper
-    def extract_subgrid_contrib_to_facet(
-        self, FSi, facet_off_elem, Fn, axis, **kwargs
-    ):
+    def extract_subgrid_contrib_to_facet(self, FSi, facet_off_elem, Fn, axis):
         """
         Extract contribution of subgrid to a facet.
 
@@ -479,9 +444,6 @@ class StreamingDistributedFFT(BaseParameters):
         :param facet_off_elem: facet offset
         :param Fn: window function in image space
         :param axis: axis along which the operations are performed (0 or 1)
-        :param kwargs: needs to contain the following if dask is used:
-                use_dask: True
-                nout: <number of function outputs> --> 1
 
         :return: Contribution of subgrid to facet
 
@@ -505,13 +467,11 @@ class StreamingDistributedFFT(BaseParameters):
         )
 
     # pylint: disable=too-many-arguments
-    @dask_wrapper
     def add_subgrid_contribution(
         self,
         subgrid_contrib,
         subgrid_off_elem,
         axis,
-        **kwargs,
     ):
         """
         Sum up subgrid contributions to a facet.
@@ -521,9 +481,6 @@ class StreamingDistributedFFT(BaseParameters):
         :param subgrid_off_elem: subgrid offset
         :param facet_m0_trunc: mask truncated to a facet (image space)
         :param axis: axis along which operations are performed (0 or 1)
-        :param kwargs: needs to contain the following if dask is used:
-                use_dask: True
-                nout: <number of function outputs> --> 1
 
         :return summed subgrid contributions
 
@@ -549,9 +506,8 @@ class StreamingDistributedFFT(BaseParameters):
             axis=axis,
         )
 
-    @dask_wrapper
     def finish_facet(
-        self, MiNjSi_sum, facet_off_elem, facet_B_mask_elem, Fb, axis, **kwargs
+        self, MiNjSi_sum, facet_off_elem, facet_B_mask_elem, Fb, axis
     ):
         """
         Obtain finished facet.
@@ -565,9 +521,6 @@ class StreamingDistributedFFT(BaseParameters):
         :param facet_B_mask_elem: a facet mask element
         :param Fb: Fourier transform of grid correction function
         :param axis: axis along which operations are performed (0 or 1)
-        :param kwargs: needs to contain the following if dask is used:
-                use_dask: True
-                nout: <number of function outputs> --> 1
 
         :return: finished (approximate) facet element
         """

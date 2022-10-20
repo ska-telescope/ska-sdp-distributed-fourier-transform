@@ -22,11 +22,11 @@ from ska_sdp_exec_swiftly import (
     SwiftlyConfig,
     SwiftlyForward,
     check_facet,
-    cli_parser,
     make_facet,
     make_full_subgrid_cover,
-    set_up_dask,
 )
+
+from .utils import cli_parser
 
 log = logging.getLogger("fourier-logger")
 log.setLevel(logging.INFO)
@@ -273,7 +273,8 @@ def main(args):
     numpy.random.seed(123456789)
 
     scheduler = os.environ.get("DASK_SCHEDULER", None)
-    dask_client = set_up_dask(scheduler_address=scheduler)
+    dask_client = dask.distributed.Client(scheduler)
+    log.info(dask_client.dashboard_link)
 
     swift_config_keys = args.swift_config.split(",")
     for c in swift_config_keys:

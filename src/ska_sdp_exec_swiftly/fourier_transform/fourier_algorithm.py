@@ -9,8 +9,6 @@ import dask
 import h5py
 import numpy
 
-from ska_sdp_exec_swiftly.dask_wrapper import dask_wrapper
-
 
 def create_slice(fill_val, axis_val, dims, axis):
     """
@@ -144,7 +142,6 @@ def coordinates(n):
     return numpy.mgrid[-n2 : n2 + 1] / n
 
 
-@dask_wrapper
 def ith_subgrid_facet_element(
     true_image, offset_i, true_usable_size, mask_element, axis=(0, 1), **kwargs
 ):  # pylint: disable=unused-argument
@@ -379,7 +376,6 @@ def roll_and_extract_mid_axis(data, offset, true_usable_size, axis):
 
 
 # pylint: disable=too-many-locals,unused-argument
-@dask_wrapper
 def _ith_subgrid_facet_element_from_hdf5(
     hdf5_file, dataset_name, offset_i, base_arrays, idx0, idx1, **kwargs
 ):

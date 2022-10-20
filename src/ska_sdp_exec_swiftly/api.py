@@ -91,6 +91,7 @@ class SwiftlyForward:
         facet_tasks,
         lru_forward=1,
         queue_size=20,
+        client=None,
     ):
         self.core_config = swiftly_config
         self.facet_tasks = facet_tasks
@@ -107,7 +108,8 @@ class SwiftlyForward:
             self.core_config.distriFFT, broadcast=True
         )
 
-        self.task_queue = TaskQueue(queue_size)
+        self._client = client or dask.distributed.Client.current()
+        self.task_queue = TaskQueue(queue_size, self._client)
 
         self.lru = LRUCache(lru_forward)
 
@@ -137,12 +139,12 @@ class SwiftlyForward:
         :return: subgrid task
         """
         NMBF_NMBF_tasks = [
-            self.core_config.distriFFT.extract_facet_contrib_to_subgrid(
+            dask.delayed(
+                self.core_config.distriFFT.extract_facet_contrib_to_subgrid
+            )(
                 NMBF_BF,
                 subgrid_config.off1,
                 axis=1,
-                use_dask=True,
-                nout=1,
             )
             for NMBF_BF in NMBF_BFs_off0
         ]
@@ -163,19 +165,17 @@ class SwiftlyForward:
         :return: BF_F dict
         """
         if self.BF_Fs_persist is None:
-            self.BF_Fs_persist = dask.persist(
+            self.BF_Fs_persist = self._client.persist(
                 [
-                    self.core_config.distriFFT.prepare_facet(
+                    dask.delayed(self.core_config.distriFFT.prepare_facet)(
                         facet_data,
                         facet.off0,
                         self.Fb_task,
                         axis=0,
-                        use_dask=True,
-                        nout=1,
                     )
                     for facet, facet_data in self.facet_tasks
                 ]
-            )[0]
+            )
 
         return self.BF_Fs_persist
 
@@ -190,7 +190,7 @@ class SwiftlyForward:
         NMBF_BFs = self.lru.get(off0)
 
         if NMBF_BFs is None:
-            NMBF_BFs = dask.persist(
+            NMBF_BFs = self._client.persist(
                 [
                     dask.delayed(extract_column)(
                         self.distriFFT_obj_task,
@@ -201,7 +201,7 @@ class SwiftlyForward:
                     )
                     for (facet, _), BF_F in zip(self.facet_tasks, BF_Fs)
                 ]
-            )[0]
+            )
             self.lru.set(off0, NMBF_BFs)
 
         return NMBF_BFs
@@ -216,6 +216,7 @@ class SwiftlyBackward:
         facets_config_list,
         lru_backward=1,
         queue_size=20,
+        client=None,
     ) -> None:
         self.core_config = swiftly_config
 
@@ -233,7 +234,8 @@ class SwiftlyBackward:
 
         self.MNAF_BMNAFs_persist = [None for _ in self.facets_config_list]
 
-        self.task_queue = TaskQueue(queue_size)
+        self._client = client or dask.distributed.Client.current()
+        self.task_queue = TaskQueue(queue_size, self._client)
         self.lru = LRUCache(lru_backward)
 
     def add_new_subgrid_task(self, subgrid_config, new_subgrid_task):
@@ -309,7 +311,7 @@ class SwiftlyBackward:
         if old_NAF_NAF_tasks is None:
             old_NAF_NAF_tasks = [None for _ in self.facets_config_list]
 
-        new_NAF_MNAFs = dask.persist(
+        new_NAF_MNAFs = self._client.persist(
             [
                 dask.delayed(accumulate_column)(
                     self.distriFFT_obj_task,
@@ -321,7 +323,7 @@ class SwiftlyBackward:
                     new_NAF_NAF_tasks, old_NAF_NAF_tasks
                 )
             ]
-        )[0]
+        )
 
         return_task = [new_NAF_MNAFs]
         oldest_off0, oldest_NAF_MNAFs = self.lru.set(off0, new_NAF_MNAFs)
@@ -341,7 +343,7 @@ class SwiftlyBackward:
         :param new_NAF_MNAFs: new NAF_MNAF tasks
         :return: updated MNAF_BMNAFs
         """
-        self.MNAF_BMNAFs_persist = dask.persist(
+        self.MNAF_BMNAFs_persist = self._client.persist(
             [
                 dask.delayed(accumulate_facet)(
                     self.distriFFT_obj_task,
@@ -358,20 +360,21 @@ class SwiftlyBackward:
                     self.MNAF_BMNAFs_persist,
                 )
             ]
-        )[0]
+        )
         return self.MNAF_BMNAFs_persist
 
 
 class TaskQueue:
     """Task Queue Class"""
 
-    def __init__(self, max_task):
+    def __init__(self, max_task, client):
         """
         Initialize task queue
         :param max_task: max queue size
         """
         self.task_queue = []
         self.max_task = max_task
+        self._client = client
 
     def process(self, task_list):
         """process in queue
@@ -393,12 +396,14 @@ class TaskQueue:
 
         if isinstance(task_list[0], list):
             for one_task_list in task_list:
-                handle_task_list = dask.compute(one_task_list, sync=False)[0]
+                handle_task_list = self._client.compute(
+                    one_task_list, sync=False
+                )
                 for handle_task in handle_task_list:
                     self.task_queue.append(handle_task)
 
         else:
-            handle_task_list = dask.compute(task_list, sync=False)[0]
+            handle_task_list = self._client.compute(task_list, sync=False)
             for handle_task in handle_task_list:
                 self.task_queue.append(handle_task)
 

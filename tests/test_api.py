@@ -7,6 +7,13 @@ import random
 
 import dask
 import pytest
+from distributed.utils_test import (  # noqa: F401,E501; pylint: disable=unused-import
+    cleanup,
+    client,
+    cluster_fixture,
+    loop,
+    loop_in_thread,
+)
 
 from ska_sdp_exec_swiftly import (
     SwiftlyBackward,
@@ -16,7 +23,6 @@ from ska_sdp_exec_swiftly import (
     make_facet,
     make_full_facet_cover,
     make_full_subgrid_cover,
-    set_up_dask,
 )
 
 log = logging.getLogger("fourier-logger")
@@ -51,9 +57,14 @@ TEST_PARAMS = {
         (200, 1, 2, False),
     ],
 )
-def test_swiftly_api(queue_size, lru_forward, lru_backward, shuffle):
+def test_swiftly_api(
+    client,  # noqa: F811
+    queue_size,
+    lru_forward,
+    lru_backward,
+    shuffle,
+):  # pylint: disable=redefined-outer-name
     """test major with api"""
-    client = set_up_dask()
 
     sources = [(1, 1, 0)]
     swiftlyconfig = SwiftlyConfig(**TEST_PARAMS)
@@ -77,9 +88,11 @@ def test_swiftly_api(queue_size, lru_forward, lru_backward, shuffle):
         for facet_config in facets_config_list
     ]
 
-    fwd = SwiftlyForward(swiftlyconfig, facet_tasks, lru_forward, queue_size)
+    fwd = SwiftlyForward(
+        swiftlyconfig, facet_tasks, lru_forward, queue_size, client
+    )
     bwd = SwiftlyBackward(
-        swiftlyconfig, facets_config_list, lru_backward, queue_size
+        swiftlyconfig, facets_config_list, lru_backward, queue_size, client
     )
     if shuffle:
 
@@ -121,5 +134,3 @@ def test_swiftly_api(queue_size, lru_forward, lru_backward, shuffle):
             error,
         )
         assert error < 3e-10
-
-    client.close()
