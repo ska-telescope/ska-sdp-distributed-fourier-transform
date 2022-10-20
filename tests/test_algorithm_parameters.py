@@ -126,8 +126,8 @@ def test_facet_to_subgrid_basic():
     dft = StreamingDistributedFFT(**TEST_PARAMS)
     Fb = array_class.Fb
     Fn = array_class.Fn
-    Nx = array_class.Nx
-    Ny = array_class.Ny
+    Nx = array_class.subgrid_off_step
+    Ny = array_class.facet_off_step
     assert yB_size % Ny == 0
 
     # Test with different values and facet offsets
@@ -171,8 +171,8 @@ def test_facet_to_subgrid_dft_1d():
     dft = StreamingDistributedFFT(**TEST_PARAMS)
     Fb = array_class.Fb
     Fn = array_class.Fn
-    Nx = array_class.Nx
-    Ny = array_class.Ny
+    Nx = array_class.subgrid_off_step
+    Ny = array_class.facet_off_step
     assert yB_size % Ny == 0
 
     # Test with different values and facet offsets
@@ -225,8 +225,8 @@ def test_facet_to_subgrid_dft_2d():
     dft = StreamingDistributedFFT(**TEST_PARAMS)
     Fb = array_class.Fb
     Fn = array_class.Fn
-    Nx = array_class.Nx
-    Ny = array_class.Ny
+    Nx = array_class.subgrid_off_step
+    Ny = array_class.facet_off_step
     assert yB_size % Ny == 0
 
     # Test with different values and facet offsets
@@ -281,8 +281,8 @@ def test_subgrid_to_facet_basic():
     dft = StreamingDistributedFFT(**TEST_PARAMS)
     Fb = array_class.Fb
     Fn = array_class.Fn
-    Nx = array_class.Nx
-    Ny = array_class.Ny
+    Nx = array_class.subgrid_off_step
+    Ny = array_class.facet_off_step
     assert yB_size % Ny == 0
     sg_offs = Nx * numpy.arange(-9, 8)
     facet_offs = numpy.hstack(
@@ -331,8 +331,8 @@ def test_subgrid_to_facet_dft():
     dft = StreamingDistributedFFT(**TEST_PARAMS)
     Fb = array_class.Fb
     Fn = array_class.Fn
-    Nx = array_class.Nx
-    Ny = array_class.Ny
+    Nx = array_class.subgrid_off_step
+    Ny = array_class.facet_off_step
     assert yB_size % Ny == 0
 
     # Parameters to try

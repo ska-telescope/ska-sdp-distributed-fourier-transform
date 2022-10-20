@@ -112,10 +112,6 @@ def main(args):
     # Fixing seed of numpy random
     numpy.random.seed(123456789)
 
-    scheduler = os.environ.get("DASK_SCHEDULER", None)
-    dask_client = dask.distributed.Client(scheduler)
-    log.info(dask_client.dashboard_link)
-
     swift_config_keys = args.swift_config.split(",")
     for c in swift_config_keys:
         try:
@@ -126,6 +122,10 @@ def main(args):
                 f"configuration keys. Please consult src/swift_configs.py "
                 f"for available options."
             ) from error
+
+    scheduler = os.environ.get("DASK_SCHEDULER", None)
+    dask_client = dask.distributed.Client(scheduler)
+    log.info(dask_client.dashboard_link)
 
     for config_key in swift_config_keys:
         log.info("Running for swift-config: %s", config_key)
@@ -157,25 +157,27 @@ def main(args):
         dask_client.restart()
 
 
+dfft_parser = cli_parser()
+dfft_parser.add_argument(
+    "--queue_size",
+    type=int,
+    default=20,
+    help="the size of queue",
+)
+dfft_parser.add_argument(
+    "--lru_forward",
+    type=int,
+    default=1,
+    help="max columns pin NMBF_BFs",
+)
+dfft_parser.add_argument(
+    "--lru_backward",
+    type=int,
+    default=1,
+    help="max columns pin NAF_MNAFs",
+)
+
 if __name__ == "__main__":
-    dfft_parser = cli_parser()
-    dfft_parser.add_argument(
-        "--queue_size",
-        type=int,
-        default=20,
-        help="the size of queue",
-    )
-    dfft_parser.add_argument(
-        "--lru_forward",
-        type=int,
-        default=1,
-        help="max columns pin NMBF_BFs",
-    )
-    dfft_parser.add_argument(
-        "--lru_backward",
-        type=int,
-        default=1,
-        help="max columns pin NAF_MNAFs",
-    )
+    logging.basicConfig()
     parsed_args = dfft_parser.parse_args()
     main(parsed_args)

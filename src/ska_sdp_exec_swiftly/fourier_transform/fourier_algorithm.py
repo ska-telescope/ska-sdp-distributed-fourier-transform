@@ -29,14 +29,13 @@ def create_slice(fill_val, axis_val, dims, axis):
 
     :return: tuple of length dims
     """
-    # pylint: disable=consider-using-generator
-    # TODO: pylint's suggestion of using a generator should be investigated
+
     if not isinstance(axis, int) or not isinstance(dims, int):
         raise ValueError(
             "create_slice: axis and dims values have to be integers."
         )
 
-    return tuple([axis_val if i == axis else fill_val for i in range(dims)])
+    return tuple(axis_val if i == axis else fill_val for i in range(dims))
 
 
 def broadcast(a, dims, axis):

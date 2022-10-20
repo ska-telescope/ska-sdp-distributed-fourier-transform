@@ -253,25 +253,10 @@ def cli_parser():
     )
 
     parser.add_argument(
-        "--generate_random_sources",
-        type=str,
-        default="False",
-        help="Whether to generate generic input data with random sources",
-    )
-
-    parser.add_argument(
         "--source_number",
         type=int,
         default=10,
         help="Number of random sources to add to input data",
-    )
-
-    parser.add_argument(
-        "--facet_to_subgrid_method",
-        type=str,
-        default="3",
-        help="which facet to subgrid method to run. "
-        "Options are 1,2 and 3, see documentation for details",
     )
 
     return parser

@@ -69,9 +69,6 @@ class BaseParameters:
         self.xM_size = fundamental_constants["xM_size"]
         self.yN_size = fundamental_constants["yN_size"]
 
-        self.subgrid_off_step = self.Nx
-        self.facet_off_step = self.N // self.Nx
-
         self.check_params()
 
         # Derive subgrid <> facet contribution size
@@ -94,7 +91,7 @@ class BaseParameters:
             raise ValueError
 
     @property
-    def Nx(self):
+    def subgrid_off_step(self):
         """
         Returns the base subgrid offset.
 
@@ -103,7 +100,7 @@ class BaseParameters:
         return self.N // self.yN_size
 
     @property
-    def Ny(self):
+    def facet_off_step(self):
         """
         Returns the base facet offset.
 
@@ -116,7 +113,7 @@ class BaseParameters:
         Calculate facet offset array
         """
         facet_off = self.yB_size * numpy.arange(self.nfacet)
-        assert numpy.all(facet_off % (self.N // self.xM_size) == 0)
+        assert numpy.all(facet_off % self.facet_off_step == 0)
         return facet_off
 
     def calculate_subgrid_off(self):
@@ -124,7 +121,7 @@ class BaseParameters:
         Calculate subgrid offset array
         """
         subgrid_off = self.xA_size * numpy.arange(self.nsubgrid)
-        assert numpy.all(subgrid_off % (self.N // self.yN_size) == 0)
+        assert numpy.all(subgrid_off % self.subgrid_off_step == 0)
         return subgrid_off
 
     def __str__(self):

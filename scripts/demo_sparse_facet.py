@@ -182,7 +182,9 @@ def make_demo_sparse_off(swiftlyconfig):
     return off_list, mask_list
 
 
-def demo_api(queue_size, fundamental_params, lru_forward, lru_backward):
+def demo_api(
+    queue_size, fundamental_params, lru_forward, lru_backward, source_count
+):
     """demo for api
 
     :param queue_size: size of queue
@@ -194,7 +196,8 @@ def demo_api(queue_size, fundamental_params, lru_forward, lru_backward):
         return subgrid_task
 
     swiftlyconfig = SwiftlyConfig(**fundamental_params)
-    sources = [(1, 1, 0)]
+    sources = [(1, i + 1, i) for i in range(source_count)]
+    print(sources)
 
     subgrid_config_list = make_full_subgrid_cover(swiftlyconfig)
     # facets_config_list = make_full_facet_cover(swiftlyconfig)
@@ -301,6 +304,7 @@ def main(args):
                 SWIFT_CONFIGS[config_key],
                 args.lru_forward,
                 args.lru_backward,
+                args.source_number,
             )
 
         mem_sampler.to_pandas().to_csv(
@@ -315,25 +319,27 @@ def main(args):
         dask_client.restart()
 
 
+dfft_parser = cli_parser()
+dfft_parser.add_argument(
+    "--queue_size",
+    type=int,
+    default=20,
+    help="the size of queue",
+)
+dfft_parser.add_argument(
+    "--lru_forward",
+    type=int,
+    default=1,
+    help="max columns pin NMBF_BFs",
+)
+dfft_parser.add_argument(
+    "--lru_backward",
+    type=int,
+    default=1,
+    help="max columns pin NAF_MNAFs",
+)
+
 if __name__ == "__main__":
-    dfft_parser = cli_parser()
-    dfft_parser.add_argument(
-        "--queue_size",
-        type=int,
-        default=20,
-        help="the size of queue",
-    )
-    dfft_parser.add_argument(
-        "--lru_forward",
-        type=int,
-        default=1,
-        help="max columns pin NMBF_BFs",
-    )
-    dfft_parser.add_argument(
-        "--lru_backward",
-        type=int,
-        default=1,
-        help="max columns pin NAF_MNAFs",
-    )
+    logging.basicConfig()
     parsed_args = dfft_parser.parse_args()
     main(parsed_args)

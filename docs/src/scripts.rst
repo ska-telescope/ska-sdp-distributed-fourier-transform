@@ -19,7 +19,7 @@ proposed and implemented. The API has the following features.
 
 .. argparse::
    :filename: scripts/demo_api.py
-   :func: cli_parser
+   :func: dfft_parser
    :prog: demo_api.py
 
 Sparse Facet Demo
@@ -31,5 +31,5 @@ some specific configurations.
 
 .. argparse::
    :filename: scripts/demo_sparse_facet.py
-   :func: cli_parser
+   :func: dfft_parser
    :prog: demo_sparse_facet.py
