@@ -51,12 +51,8 @@ def demo_api(queue_size, fundamental_params, lru_forward, lru_backward):
         (
             facet_config,
             dask.delayed(make_facet)(
-                swiftlyconfig.distriFFT.N,
-                swiftlyconfig.distriFFT.yB_size,
-                facet_config.off0,
-                facet_config.mask0,
-                facet_config.off1,
-                facet_config.mask1,
+                swiftlyconfig.image_size,
+                facet_config,
                 sources,
             ),
         )
@@ -86,11 +82,8 @@ def demo_api(queue_size, fundamental_params, lru_forward, lru_backward):
     # check
     check_task = [
         dask.delayed(check_facet)(
-            swiftlyconfig.distriFFT.N,
-            facet_config.off0,
-            facet_config.mask0,
-            facet_config.off1,
-            facet_config.mask1,
+            swiftlyconfig.image_size,
+            facet_config,
             new_facet,
             sources,
         )

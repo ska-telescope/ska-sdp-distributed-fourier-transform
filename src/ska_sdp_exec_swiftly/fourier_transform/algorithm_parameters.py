@@ -29,8 +29,17 @@ from .fourier_algorithm import (
 )
 
 
-class BaseParameters:
+class SwiftlyCore:
     """
+    Streaming Distributed Fourier Transform class
+
+    It takes the fundamental_constants dict as input
+    (see BaseParameters class).
+    It encompasses all building blocks of the algorithm for
+    both subgrid -> facet and facet -> subgrid directions.
+
+    The algorithm was developed for 2D input arrays (images).
+
     **fundamental_constants contains the following keys:
 
     :param W: PSWF (prolate-spheroidal wave function)
@@ -50,28 +59,51 @@ class BaseParameters:
     commonly used sizes (integers), and offset arrays:
 
     :param xM_yN_size: (padded subgrid size * padding) / N
-    :param nsubgrid: number of subgrids
-    :param nfacet: number of facets
-    :param facet_off: facet offset (numpy array)
-    :param subgrid_off: subgrid offset (numpy array)
+
+    Class that calculates and holds fundamental constant arrays.
+    See the parent class docstring for description of input parameters.
+
+    It contains the following arrays (in addition to BaseParameters):
+
+    :param facet_B: facet mask
+    :param subgrid_A: subgrid mask
+    :param Fb: Fourier transform of grid correction function
+    :param Fn: Fourier transform of gridding function
+    :param facet_m0_trunc: mask truncated to a facet (image space)
+    :param pswf: prolate spheroidal wave function
+
+    Notes on gridding-related functions (arrays; Fb, Fn, facet_m0_trunc):
+
+        Calculate actual work terms to use.
+        We need both $n$ and $b$ in image space
+        In case of gridding: "n": gridding function (in image space)
+                             "b": grid correction function.
+
+        Note (Peter W): The reason they're single functions
+        (i.e. we only compute one Fn, Fb and m0 instead of one
+        per facet/subgrid) is that we assume that they are all
+        the same function, just shifted in grid and image space
+        respectively (to the positions of the subgrids and facets)
+
     """
 
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, **fundamental_constants):
+    def __init__(self, W, N, xM_size, yN_size):
         # Fundamental sizes and parameters
-        self.W = fundamental_constants["W"]
-        self.fov = fundamental_constants["fov"]
-        self.N = fundamental_constants["N"]
-        self.yB_size = fundamental_constants["yB_size"]
-        self.xA_size = fundamental_constants["xA_size"]
-        self.xM_size = fundamental_constants["xM_size"]
-        self.yN_size = fundamental_constants["yN_size"]
-
+        self.W = W
+        self.N = N
+        self.xM_size = xM_size
+        self.yN_size = yN_size
         self.check_params()
 
         # Derive subgrid <> facet contribution size
         self.xM_yN_size = self.xM_size * self.yN_size // self.N
+
+        # Calculate constants
+        pswf = self._calculate_pswf()
+        self._Fb = self._calculate_Fb(pswf)
+        self._Fn = self._calculate_Fn(pswf)
 
     def check_params(self):
         """
@@ -104,10 +136,7 @@ class BaseParameters:
         class_string = (
             "Fundamental parameters: \n"
             f"W = {self.W}\n"
-            f"fov = {self.fov}\n"
             f"N = {self.N}\n"
-            f"yB_size = {self.yB_size}\n"
-            f"xA_size = {self.xA_size}\n"
             f"xM_size = {self.xM_size}\n"
             f"yN_size = {self.yN_size}\n"
             f"\nDerived values: \n"
@@ -115,62 +144,22 @@ class BaseParameters:
         )
         return class_string
 
-
-class BaseArrays(BaseParameters):
-    """
-    Class that calculates and holds fundamental constant arrays.
-    See the parent class docstring for description of input parameters.
-
-    It contains the following arrays (in addition to BaseParameters):
-
-    :param facet_B: facet mask
-    :param subgrid_A: subgrid mask
-    :param Fb: Fourier transform of grid correction function
-    :param Fn: Fourier transform of gridding function
-    :param facet_m0_trunc: mask truncated to a facet (image space)
-    :param pswf: prolate spheroidal wave function
-
-    Notes on gridding-related functions (arrays; Fb, Fn, facet_m0_trunc):
-
-        Calculate actual work terms to use.
-        We need both $n$ and $b$ in image space
-        In case of gridding: "n": gridding function (in image space)
-                             "b": grid correction function.
-
-        Note (Peter W): The reason they're single functions
-        (i.e. we only compute one Fn, Fb and m0 instead of one
-        per facet/subgrid) is that we assume that they are all
-        the same function, just shifted in grid and image space
-        respectively (to the positions of the subgrids and facets)
-    """
-
-    # pylint: disable=too-many-instance-attributes
-
-    def __init__(self, **fundamental_constants):
-        super().__init__(**fundamental_constants)
-
-        self.pswf = self.calculate_pswf()
-        self.Fb = self.calculate_Fb()
-        self.Fn = self.calculate_Fn()
-
-    def calculate_Fb(self):
+    def _calculate_Fb(self, pswf):
         """
         Calculate the Fourier transform of grid correction function
         """
-        Fb = 1 / extract_mid(self.pswf, self.yB_size, axis=0)
-        return Fb
+        return 1 / pswf[1:]
 
-    def calculate_Fn(self):
+    def _calculate_Fn(self, pswf):
         """
         Calculate the Fourier transform of gridding function
         """
-        Fn = self.pswf[
+        return pswf[
             (self.yN_size // 2)
             % int(self.N / self.xM_size) :: int(self.N / self.xM_size)
         ]
-        return Fn
 
-    def calculate_pswf(self):
+    def _calculate_pswf(self):
         """
         Calculate 1D PSWF (prolate-spheroidal wave function) at the
         full required resolution (facet size)
@@ -203,21 +192,8 @@ class BaseArrays(BaseParameters):
 
         return pswf
 
-
-class StreamingDistributedFFT(BaseParameters):
-    """
-    Streaming Distributed Fourier Transform class
-
-    It takes the fundamental_constants dict as input
-    (see BaseParameters class).
-    It encompasses all building blocks of the algorithm for
-    both subgrid -> facet and facet -> subgrid directions.
-
-    The algorithm was developed for 2D input arrays (images).
-    """
-
     # facet to subgrid algorithm
-    def prepare_facet(self, facet, facet_off_elem, Fb, axis):
+    def prepare_facet(self, facet, facet_off_elem, axis):
         """
         Calculate the inverse FFT of a padded facet element multiplied by Fb
         (Fb: Fourier transform of grid correction function)
@@ -230,8 +206,12 @@ class StreamingDistributedFFT(BaseParameters):
         :return: TODO: BF? prepared facet
         """
 
+        facet_size = facet.shape[axis]
         BF = pad_mid(
-            facet * broadcast(Fb, len(facet.shape), axis),
+            facet
+            * broadcast(
+                extract_mid(self._Fb, facet_size, 0), len(facet.shape), axis
+            ),
             self.yN_size,
             axis,
         )
@@ -246,7 +226,6 @@ class StreamingDistributedFFT(BaseParameters):
         :param BF: TODO: ? prepared facet
         :param subgrid_off_elem: single subgrid offset element
         :param facet_off_elem: single subgrid offset element
-        :param Fn: Fourier transform of gridding function
         :param axis: axis along which the operations are performed (0 or 1)
 
         :return: contribution of facet to subgrid
@@ -263,7 +242,7 @@ class StreamingDistributedFFT(BaseParameters):
             axis,
         )
 
-    def add_facet_contribution(self, facet_contrib, facet_off_elem, Fn, axis):
+    def add_facet_contribution(self, facet_contrib, facet_off_elem, axis):
         """
         Further transforms facet contributions, which then will be summed up.
 
@@ -276,7 +255,9 @@ class StreamingDistributedFFT(BaseParameters):
 
         scaled_facet_off_elem = facet_off_elem * self.xM_size // self.N
 
-        FNMBF = broadcast(Fn, len(facet_contrib.shape), axis) * numpy.roll(
+        FNMBF = broadcast(
+            self._Fn, len(facet_contrib.shape), axis
+        ) * numpy.roll(
             fft(facet_contrib, axis), -scaled_facet_off_elem, axis=axis
         )
 
@@ -287,12 +268,14 @@ class StreamingDistributedFFT(BaseParameters):
         )
 
     def finish_subgrid(
-        self, summed_facets, subgrid_off_elem, subgrid_masks=None
+        self, summed_facets, subgrid_off_elem, subgrid_size, subgrid_masks=None
     ):
         """
         Obtain finished subgrid. Operation performed for all axes.
 
         :param summed_facets: summed facets contributing to this subgrid
+        :param subgrid_off: subgrid offset per axis
+        :param subgrid_size: subgrid size
         :param subgrid_masks: subgrid mask per axis (optional)
 
         :return: approximate subgrid element
@@ -314,7 +297,7 @@ class StreamingDistributedFFT(BaseParameters):
                 numpy.roll(
                     ifft(tmp, axis=axis), -subgrid_off_elem[axis], axis=axis
                 ),
-                self.xA_size,
+                subgrid_size,
                 axis=axis,
             )
 
@@ -360,13 +343,12 @@ class StreamingDistributedFFT(BaseParameters):
 
         return tmp
 
-    def extract_subgrid_contrib_to_facet(self, FSi, facet_off_elem, Fn, axis):
+    def extract_subgrid_contrib_to_facet(self, FSi, facet_off_elem, axis):
         """
         Extract contribution of subgrid to a facet.
 
         :param Fsi: Prepared subgrid in image space (see prepare_facet)
         :param facet_off_elem: facet offset
-        :param Fn: window function in image space
         :param axis: axis along which the operations are performed (0 or 1)
 
         :return: Contribution of subgrid to facet
@@ -380,7 +362,7 @@ class StreamingDistributedFFT(BaseParameters):
             axis,
         )
 
-        FNjSi = broadcast(Fn, len(FSi.shape), axis) * extract_mid(
+        FNjSi = broadcast(self._Fn, len(FSi.shape), axis) * extract_mid(
             FSi,
             self.xM_yN_size,
             axis,
@@ -431,19 +413,18 @@ class StreamingDistributedFFT(BaseParameters):
         )
 
     def finish_facet(
-        self, MiNjSi_sum, facet_off_elem, facet_B_mask_elem, Fb, axis
+        self, MiNjSi_sum, facet_off_elem, facet_size, facet_B_mask_elem, axis
     ):
         """
         Obtain finished facet.
 
         It extracts from the padded facet (obtained from subgrid via FFT)
         the true-sized facet and multiplies with masked Fb.
-        (Fb: Fourier transform of grid correction function)
 
         :param MiNjSi_sum: sum of subgrid contributions to a facet
+        :param facet_size: facet size
         :param facet_off_elem: facet offset
         :param facet_B_mask_elem: a facet mask element
-        :param Fb: Fourier transform of grid correction function
         :param axis: axis along which operations are performed (0 or 1)
 
         :return: finished (approximate) facet element
@@ -451,19 +432,19 @@ class StreamingDistributedFFT(BaseParameters):
 
         if facet_B_mask_elem is not None:
             facet_mask = broadcast(
-                Fb * facet_B_mask_elem,
+                extract_mid(self._Fb, facet_size, 0) * facet_B_mask_elem,
                 len(MiNjSi_sum.shape),
                 axis,
             )
         else:
             facet_mask = broadcast(
-                Fb,
+                extract_mid(self._Fb, facet_size, 0),
                 len(MiNjSi_sum.shape),
                 axis,
             )
 
         return facet_mask * extract_mid(
             numpy.roll(fft(MiNjSi_sum, axis), -facet_off_elem, axis=axis),
-            self.yB_size,
+            facet_size,
             axis,
         )

@@ -22,6 +22,7 @@ from ska_sdp_exec_swiftly import (
     SwiftlyConfig,
     SwiftlyForward,
     check_facet,
+    check_subgrid,
     make_facet,
     make_full_subgrid_cover,
 )
@@ -111,8 +112,8 @@ def fov_sparse_cover_off_mask(swiftlyconfig, ifov_pixel, x=0, y=0):
     @param y: Fov offset in y axis
     @return: off0_off1_list, mask_list
     """
-    N = swiftlyconfig.distriFFT.N
-    facet_size = swiftlyconfig.distriFFT.yB_size
+    N = swiftlyconfig.image_size
+    facet_size = swiftlyconfig.max_facet_size
     off0_off1_list = []
     for nfacet, off1 in calc_nfacet_and_off1(facet_size, ifov_pixel, N):
 
@@ -127,7 +128,7 @@ def fov_sparse_cover_off_mask(swiftlyconfig, ifov_pixel, x=0, y=0):
         for _ in off0_off1_list
     ]
 
-    facet_off_step = swiftlyconfig.distriFFT.facet_off_step
+    facet_off_step = swiftlyconfig.facet_off_step
     for off0, off1 in off0_off1_list:
         if off0 % facet_off_step != 0 or off1 % facet_off_step != 0:
             raise ValueError("Can't not support offset % (N//Nx) != 0")
@@ -135,7 +136,7 @@ def fov_sparse_cover_off_mask(swiftlyconfig, ifov_pixel, x=0, y=0):
     return off0_off1_list, mask_list
 
 
-def make_sparse_facet_cover_from_list(off_list, mask_list):
+def make_sparse_facet_cover_from_list(facet_size, off_list, mask_list):
     """make facet_config from off and mask list
 
     :param off_list: off_list
@@ -145,7 +146,7 @@ def make_sparse_facet_cover_from_list(off_list, mask_list):
 
     config_list = []
     for (off0, off1), (mask0, mask1) in zip(off_list, mask_list):
-        config_list.append(FacetConfig(off0, off1, mask0, mask1))
+        config_list.append(FacetConfig(off0, off1, facet_size, mask0, mask1))
 
     return config_list
 
@@ -155,8 +156,8 @@ def make_demo_sparse_off(swiftlyconfig):
     Generate all necessary sparse facet parameters,
     supporting configurations if Fov assigned less than the original Fov
     """
-    N = swiftlyconfig.distriFFT.N
-    yB = swiftlyconfig.distriFFT.yB_size
+    N = swiftlyconfig.image_size
+    yB = swiftlyconfig.max_facet_size
 
     off_list = []
     # up
@@ -183,8 +184,13 @@ def make_demo_sparse_off(swiftlyconfig):
 
 
 def demo_api(
-    queue_size, fundamental_params, lru_forward, lru_backward, source_count
-):
+    queue_size,
+    fundamental_params,
+    lru_forward,
+    lru_backward,
+    check_subgrids,
+    source_count,
+):  # pylint: disable=too-many-arguments
     """demo for api
 
     :param queue_size: size of queue
@@ -197,27 +203,24 @@ def demo_api(
 
     swiftlyconfig = SwiftlyConfig(**fundamental_params)
     sources = [(1, i + 1, i) for i in range(source_count)]
-    print(sources)
 
     subgrid_config_list = make_full_subgrid_cover(swiftlyconfig)
     # facets_config_list = make_full_facet_cover(swiftlyconfig)
 
     # demo sparse facet
-    ifov_pixel = int(2.12 * swiftlyconfig.distriFFT.yB_size)
+    ifov_pixel = int(2.12 * swiftlyconfig.max_facet_size)
 
     off_list, mask_list = fov_sparse_cover_off_mask(swiftlyconfig, ifov_pixel)
-    facets_config_list = make_sparse_facet_cover_from_list(off_list, mask_list)
+    facets_config_list = make_sparse_facet_cover_from_list(
+        swiftlyconfig.max_facet_size, off_list, mask_list
+    )
 
     facet_tasks = [
         (
             facet_config,
             dask.delayed(make_facet)(
-                swiftlyconfig.distriFFT.N,
-                swiftlyconfig.distriFFT.yB_size,
-                facet_config.off0,
-                facet_config.mask0,
-                facet_config.off1,
-                facet_config.mask1,
+                swiftlyconfig.image_size,
+                facet_config,
                 sources,
             ),
         )
@@ -236,10 +239,25 @@ def demo_api(
         )
         bwd.add_new_subgrid_task(subgrid_config, new_subgrid_task)
 
+        # Check subgrid error, if requested
+        sg_err_str = ""
+        if check_subgrids:
+            sg_err = dask.compute(
+                dask.delayed(check_subgrid)(
+                    swiftlyconfig.image_size,
+                    subgrid_config,
+                    new_subgrid_task,
+                    sources,
+                )
+            )[0]
+            sg_err_str = f", err: {sg_err}"
+
+        # Log
         log.info(
-            "process subgrid off0: %d, off1: %d",
+            "process subgrid off0: %d, off1: %d%s",
             subgrid_config.off0,
             subgrid_config.off1,
+            sg_err_str,
         )
 
     new_facet_tasks = bwd.finish()
@@ -247,11 +265,8 @@ def demo_api(
     # check
     check_task = [
         dask.delayed(check_facet)(
-            swiftlyconfig.distriFFT.N,
-            facet_config.off0,
-            facet_config.mask0,
-            facet_config.off1,
-            facet_config.mask1,
+            swiftlyconfig.image_size,
+            facet_config,
             new_facet,
             sources,
         )
@@ -304,6 +319,7 @@ def main(args):
                 SWIFT_CONFIGS[config_key],
                 args.lru_forward,
                 args.lru_backward,
+                args.check_subgrid,
                 args.source_number,
             )
 
@@ -337,6 +353,13 @@ dfft_parser.add_argument(
     type=int,
     default=1,
     help="max columns pin NAF_MNAFs",
+)
+dfft_parser.add_argument(
+    "--check_subgrid",
+    action="store_const",
+    const=True,
+    default=False,
+    help="check accuracy of subgrids",
 )
 
 if __name__ == "__main__":

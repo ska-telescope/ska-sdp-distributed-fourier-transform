@@ -26,10 +26,11 @@ from .api_helper import (
     extract_column,
     finish_facet,
     make_full_cover_config,
+    make_mask_from_slice,
     prepare_and_split_subgrid,
     sum_and_finish_subgrid,
 )
-from .fourier_transform import BaseArrays, StreamingDistributedFFT
+from .fourier_transform import SwiftlyCore
 
 log = logging.getLogger("fourier-logger")
 log.setLevel(logging.INFO)
@@ -38,7 +39,7 @@ log.setLevel(logging.INFO)
 class FacetConfig:
     """Facet Configuration Class"""
 
-    def __init__(self, off0, off1, mask0=None, mask1=None):
+    def __init__(self, off0, off1, size, mask0=None, mask1=None):
         """
         Initialize FacetConfig class
 
@@ -50,14 +51,29 @@ class FacetConfig:
         """
         self.off0 = off0
         self.off1 = off1
-        self.mask0 = mask0
-        self.mask1 = mask1
+        self._mask0 = mask0
+        self._mask1 = mask1
+        self.size = size
+
+    @property
+    def mask0(self):
+        """Returns vertical facet mask"""
+        if isinstance(self._mask0, list):
+            return make_mask_from_slice(self._mask0[0], self._mask0[1])
+        return self._mask0
+
+    @property
+    def mask1(self):
+        """Returns horizontal facet mask"""
+        if isinstance(self._mask1, list):
+            return make_mask_from_slice(self._mask1[0], self._mask1[1])
+        return self._mask1
 
 
 class SubgridConfig:
     """Subgrid Configuration Class"""
 
-    def __init__(self, off0, off1, mask0=None, mask1=None):
+    def __init__(self, off0, off1, size, mask0=None, mask1=None):
         """
         Initialize SubgridConfig class
 
@@ -69,17 +85,109 @@ class SubgridConfig:
         """
         self.off0 = off0
         self.off1 = off1
-        self.mask0 = mask0
-        self.mask1 = mask1
+        self._mask0 = mask0
+        self._mask1 = mask1
+        self.size = size
+
+    @property
+    def mask0(self):
+        """Returns vertical subgrid mask"""
+        if isinstance(self._mask0, list):
+            return make_mask_from_slice(self._mask0[0], self._mask0[1])
+        return self._mask0
+
+    @property
+    def mask1(self):
+        """Returns horizontal subgrid mask"""
+        if isinstance(self._mask1, list):
+            return make_mask_from_slice(self._mask1[0], self._mask1[1])
+        return self._mask1
 
 
 class SwiftlyConfig:
     """Swiftly configuration"""
 
-    def __init__(self, **fundamental_constants):
-        self.base_arrays = BaseArrays(**fundamental_constants)
-        self.distriFFT = StreamingDistributedFFT(**fundamental_constants)
-        self.dask_client = Client.current()
+    def __init__(self, dask_client=None, **fundamental_constants):
+        self._constants = fundamental_constants
+        if dask_client is None:
+            dask_client = Client.current()
+        self.dask_client = dask_client or Client.current()
+        self._core = SwiftlyCore(
+            self._constants["W"],
+            self._constants["N"],
+            self._constants["xM_size"],
+            self._constants["yN_size"],
+        )
+        self.core_task = dask.delayed(
+            self.dask_client.scatter(self._core, broadcast=True)
+        )
+
+    @property
+    def image_size(self):
+        """
+        Size of the entire (virtual) image in pixels
+        """
+        return self._constants["N"]
+
+    @property
+    def max_facet_size(self):
+        """
+        Maximum size of a facet in pixels
+        """
+        return self._constants["yB_size"]
+
+    @property
+    def max_subgrid_size(self):
+        """
+        Maximum size of a subgrid in pixels
+        """
+        return self._constants["xA_size"]
+
+    @property
+    def pswf_parameter(self):
+        """
+        Parameter used for window function
+
+        Needs to be optimised to yield the best trade-off between
+        realised accuracy and required facet/subgrid padding.
+        """
+        return self._constants["W"]
+
+    @property
+    def internal_facet_size(self):
+        """
+        Size of facet data used internally.
+
+        Includes padding for accuracy / efficiency.
+        """
+        return self._constants["yN_size"]
+
+    @property
+    def internal_subgrid_size(self):
+        """
+        Size of subgrid data used internally.
+
+        Includes padding for accuracy / efficiency.
+        """
+        return self._constants["xM_size"]
+
+    @property
+    def facet_off_step(self):
+        """
+        Returns the base facet offset.
+
+        All facet offsets must be divisible by this value.
+        """
+        return self._core.facet_off_step
+
+    @property
+    def subgrid_off_step(self):
+        """
+        Returns the base subgrif offset.
+
+        All subgrid offsets must be divisible by this value.
+        """
+        return self._core.subgrid_off_step
 
 
 class SwiftlyForward:
@@ -93,20 +201,10 @@ class SwiftlyForward:
         queue_size=20,
         client=None,
     ):
-        self.core_config = swiftly_config
+        self.config = swiftly_config
         self.facet_tasks = facet_tasks
 
         self.BF_Fs_persist = None
-
-        self.Fb_task = self.core_config.dask_client.scatter(
-            self.core_config.base_arrays.Fb, broadcast=True
-        )
-        self.Fn_task = self.core_config.dask_client.scatter(
-            self.core_config.base_arrays.Fn, broadcast=True
-        )
-        self.distriFFT_obj_task = self.core_config.dask_client.scatter(
-            self.core_config.distriFFT, broadcast=True
-        )
 
         self._client = client or dask.distributed.Client.current()
         self.task_queue = TaskQueue(queue_size, self._client)
@@ -140,8 +238,8 @@ class SwiftlyForward:
         """
         NMBF_NMBF_tasks = [
             dask.delayed(
-                self.core_config.distriFFT.extract_facet_contrib_to_subgrid
-            )(
+                self.config.core_task
+            ).extract_facet_contrib_to_subgrid(
                 NMBF_BF,
                 subgrid_config.off1,
                 axis=1,
@@ -150,9 +248,8 @@ class SwiftlyForward:
         ]
 
         subgrid_task = dask.delayed(sum_and_finish_subgrid)(
-            self.distriFFT_obj_task,
+            self.config.core_task,
             NMBF_NMBF_tasks,
-            self.Fn_task,
             [facet_config for facet_config, _ in self.facet_tasks],
             subgrid_config,
         )
@@ -167,10 +264,9 @@ class SwiftlyForward:
         if self.BF_Fs_persist is None:
             self.BF_Fs_persist = self._client.persist(
                 [
-                    dask.delayed(self.core_config.distriFFT.prepare_facet)(
+                    dask.delayed(self.config.core_task).prepare_facet(
                         facet_data,
                         facet.off0,
-                        self.Fb_task,
                         axis=0,
                     )
                     for facet, facet_data in self.facet_tasks
@@ -193,9 +289,8 @@ class SwiftlyForward:
             NMBF_BFs = self._client.persist(
                 [
                     dask.delayed(extract_column)(
-                        self.distriFFT_obj_task,
+                        self.config.core_task,
                         BF_F,
-                        self.Fb_task,
                         off0,
                         facet.off1,
                     )
@@ -218,18 +313,7 @@ class SwiftlyBackward:
         queue_size=20,
         client=None,
     ) -> None:
-        self.core_config = swiftly_config
-
-        self.Fb_task = self.core_config.dask_client.scatter(
-            self.core_config.base_arrays.Fb, broadcast=True
-        )
-        self.Fn_task = self.core_config.dask_client.scatter(
-            self.core_config.base_arrays.Fn, broadcast=True
-        )
-        self.distriFFT_obj_task = self.core_config.dask_client.scatter(
-            self.core_config.distriFFT, broadcast=True
-        )
-
+        self.config = swiftly_config
         self.facets_config_list = facets_config_list
 
         self.MNAF_BMNAFs_persist = [None for _ in self.facets_config_list]
@@ -251,9 +335,8 @@ class SwiftlyBackward:
         NAF_NAF_tasks = dask.delayed(
             prepare_and_split_subgrid, nout=len(self.MNAF_BMNAFs_persist)
         )(
-            self.distriFFT_obj_task,
+            self.config.core_task,
             new_subgrid_task,
-            self.Fn_task,
             [off0, off1],
             self.facets_config_list,
         )
@@ -281,11 +364,7 @@ class SwiftlyBackward:
 
         approx_facet_tasks = [
             dask.delayed(finish_facet)(
-                self.distriFFT_obj_task,
-                MNAF_BMNAF,
-                facet_config.off0,
-                facet_config.mask0,
-                self.Fb_task,
+                self.config.core_task, MNAF_BMNAF, facet_config
             )
             for facet_config, MNAF_BMNAF in zip(
                 self.facets_config_list, self.MNAF_BMNAFs_persist
@@ -314,7 +393,7 @@ class SwiftlyBackward:
         new_NAF_MNAFs = self._client.persist(
             [
                 dask.delayed(accumulate_column)(
-                    self.distriFFT_obj_task,
+                    self.config.core_task,
                     new_NAF_NAF,
                     old_NAF_MNAF,
                     off1,
@@ -346,12 +425,10 @@ class SwiftlyBackward:
         self.MNAF_BMNAFs_persist = self._client.persist(
             [
                 dask.delayed(accumulate_facet)(
-                    self.distriFFT_obj_task,
+                    self.config.core_task,
                     new_NAF_MNAF,
                     MNAF_BMNAFs,
-                    self.Fb_task,
-                    facet_config.off1,
-                    facet_config.mask1,
+                    facet_config,
                     off0,
                 )
                 for facet_config, new_NAF_MNAF, MNAF_BMNAFs in zip(
@@ -496,8 +573,8 @@ def make_full_subgrid_cover(swiftlyconfig):
     make subgrid config list
     """
     return make_full_cover_config(
-        swiftlyconfig.distriFFT.N,
-        swiftlyconfig.distriFFT.xA_size,
+        swiftlyconfig.image_size,
+        swiftlyconfig.max_subgrid_size,
         SubgridConfig,
     )
 
@@ -507,7 +584,7 @@ def make_full_facet_cover(swiftlyconfig):
     make facet config list
     """
     return make_full_cover_config(
-        swiftlyconfig.distriFFT.N,
-        swiftlyconfig.distriFFT.yB_size,
+        swiftlyconfig.image_size,
+        swiftlyconfig.max_facet_size,
         FacetConfig,
     )
