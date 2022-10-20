@@ -44,22 +44,9 @@ def test_base_params_derived():
     Input dictionary values are correctly used to
     obtain derived attributes of the class.
     """
-    expected_derived = {
-        "xM_yN_size": 128,
-        "nsubgrid": 5,
-        "nfacet": 3,
-    }
-
-    expected_facet_off = numpy.array([0, 416, 832])
-    expected_subgrid_off = numpy.array([0, 228, 456, 684, 912])
 
     result = BaseParameters(**TEST_PARAMS)
-
-    for k, v in expected_derived.items():
-        assert getattr(result, k) == v
-
-    assert (result.facet_off == expected_facet_off).all()
-    assert (result.subgrid_off == expected_subgrid_off).all()
+    assert result.xM_yN_size == 128
 
 
 def test_base_params_check_params():
@@ -73,26 +60,6 @@ def test_base_params_check_params():
 
     with pytest.raises(ValueError):
         BaseParameters(**new_params)
-
-
-def test_base_arrays_generate_mask():
-    """
-    Using subgrid_off and xA_size and nsubgrid, as would
-    the code with the values specified by TEST_PARAMS
-    """
-    array_class = BaseArrays(**TEST_PARAMS)
-
-    mask_size = 188
-    offsets = [4, 192, 380, 568, 756, 944]
-
-    # pylint: disable=protected-access
-    mask = array_class._generate_mask(mask_size, offsets)
-    assert mask.shape == (len(offsets), mask_size)
-    assert (mask[0, :52] == 0.0).all()
-    assert (mask[5, -52:] == 0.0).all()
-    assert (mask[1:5, :] == 1.0).all()
-    assert (mask[0, 53:] == 1.0).all()
-    assert (mask[5, :-52] == 1.0).all()
 
 
 def test_base_arrays_pure_arrays():

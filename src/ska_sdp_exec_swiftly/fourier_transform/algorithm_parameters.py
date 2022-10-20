@@ -14,7 +14,6 @@ Note: An alternative way of calculating nfacet is::
 This makes sure that if we have a specific FoV we care about,
 then we don't create facets outside that.
 """  # noqa: E501
-import math
 
 import numpy
 import scipy.signal
@@ -74,13 +73,6 @@ class BaseParameters:
         # Derive subgrid <> facet contribution size
         self.xM_yN_size = self.xM_size * self.yN_size // self.N
 
-        # Subgrid counts and offsets assuming complete re-distribution
-        self.nsubgrid = int(math.ceil(self.N / self.xA_size))
-        self.nfacet = int(math.ceil(self.N / self.yB_size))
-
-        self.facet_off = self.calculate_facet_off()
-        self.subgrid_off = self.calculate_subgrid_off()
-
     def check_params(self):
         """
         Validate some of the parameters.
@@ -108,22 +100,6 @@ class BaseParameters:
         """
         return self.N // self.xM_size
 
-    def calculate_facet_off(self):
-        """
-        Calculate facet offset array
-        """
-        facet_off = self.yB_size * numpy.arange(self.nfacet)
-        assert numpy.all(facet_off % self.facet_off_step == 0)
-        return facet_off
-
-    def calculate_subgrid_off(self):
-        """
-        Calculate subgrid offset array
-        """
-        subgrid_off = self.xA_size * numpy.arange(self.nsubgrid)
-        assert numpy.all(subgrid_off % self.subgrid_off_step == 0)
-        return subgrid_off
-
     def __str__(self):
         class_string = (
             "Fundamental parameters: \n"
@@ -136,10 +112,6 @@ class BaseParameters:
             f"yN_size = {self.yN_size}\n"
             f"\nDerived values: \n"
             f"xM_yN_size = {self.xM_yN_size}\n"
-            f"nsubgrid = {self.nsubgrid}\n"
-            f"nfacet = {self.nfacet}\n"
-            f"facet_off = {self.facet_off}\n"
-            f"subgrid_off = {self.subgrid_off}"
         )
         return class_string
 
@@ -177,54 +149,9 @@ class BaseArrays(BaseParameters):
     def __init__(self, **fundamental_constants):
         super().__init__(**fundamental_constants)
 
-        self.facet_B = self.calculate_facet_B()
-        self.subgrid_A = self.calculate_subgrid_A()
         self.pswf = self.calculate_pswf()
         self.Fb = self.calculate_Fb()
         self.Fn = self.calculate_Fn()
-
-    def _generate_mask(self, mask_size, offsets):
-        """
-        Determine the appropriate masks for cutting out subgrids/facets.
-        For each offset in offsets, a mask is generated of size mask_size.
-        The mask is centred around the specific offset.
-
-        :param mask_size: size of the required mask (xA_size or yB_size)
-        :param offsets: array of subgrid or facet offsets
-                        (subgrid_off or facet_off)
-
-        :return: mask (subgrid_A or facet_B)
-        """
-        mask = numpy.zeros((len(offsets), mask_size), dtype=int)
-        border = (
-            offsets + numpy.hstack([offsets[1:], [self.N + offsets[0]]])
-        ) // 2
-        for i, offset in enumerate(offsets):
-            left = (border[i - 1] - offset + mask_size // 2) % self.N
-            right = border[i] - offset + mask_size // 2
-
-            if not left >= 0 and right <= mask_size:
-                raise ValueError(
-                    "Mask size not large enough to cover subgrids / facets!"
-                )
-
-            mask[i, left:right] = 1
-
-        return mask
-
-    def calculate_facet_B(self):
-        """
-        Calculate facet mask
-        """
-        facet_B = self._generate_mask(self.yB_size, self.facet_off)
-        return facet_B
-
-    def calculate_subgrid_A(self):
-        """
-        Calculate subgrid mask
-        """
-        subgrid_A = self._generate_mask(self.xA_size, self.subgrid_off)
-        return subgrid_A
 
     def calculate_Fb(self):
         """
