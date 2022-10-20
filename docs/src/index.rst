@@ -48,7 +48,7 @@ for specific purposes and use cases. Please see :ref:`scripts` page
 for details of their usage.
 
 Running from the slurm cluster
-=============================
+==============================
 
 We have provided some example slurm scripts to help run the program on slurm clusters.
 Please refer to the slurm_scripts directory. The examples are based on two machines:
@@ -65,3 +65,4 @@ You may need to modify them to suit the specific machine that you are using.
    api
    dask
    scripts
+   docker

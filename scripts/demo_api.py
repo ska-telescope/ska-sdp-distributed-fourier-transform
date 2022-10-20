@@ -13,7 +13,7 @@ import dask.distributed
 import numpy
 from distributed import performance_report
 from distributed.diagnostics import MemorySampler
-from utils import get_and_write_transfer
+from utils import cli_parser, get_and_write_transfer
 
 from ska_sdp_exec_swiftly import (
     SWIFT_CONFIGS,
@@ -25,8 +25,6 @@ from ska_sdp_exec_swiftly import (
     make_full_facet_cover,
     make_full_subgrid_cover,
 )
-
-from .utils import cli_parser
 
 log = logging.getLogger("fourier-logger")
 log.setLevel(logging.INFO)

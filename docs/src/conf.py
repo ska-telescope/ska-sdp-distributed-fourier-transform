@@ -50,6 +50,7 @@ extensions = [
     "sphinx.ext.coverage",
     "sphinx.ext.mathjax",
     "sphinx.ext.viewcode",
+    "sphinxarg.ext",
     "sphinx_automodapi.automodapi",
     "sphinx_automodapi.smart_resolver",
 ]
