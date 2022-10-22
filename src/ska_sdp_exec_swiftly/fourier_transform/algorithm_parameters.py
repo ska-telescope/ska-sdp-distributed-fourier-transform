@@ -109,10 +109,22 @@ class SwiftlyCore:
         """
         Validate some of the parameters.
         """
-        if not self.N % self.yN_size == 0:
-            raise ValueError
-        if not self.N % self.xM_size == 0:
-            raise ValueError
+        if self.N % self.yN_size != 0:
+            raise ValueError(
+                f"Image size {self.N} not divisible by "
+                f"facet size {self.yN_size}!"
+            )
+        if self.N % self.xM_size != 0:
+            raise ValueError(
+                f"Image size {self.N} not divisible by "
+                f"subgrid size {self.xM_size}!"
+            )
+        if (self.xM_size * self.yN_size) % self.N != 0:
+            raise ValueError(
+                f"Contribution size not integer with "
+                f"image size {self.N}, subgrid size {self.xM_size} "
+                f"and facet size {self.yN_size}!"
+            )
 
     @property
     def subgrid_off_step(self):

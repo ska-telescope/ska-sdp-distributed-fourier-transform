@@ -14,6 +14,7 @@ from ska_sdp_exec_swiftly.fourier_transform.fourier_algorithm import (
     make_facet_from_sources,
     make_subgrid_from_sources,
 )
+from ska_sdp_exec_swiftly.swift_configs import SWIFT_CONFIGS
 
 TEST_PARAMS = {
     "W": 13.5625,
@@ -66,7 +67,14 @@ def test_base_params_check_params():
         make_core(new_params)
 
 
-def test_facet_to_subgrid_basic():
+def test_swift_configs():
+    """
+    Test all standard configurations
+    """
+
+    for config in SWIFT_CONFIGS.values():
+        if config["N"] < 4 * 1024:
+            make_core(config)
     """Test basic properties of 1D facet to subgrid distributed FT
     primitives for cases where the subgrids are expected to be a
     constant value.

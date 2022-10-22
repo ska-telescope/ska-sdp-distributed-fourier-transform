@@ -258,138 +258,6 @@ SWIFT_CONFIGS = {
         xA_size=448,
         xM_size=512,
     ),  # nfacet=3², eff 58.3%
-    "14k[1]-n8k-448": dict(
-        W=16.5,
-        fov=1,
-        N=14336,
-        Nx=56,
-        yB_size=7168,
-        yN_size=8192,
-        yP_size=8192,
-        xA_size=392,
-        xM_size=448,
-    ),  # nfacet=2², eff 76.6%
-    "7k[1]-n4k-448": dict(
-        W=16.5,
-        fov=1,
-        N=7168,
-        Nx=56,
-        yB_size=3584,
-        yN_size=4096,
-        yP_size=4096,
-        xA_size=392,
-        xM_size=448,
-    ),  # nfacet=2², eff 76.6%
-    "3584[1]-n2k-448": dict(
-        W=16.5,
-        fov=1,
-        N=3584,
-        Nx=56,
-        yB_size=1792,
-        yN_size=2048,
-        yP_size=2048,
-        xA_size=392,
-        xM_size=448,
-    ),  # nfacet=2², eff 76.6%
-    "1792[1]-n1k-448": dict(
-        W=16.5,
-        fov=1,
-        N=1792,
-        Nx=56,
-        yB_size=896,
-        yN_size=1024,
-        yP_size=1024,
-        xA_size=392,
-        xM_size=448,
-    ),  # nfacet=2², eff 76.6%
-    "12k[1]-n8k-384": dict(
-        W=12.0,
-        fov=1,
-        N=12288,
-        Nx=4,
-        yB_size=6144,
-        yN_size=8192,
-        yP_size=8192,
-        xA_size=340,
-        xM_size=384,
-    ),  # nfacet=2², eff 66.4%
-    "6k[1]-n4k-384": dict(
-        W=12.0,
-        fov=1,
-        N=6144,
-        Nx=4,
-        yB_size=3072,
-        yN_size=4096,
-        yP_size=4096,
-        xA_size=340,
-        xM_size=384,
-    ),  # nfacet=2², eff 66.4%
-    "3k[1]-n2k-384": dict(
-        W=12.0,
-        fov=1,
-        N=3072,
-        Nx=4,
-        yB_size=1536,
-        yN_size=2048,
-        yP_size=2048,
-        xA_size=340,
-        xM_size=384,
-    ),  # nfacet=2², eff 66.4%
-    "1536[1]-n1k-384": dict(
-        W=12.0,
-        fov=1,
-        N=1536,
-        Nx=4,
-        yB_size=768,
-        yN_size=1024,
-        yP_size=1024,
-        xA_size=340,
-        xM_size=384,
-    ),  # nfacet=2², eff 66.4%
-    "10k[1]-n8k-320": dict(
-        W=10.25,
-        fov=1,
-        N=10240,
-        Nx=4,
-        yB_size=5120,
-        yN_size=8192,
-        yP_size=8192,
-        xA_size=292,
-        xM_size=320,
-    ),  # nfacet=2², eff 57.0%
-    "5k[1]-n4k-320": dict(
-        W=10.25,
-        fov=1,
-        N=5120,
-        Nx=4,
-        yB_size=2560,
-        yN_size=4096,
-        yP_size=4096,
-        xA_size=292,
-        xM_size=320,
-    ),  # nfacet=2², eff 57.0%
-    "2560[1]-n2k-320": dict(
-        W=10.25,
-        fov=1,
-        N=2560,
-        Nx=4,
-        yB_size=1280,
-        yN_size=2048,
-        yP_size=2048,
-        xA_size=292,
-        xM_size=320,
-    ),  # nfacet=2², eff 57.0%
-    "1280[1]-n1k-320": dict(
-        W=10.25,
-        fov=1,
-        N=1280,
-        Nx=4,
-        yB_size=640,
-        yN_size=1024,
-        yP_size=1024,
-        xA_size=292,
-        xM_size=320,
-    ),  # nfacet=2², eff 57.0%
     "16k[1]-n16k-256": dict(
         W=9.25,
         fov=1,
@@ -577,171 +445,6 @@ SWIFT_CONFIGS = {
         xA_size=236,
         xM_size=256,
     ),  # nfacet=2², eff 46.1%
-    "16k[1]-n7k-512": dict(
-        W=12.875,
-        fov=1,
-        N=16384,
-        Nx=64,
-        yB_size=5632,
-        yN_size=7168,
-        yP_size=7168,
-        xA_size=448,
-        xM_size=512,
-    ),  # nfacet=3², eff 66.7%
-    "14k[1]-n6272-512": dict(
-        W=12.875,
-        fov=1,
-        N=14336,
-        Nx=64,
-        yB_size=4928,
-        yN_size=6272,
-        yP_size=6272,
-        xA_size=448,
-        xM_size=512,
-    ),  # nfacet=3², eff 66.7%
-    "12k[1]-n5376-512": dict(
-        W=12.875,
-        fov=1,
-        N=12288,
-        Nx=64,
-        yB_size=4224,
-        yN_size=5376,
-        yP_size=5376,
-        xA_size=448,
-        xM_size=512,
-    ),  # nfacet=3², eff 66.7%
-    "10k[1]-n4480-512": dict(
-        W=12.875,
-        fov=1,
-        N=10240,
-        Nx=64,
-        yB_size=3520,
-        yN_size=4480,
-        yP_size=4480,
-        xA_size=448,
-        xM_size=512,
-    ),  # nfacet=3², eff 66.7%
-    "8k[1]-n3584-512": dict(
-        W=12.875,
-        fov=1,
-        N=8192,
-        Nx=64,
-        yB_size=2816,
-        yN_size=3584,
-        yP_size=3584,
-        xA_size=448,
-        xM_size=512,
-    ),  # nfacet=3², eff 66.7%
-    "7k[1]-n3136-512": dict(
-        W=12.875,
-        fov=1,
-        N=7168,
-        Nx=64,
-        yB_size=2464,
-        yN_size=3136,
-        yP_size=3136,
-        xA_size=448,
-        xM_size=512,
-    ),  # nfacet=3², eff 66.7%
-    "6k[1]-n2688-512": dict(
-        W=12.875,
-        fov=1,
-        N=6144,
-        Nx=64,
-        yB_size=2112,
-        yN_size=2688,
-        yP_size=2688,
-        xA_size=448,
-        xM_size=512,
-    ),  # nfacet=3², eff 66.7%
-    "5k[1]-n2240-512": dict(
-        W=12.875,
-        fov=1,
-        N=5120,
-        Nx=64,
-        yB_size=1760,
-        yN_size=2240,
-        yP_size=2240,
-        xA_size=448,
-        xM_size=512,
-    ),  # nfacet=3², eff 66.7%
-    "4k[1]-n1792-512": dict(
-        W=12.875,
-        fov=1,
-        N=4096,
-        Nx=64,
-        yB_size=1408,
-        yN_size=1792,
-        yP_size=1792,
-        xA_size=448,
-        xM_size=512,
-    ),  # nfacet=3², eff 66.7%
-    "3584[1]-n1568-512": dict(
-        W=12.875,
-        fov=1,
-        N=3584,
-        Nx=64,
-        yB_size=1232,
-        yN_size=1568,
-        yP_size=1568,
-        xA_size=448,
-        xM_size=512,
-    ),  # nfacet=3², eff 66.7%
-    "3k[1]-n1344-512": dict(
-        W=12.875,
-        fov=1,
-        N=3072,
-        Nx=64,
-        yB_size=1056,
-        yN_size=1344,
-        yP_size=1344,
-        xA_size=448,
-        xM_size=512,
-    ),  # nfacet=3², eff 66.7%
-    "2560[1]-n1120-512": dict(
-        W=12.875,
-        fov=1,
-        N=2560,
-        Nx=64,
-        yB_size=880,
-        yN_size=1120,
-        yP_size=1120,
-        xA_size=448,
-        xM_size=512,
-    ),  # nfacet=3², eff 66.7%
-    "2k[1]-n896-512": dict(
-        W=12.875,
-        fov=1,
-        N=2048,
-        Nx=64,
-        yB_size=704,
-        yN_size=896,
-        yP_size=896,
-        xA_size=448,
-        xM_size=512,
-    ),  # nfacet=3², eff 66.7%
-    "1536[1]-n672-512": dict(
-        W=12.875,
-        fov=1,
-        N=1536,
-        Nx=64,
-        yB_size=528,
-        yN_size=672,
-        yP_size=672,
-        xA_size=448,
-        xM_size=512,
-    ),  # nfacet=3², eff 66.7%
-    "1k[1]-n448-512": dict(
-        W=12.875,
-        fov=1,
-        N=1024,
-        Nx=64,
-        yB_size=352,
-        yN_size=448,
-        yP_size=448,
-        xA_size=448,
-        xM_size=512,
-    ),  # nfacet=3², eff 66.7%
     "14k[1]-n7k-448": dict(
         W=10.875,
         fov=1,
@@ -786,490 +489,6 @@ SWIFT_CONFIGS = {
         xA_size=392,
         xM_size=448,
     ),  # nfacet=3², eff 58.3%
-    "12k[1]-n7k-384": dict(
-        W=15.5,
-        fov=1,
-        N=12288,
-        Nx=48,
-        yB_size=6144,
-        yN_size=7168,
-        yP_size=7168,
-        xA_size=336,
-        xM_size=384,
-    ),  # nfacet=2², eff 75.0%
-    "6k[1]-n3584-384": dict(
-        W=15.5,
-        fov=1,
-        N=6144,
-        Nx=48,
-        yB_size=3072,
-        yN_size=3584,
-        yP_size=3584,
-        xA_size=336,
-        xM_size=384,
-    ),  # nfacet=2², eff 75.0%
-    "3k[1]-n1792-384": dict(
-        W=15.5,
-        fov=1,
-        N=3072,
-        Nx=48,
-        yB_size=1536,
-        yN_size=1792,
-        yP_size=1792,
-        xA_size=336,
-        xM_size=384,
-    ),  # nfacet=2², eff 75.0%
-    "1536[1]-n896-384": dict(
-        W=15.5,
-        fov=1,
-        N=1536,
-        Nx=48,
-        yB_size=768,
-        yN_size=896,
-        yP_size=896,
-        xA_size=336,
-        xM_size=384,
-    ),  # nfacet=2², eff 75.0%
-    "10k[1]-n7k-320": dict(
-        W=11.375,
-        fov=1,
-        N=10240,
-        Nx=4,
-        yB_size=5120,
-        yN_size=7168,
-        yP_size=7168,
-        xA_size=292,
-        xM_size=320,
-    ),  # nfacet=2², eff 65.2%
-    "5k[1]-n3584-320": dict(
-        W=11.375,
-        fov=1,
-        N=5120,
-        Nx=4,
-        yB_size=2560,
-        yN_size=3584,
-        yP_size=3584,
-        xA_size=292,
-        xM_size=320,
-    ),  # nfacet=2², eff 65.2%
-    "2560[1]-n1792-320": dict(
-        W=11.375,
-        fov=1,
-        N=2560,
-        Nx=4,
-        yB_size=1280,
-        yN_size=1792,
-        yP_size=1792,
-        xA_size=292,
-        xM_size=320,
-    ),  # nfacet=2², eff 65.2%
-    "1280[1]-n896-320": dict(
-        W=11.375,
-        fov=1,
-        N=1280,
-        Nx=4,
-        yB_size=640,
-        yN_size=896,
-        yP_size=896,
-        xA_size=292,
-        xM_size=320,
-    ),  # nfacet=2², eff 65.2%
-    "16k[1]-n14k-256": dict(
-        W=9.75,
-        fov=1,
-        N=16384,
-        Nx=4,
-        yB_size=8192,
-        yN_size=14336,
-        yP_size=14336,
-        xA_size=236,
-        xM_size=256,
-    ),  # nfacet=2², eff 52.7%
-    "14k[1]-n12544-256": dict(
-        W=9.75,
-        fov=1,
-        N=14336,
-        Nx=4,
-        yB_size=7168,
-        yN_size=12544,
-        yP_size=12544,
-        xA_size=236,
-        xM_size=256,
-    ),  # nfacet=2², eff 52.7%
-    "12k[1]-n10752-256": dict(
-        W=9.75,
-        fov=1,
-        N=12288,
-        Nx=4,
-        yB_size=6144,
-        yN_size=10752,
-        yP_size=10752,
-        xA_size=236,
-        xM_size=256,
-    ),  # nfacet=2², eff 52.7%
-    "10k[1]-n8960-256": dict(
-        W=9.75,
-        fov=1,
-        N=10240,
-        Nx=4,
-        yB_size=5120,
-        yN_size=8960,
-        yP_size=8960,
-        xA_size=236,
-        xM_size=256,
-    ),  # nfacet=2², eff 52.7%
-    "8k[1]-n7k-256": dict(
-        W=9.75,
-        fov=1,
-        N=8192,
-        Nx=4,
-        yB_size=4096,
-        yN_size=7168,
-        yP_size=7168,
-        xA_size=236,
-        xM_size=256,
-    ),  # nfacet=2², eff 52.7%
-    "7k[1]-n6272-256": dict(
-        W=9.75,
-        fov=1,
-        N=7168,
-        Nx=4,
-        yB_size=3584,
-        yN_size=6272,
-        yP_size=6272,
-        xA_size=236,
-        xM_size=256,
-    ),  # nfacet=2², eff 52.7%
-    "6k[1]-n5376-256": dict(
-        W=9.75,
-        fov=1,
-        N=6144,
-        Nx=4,
-        yB_size=3072,
-        yN_size=5376,
-        yP_size=5376,
-        xA_size=236,
-        xM_size=256,
-    ),  # nfacet=2², eff 52.7%
-    "5k[1]-n4480-256": dict(
-        W=9.75,
-        fov=1,
-        N=5120,
-        Nx=4,
-        yB_size=2560,
-        yN_size=4480,
-        yP_size=4480,
-        xA_size=236,
-        xM_size=256,
-    ),  # nfacet=2², eff 52.7%
-    "4k[1]-n3584-256": dict(
-        W=9.75,
-        fov=1,
-        N=4096,
-        Nx=4,
-        yB_size=2048,
-        yN_size=3584,
-        yP_size=3584,
-        xA_size=236,
-        xM_size=256,
-    ),  # nfacet=2², eff 52.7%
-    "3584[1]-n3136-256": dict(
-        W=9.75,
-        fov=1,
-        N=3584,
-        Nx=4,
-        yB_size=1792,
-        yN_size=3136,
-        yP_size=3136,
-        xA_size=236,
-        xM_size=256,
-    ),  # nfacet=2², eff 52.7%
-    "3k[1]-n2688-256": dict(
-        W=9.75,
-        fov=1,
-        N=3072,
-        Nx=4,
-        yB_size=1536,
-        yN_size=2688,
-        yP_size=2688,
-        xA_size=236,
-        xM_size=256,
-    ),  # nfacet=2², eff 52.7%
-    "2560[1]-n2240-256": dict(
-        W=9.75,
-        fov=1,
-        N=2560,
-        Nx=4,
-        yB_size=1280,
-        yN_size=2240,
-        yP_size=2240,
-        xA_size=236,
-        xM_size=256,
-    ),  # nfacet=2², eff 52.7%
-    "2k[1]-n1792-256": dict(
-        W=9.75,
-        fov=1,
-        N=2048,
-        Nx=4,
-        yB_size=1024,
-        yN_size=1792,
-        yP_size=1792,
-        xA_size=236,
-        xM_size=256,
-    ),  # nfacet=2², eff 52.7%
-    "1792[1]-n1568-256": dict(
-        W=9.75,
-        fov=1,
-        N=1792,
-        Nx=4,
-        yB_size=896,
-        yN_size=1568,
-        yP_size=1568,
-        xA_size=236,
-        xM_size=256,
-    ),  # nfacet=2², eff 52.7%
-    "1536[1]-n1344-256": dict(
-        W=9.75,
-        fov=1,
-        N=1536,
-        Nx=4,
-        yB_size=768,
-        yN_size=1344,
-        yP_size=1344,
-        xA_size=236,
-        xM_size=256,
-    ),  # nfacet=2², eff 52.7%
-    "1280[1]-n1120-256": dict(
-        W=9.75,
-        fov=1,
-        N=1280,
-        Nx=4,
-        yB_size=640,
-        yN_size=1120,
-        yP_size=1120,
-        xA_size=236,
-        xM_size=256,
-    ),  # nfacet=2², eff 52.7%
-    "1k[1]-n896-256": dict(
-        W=9.75,
-        fov=1,
-        N=1024,
-        Nx=4,
-        yB_size=512,
-        yN_size=896,
-        yP_size=896,
-        xA_size=236,
-        xM_size=256,
-    ),  # nfacet=2², eff 52.7%
-    "16k[1]-n6k-512": dict(
-        W=20.125,
-        fov=1,
-        N=16384,
-        Nx=64,
-        yB_size=5632,
-        yN_size=6144,
-        yP_size=6144,
-        xA_size=320,
-        xM_size=512,
-    ),  # nfacet=3², eff 55.6%
-    "14k[1]-n5376-512": dict(
-        W=20.125,
-        fov=1,
-        N=14336,
-        Nx=64,
-        yB_size=4928,
-        yN_size=5376,
-        yP_size=5376,
-        xA_size=320,
-        xM_size=512,
-    ),  # nfacet=3², eff 55.6%
-    "12k[1]-n4608-512": dict(
-        W=20.125,
-        fov=1,
-        N=12288,
-        Nx=64,
-        yB_size=4224,
-        yN_size=4608,
-        yP_size=4608,
-        xA_size=320,
-        xM_size=512,
-    ),  # nfacet=3², eff 55.6%
-    "10k[1]-n3840-512": dict(
-        W=20.125,
-        fov=1,
-        N=10240,
-        Nx=64,
-        yB_size=3520,
-        yN_size=3840,
-        yP_size=3840,
-        xA_size=320,
-        xM_size=512,
-    ),  # nfacet=3², eff 55.6%
-    "8k[1]-n3k-512": dict(
-        W=20.125,
-        fov=1,
-        N=8192,
-        Nx=64,
-        yB_size=2816,
-        yN_size=3072,
-        yP_size=3072,
-        xA_size=320,
-        xM_size=512,
-    ),  # nfacet=3², eff 55.6%
-    "7k[1]-n2688-512": dict(
-        W=20.125,
-        fov=1,
-        N=7168,
-        Nx=64,
-        yB_size=2464,
-        yN_size=2688,
-        yP_size=2688,
-        xA_size=320,
-        xM_size=512,
-    ),  # nfacet=3², eff 55.6%
-    "6k[1]-n2304-512": dict(
-        W=20.125,
-        fov=1,
-        N=6144,
-        Nx=64,
-        yB_size=2112,
-        yN_size=2304,
-        yP_size=2304,
-        xA_size=320,
-        xM_size=512,
-    ),  # nfacet=3², eff 55.6%
-    "5k[1]-n1920-512": dict(
-        W=20.125,
-        fov=1,
-        N=5120,
-        Nx=64,
-        yB_size=1760,
-        yN_size=1920,
-        yP_size=1920,
-        xA_size=320,
-        xM_size=512,
-    ),  # nfacet=3², eff 55.6%
-    "4k[1]-n1536-512": dict(
-        W=20.125,
-        fov=1,
-        N=4096,
-        Nx=64,
-        yB_size=1408,
-        yN_size=1536,
-        yP_size=1536,
-        xA_size=320,
-        xM_size=512,
-    ),  # nfacet=3², eff 55.6%
-    "3584[1]-n1344-512": dict(
-        W=20.125,
-        fov=1,
-        N=3584,
-        Nx=64,
-        yB_size=1232,
-        yN_size=1344,
-        yP_size=1344,
-        xA_size=320,
-        xM_size=512,
-    ),  # nfacet=3², eff 55.6%
-    "3k[1]-n1152-512": dict(
-        W=20.125,
-        fov=1,
-        N=3072,
-        Nx=64,
-        yB_size=1056,
-        yN_size=1152,
-        yP_size=1152,
-        xA_size=320,
-        xM_size=512,
-    ),  # nfacet=3², eff 55.6%
-    "2560[1]-n960-512": dict(
-        W=20.125,
-        fov=1,
-        N=2560,
-        Nx=64,
-        yB_size=880,
-        yN_size=960,
-        yP_size=960,
-        xA_size=320,
-        xM_size=512,
-    ),  # nfacet=3², eff 55.6%
-    "2k[1]-n768-512": dict(
-        W=20.125,
-        fov=1,
-        N=2048,
-        Nx=64,
-        yB_size=704,
-        yN_size=768,
-        yP_size=768,
-        xA_size=320,
-        xM_size=512,
-    ),  # nfacet=3², eff 55.6%
-    "1536[1]-n576-512": dict(
-        W=20.125,
-        fov=1,
-        N=1536,
-        Nx=64,
-        yB_size=528,
-        yN_size=576,
-        yP_size=576,
-        xA_size=320,
-        xM_size=512,
-    ),  # nfacet=3², eff 55.6%
-    "1k[1]-n384-512": dict(
-        W=20.125,
-        fov=1,
-        N=1024,
-        Nx=64,
-        yB_size=352,
-        yN_size=384,
-        yP_size=384,
-        xA_size=320,
-        xM_size=512,
-    ),  # nfacet=3², eff 55.6%
-    "14k[1]-n6k-448": dict(
-        W=13.0,
-        fov=1,
-        N=14336,
-        Nx=56,
-        yB_size=4864,
-        yN_size=6144,
-        yP_size=6144,
-        xA_size=392,
-        xM_size=448,
-    ),  # nfacet=3², eff 68.1%
-    "7k[1]-n3k-448": dict(
-        W=13.0,
-        fov=1,
-        N=7168,
-        Nx=56,
-        yB_size=2432,
-        yN_size=3072,
-        yP_size=3072,
-        xA_size=392,
-        xM_size=448,
-    ),  # nfacet=3², eff 68.1%
-    "3584[1]-n1536-448": dict(
-        W=13.0,
-        fov=1,
-        N=3584,
-        Nx=56,
-        yB_size=1216,
-        yN_size=1536,
-        yP_size=1536,
-        xA_size=392,
-        xM_size=448,
-    ),  # nfacet=3², eff 68.1%
-    "1792[1]-n768-448": dict(
-        W=13.0,
-        fov=1,
-        N=1792,
-        Nx=56,
-        yB_size=608,
-        yN_size=768,
-        yP_size=768,
-        xA_size=392,
-        xM_size=448,
-    ),  # nfacet=3², eff 68.1%
     "12k[1]-n6k-384": dict(
         W=10.75,
         fov=1,
@@ -1302,7 +521,7 @@ SWIFT_CONFIGS = {
         yP_size=1536,
         xA_size=345,
         xM_size=384,
-    ),  # nfacet=3², eff 59.9%
+    ),
     "1536[1]-n768-384": dict(
         W=10.75,
         fov=1,
@@ -1313,491 +532,7 @@ SWIFT_CONFIGS = {
         yP_size=768,
         xA_size=345,
         xM_size=384,
-    ),  # nfacet=3², eff 59.9%
-    "10k[1]-n6k-320": dict(
-        W=14.375,
-        fov=1,
-        N=10240,
-        Nx=4,
-        yB_size=5120,
-        yN_size=6144,
-        yP_size=6144,
-        xA_size=276,
-        xM_size=320,
-    ),  # nfacet=2², eff 71.9%
-    "5k[1]-n3k-320": dict(
-        W=14.375,
-        fov=1,
-        N=5120,
-        Nx=4,
-        yB_size=2560,
-        yN_size=3072,
-        yP_size=3072,
-        xA_size=276,
-        xM_size=320,
-    ),  # nfacet=2², eff 71.9%
-    "2560[1]-n1536-320": dict(
-        W=14.375,
-        fov=1,
-        N=2560,
-        Nx=4,
-        yB_size=1280,
-        yN_size=1536,
-        yP_size=1536,
-        xA_size=276,
-        xM_size=320,
-    ),  # nfacet=2², eff 71.9%
-    "1280[1]-n768-320": dict(
-        W=14.375,
-        fov=1,
-        N=1280,
-        Nx=4,
-        yB_size=640,
-        yN_size=768,
-        yP_size=768,
-        xA_size=276,
-        xM_size=320,
-    ),  # nfacet=2², eff 71.9%
-    "16k[1]-n12k-256": dict(
-        W=10.75,
-        fov=1,
-        N=16384,
-        Nx=32,
-        yB_size=8192,
-        yN_size=12288,
-        yP_size=12288,
-        xA_size=224,
-        xM_size=256,
-    ),  # nfacet=2², eff 58.3%
-    "14k[1]-n10752-256": dict(
-        W=10.75,
-        fov=1,
-        N=14336,
-        Nx=32,
-        yB_size=7168,
-        yN_size=10752,
-        yP_size=10752,
-        xA_size=224,
-        xM_size=256,
-    ),  # nfacet=2², eff 58.3%
-    "12k[1]-n9k-256": dict(
-        W=10.75,
-        fov=1,
-        N=12288,
-        Nx=32,
-        yB_size=6144,
-        yN_size=9216,
-        yP_size=9216,
-        xA_size=224,
-        xM_size=256,
-    ),  # nfacet=2², eff 58.3%
-    "10k[1]-n7680-256": dict(
-        W=10.75,
-        fov=1,
-        N=10240,
-        Nx=32,
-        yB_size=5120,
-        yN_size=7680,
-        yP_size=7680,
-        xA_size=224,
-        xM_size=256,
-    ),  # nfacet=2², eff 58.3%
-    "8k[1]-n6k-256": dict(
-        W=10.75,
-        fov=1,
-        N=8192,
-        Nx=32,
-        yB_size=4096,
-        yN_size=6144,
-        yP_size=6144,
-        xA_size=224,
-        xM_size=256,
-    ),  # nfacet=2², eff 58.3%
-    "7k[1]-n5376-256": dict(
-        W=10.75,
-        fov=1,
-        N=7168,
-        Nx=32,
-        yB_size=3584,
-        yN_size=5376,
-        yP_size=5376,
-        xA_size=224,
-        xM_size=256,
-    ),  # nfacet=2², eff 58.3%
-    "6k[1]-n4608-256": dict(
-        W=10.75,
-        fov=1,
-        N=6144,
-        Nx=32,
-        yB_size=3072,
-        yN_size=4608,
-        yP_size=4608,
-        xA_size=224,
-        xM_size=256,
-    ),  # nfacet=2², eff 58.3%
-    "5k[1]-n3840-256": dict(
-        W=10.75,
-        fov=1,
-        N=5120,
-        Nx=32,
-        yB_size=2560,
-        yN_size=3840,
-        yP_size=3840,
-        xA_size=224,
-        xM_size=256,
-    ),  # nfacet=2², eff 58.3%
-    "4k[1]-n3k-256": dict(
-        W=10.75,
-        fov=1,
-        N=4096,
-        Nx=32,
-        yB_size=2048,
-        yN_size=3072,
-        yP_size=3072,
-        xA_size=224,
-        xM_size=256,
-    ),  # nfacet=2², eff 58.3%
-    "3584[1]-n2688-256": dict(
-        W=10.75,
-        fov=1,
-        N=3584,
-        Nx=32,
-        yB_size=1792,
-        yN_size=2688,
-        yP_size=2688,
-        xA_size=224,
-        xM_size=256,
-    ),  # nfacet=2², eff 58.3%
-    "3k[1]-n2304-256": dict(
-        W=10.75,
-        fov=1,
-        N=3072,
-        Nx=32,
-        yB_size=1536,
-        yN_size=2304,
-        yP_size=2304,
-        xA_size=224,
-        xM_size=256,
-    ),  # nfacet=2², eff 58.3%
-    "2560[1]-n1920-256": dict(
-        W=10.75,
-        fov=1,
-        N=2560,
-        Nx=32,
-        yB_size=1280,
-        yN_size=1920,
-        yP_size=1920,
-        xA_size=224,
-        xM_size=256,
-    ),  # nfacet=2², eff 58.3%
-    "2k[1]-n1536-256": dict(
-        W=10.75,
-        fov=1,
-        N=2048,
-        Nx=32,
-        yB_size=1024,
-        yN_size=1536,
-        yP_size=1536,
-        xA_size=224,
-        xM_size=256,
-    ),  # nfacet=2², eff 58.3%
-    "1792[1]-n1344-256": dict(
-        W=10.75,
-        fov=1,
-        N=1792,
-        Nx=32,
-        yB_size=896,
-        yN_size=1344,
-        yP_size=1344,
-        xA_size=224,
-        xM_size=256,
-    ),  # nfacet=2², eff 58.3%
-    "1536[1]-n1152-256": dict(
-        W=10.75,
-        fov=1,
-        N=1536,
-        Nx=32,
-        yB_size=768,
-        yN_size=1152,
-        yP_size=1152,
-        xA_size=224,
-        xM_size=256,
-    ),  # nfacet=2², eff 58.3%
-    "1280[1]-n960-256": dict(
-        W=10.75,
-        fov=1,
-        N=1280,
-        Nx=32,
-        yB_size=640,
-        yN_size=960,
-        yP_size=960,
-        xA_size=224,
-        xM_size=256,
-    ),  # nfacet=2², eff 58.3%
-    "1k[1]-n768-256": dict(
-        W=10.75,
-        fov=1,
-        N=1024,
-        Nx=32,
-        yB_size=512,
-        yN_size=768,
-        yP_size=768,
-        xA_size=224,
-        xM_size=256,
-    ),  # nfacet=2², eff 58.3%
-    "16k[1]-n5k-512": dict(
-        W=13.25,
-        fov=1,
-        N=16384,
-        Nx=8,
-        yB_size=4096,
-        yN_size=5120,
-        yP_size=5120,
-        xA_size=440,
-        xM_size=512,
-    ),  # nfacet=4², eff 68.8%
-    "14k[1]-n4480-512": dict(
-        W=13.25,
-        fov=1,
-        N=14336,
-        Nx=8,
-        yB_size=3584,
-        yN_size=4480,
-        yP_size=4480,
-        xA_size=440,
-        xM_size=512,
-    ),  # nfacet=4², eff 68.8%
-    "12k[1]-n3840-512": dict(
-        W=13.25,
-        fov=1,
-        N=12288,
-        Nx=8,
-        yB_size=3072,
-        yN_size=3840,
-        yP_size=3840,
-        xA_size=440,
-        xM_size=512,
-    ),  # nfacet=4², eff 68.8%
-    "10k[1]-n3200-512": dict(
-        W=13.25,
-        fov=1,
-        N=10240,
-        Nx=8,
-        yB_size=2560,
-        yN_size=3200,
-        yP_size=3200,
-        xA_size=440,
-        xM_size=512,
-    ),  # nfacet=4², eff 68.8%
-    "8k[1]-n2560-512": dict(
-        W=13.25,
-        fov=1,
-        N=8192,
-        Nx=8,
-        yB_size=2048,
-        yN_size=2560,
-        yP_size=2560,
-        xA_size=440,
-        xM_size=512,
-    ),  # nfacet=4², eff 68.8%
-    "7k[1]-n2240-512": dict(
-        W=13.25,
-        fov=1,
-        N=7168,
-        Nx=8,
-        yB_size=1792,
-        yN_size=2240,
-        yP_size=2240,
-        xA_size=440,
-        xM_size=512,
-    ),  # nfacet=4², eff 68.8%
-    "6k[1]-n1920-512": dict(
-        W=13.25,
-        fov=1,
-        N=6144,
-        Nx=8,
-        yB_size=1536,
-        yN_size=1920,
-        yP_size=1920,
-        xA_size=440,
-        xM_size=512,
-    ),  # nfacet=4², eff 68.8%
-    "5k[1]-n1600-512": dict(
-        W=13.25,
-        fov=1,
-        N=5120,
-        Nx=8,
-        yB_size=1280,
-        yN_size=1600,
-        yP_size=1600,
-        xA_size=440,
-        xM_size=512,
-    ),  # nfacet=4², eff 68.8%
-    "4k[1]-n1280-512": dict(
-        W=13.25,
-        fov=1,
-        N=4096,
-        Nx=8,
-        yB_size=1024,
-        yN_size=1280,
-        yP_size=1280,
-        xA_size=440,
-        xM_size=512,
-    ),  # nfacet=4², eff 68.8%
-    "3584[1]-n1120-512": dict(
-        W=13.25,
-        fov=1,
-        N=3584,
-        Nx=8,
-        yB_size=896,
-        yN_size=1120,
-        yP_size=1120,
-        xA_size=440,
-        xM_size=512,
-    ),  # nfacet=4², eff 68.8%
-    "3k[1]-n960-512": dict(
-        W=13.25,
-        fov=1,
-        N=3072,
-        Nx=8,
-        yB_size=768,
-        yN_size=960,
-        yP_size=960,
-        xA_size=440,
-        xM_size=512,
-    ),  # nfacet=4², eff 68.8%
-    "2560[1]-n800-512": dict(
-        W=13.25,
-        fov=1,
-        N=2560,
-        Nx=8,
-        yB_size=640,
-        yN_size=800,
-        yP_size=800,
-        xA_size=440,
-        xM_size=512,
-    ),  # nfacet=4², eff 68.8%
-    "2k[1]-n640-512": dict(
-        W=13.25,
-        fov=1,
-        N=2048,
-        Nx=8,
-        yB_size=512,
-        yN_size=640,
-        yP_size=640,
-        xA_size=440,
-        xM_size=512,
-    ),  # nfacet=4², eff 68.8%
-    "1536[1]-n480-512": dict(
-        W=13.25,
-        fov=1,
-        N=1536,
-        Nx=8,
-        yB_size=384,
-        yN_size=480,
-        yP_size=480,
-        xA_size=440,
-        xM_size=512,
-    ),  # nfacet=4², eff 68.8%
-    "1k[1]-n320-512": dict(
-        W=13.25,
-        fov=1,
-        N=1024,
-        Nx=8,
-        yB_size=256,
-        yN_size=320,
-        yP_size=320,
-        xA_size=440,
-        xM_size=512,
-    ),  # nfacet=4², eff 68.8%
-    "14k[1]-n5k-448": dict(
-        W=11.125,
-        fov=1,
-        N=14336,
-        Nx=56,
-        yB_size=3584,
-        yN_size=5120,
-        yP_size=5120,
-        xA_size=392,
-        xM_size=448,
-    ),  # nfacet=4², eff 61.2%
-    "7k[1]-n2560-448": dict(
-        W=11.125,
-        fov=1,
-        N=7168,
-        Nx=56,
-        yB_size=1792,
-        yN_size=2560,
-        yP_size=2560,
-        xA_size=392,
-        xM_size=448,
-    ),  # nfacet=4², eff 61.2%
-    "3584[1]-n1280-448": dict(
-        W=11.125,
-        fov=1,
-        N=3584,
-        Nx=56,
-        yB_size=896,
-        yN_size=1280,
-        yP_size=1280,
-        xA_size=392,
-        xM_size=448,
-    ),  # nfacet=4², eff 61.2%
-    "1792[1]-n640-448": dict(
-        W=11.125,
-        fov=1,
-        N=1792,
-        Nx=56,
-        yB_size=448,
-        yN_size=640,
-        yP_size=640,
-        xA_size=392,
-        xM_size=448,
-    ),  # nfacet=4², eff 61.2%
-    "12k[1]-n5k-384": dict(
-        W=13.25,
-        fov=1,
-        N=12288,
-        Nx=6,
-        yB_size=4096,
-        yN_size=5120,
-        yP_size=5120,
-        xA_size=330,
-        xM_size=384,
-    ),  # nfacet=3², eff 68.8%
-    "6k[1]-n2560-384": dict(
-        W=13.25,
-        fov=1,
-        N=6144,
-        Nx=6,
-        yB_size=2048,
-        yN_size=2560,
-        yP_size=2560,
-        xA_size=330,
-        xM_size=384,
-    ),  # nfacet=3², eff 68.8%
-    "3k[1]-n1280-384": dict(
-        W=13.25,
-        fov=1,
-        N=3072,
-        Nx=6,
-        yB_size=1024,
-        yN_size=1280,
-        yP_size=1280,
-        xA_size=330,
-        xM_size=384,
-    ),  # nfacet=3², eff 68.8%
-    "1536[1]-n640-384": dict(
-        W=13.25,
-        fov=1,
-        N=1536,
-        Nx=6,
-        yB_size=512,
-        yN_size=640,
-        yP_size=640,
-        xA_size=330,
-        xM_size=384,
-    ),  # nfacet=3², eff 68.8%
+    ),
     "10k[1]-n5k-320": dict(
         W=11.125,
         fov=1,
@@ -1808,7 +543,7 @@ SWIFT_CONFIGS = {
         yP_size=5120,
         xA_size=280,
         xM_size=320,
-    ),  # nfacet=3², eff 58.3%
+    ),
     "5k[1]-n2560-320": dict(
         W=11.125,
         fov=1,
@@ -1819,7 +554,7 @@ SWIFT_CONFIGS = {
         yP_size=2560,
         xA_size=280,
         xM_size=320,
-    ),  # nfacet=3², eff 58.3%
+    ),
     "2560[1]-n1280-320": dict(
         W=11.125,
         fov=1,
@@ -1830,7 +565,7 @@ SWIFT_CONFIGS = {
         yP_size=1280,
         xA_size=280,
         xM_size=320,
-    ),  # nfacet=3², eff 58.3%
+    ),
     "1280[1]-n640-320": dict(
         W=11.125,
         fov=1,
@@ -1841,205 +576,7 @@ SWIFT_CONFIGS = {
         yP_size=640,
         xA_size=280,
         xM_size=320,
-    ),  # nfacet=3², eff 58.3%
-    "16k[1]-n10k-256": dict(
-        W=13.25,
-        fov=1,
-        N=16384,
-        Nx=4,
-        yB_size=8192,
-        yN_size=10240,
-        yP_size=10240,
-        xA_size=220,
-        xM_size=256,
-    ),  # nfacet=2², eff 68.8%
-    "14k[1]-n8960-256": dict(
-        W=13.25,
-        fov=1,
-        N=14336,
-        Nx=4,
-        yB_size=7168,
-        yN_size=8960,
-        yP_size=8960,
-        xA_size=220,
-        xM_size=256,
-    ),  # nfacet=2², eff 68.8%
-    "12k[1]-n7680-256": dict(
-        W=13.25,
-        fov=1,
-        N=12288,
-        Nx=4,
-        yB_size=6144,
-        yN_size=7680,
-        yP_size=7680,
-        xA_size=220,
-        xM_size=256,
-    ),  # nfacet=2², eff 68.8%
-    "10k[1]-n6400-256": dict(
-        W=13.25,
-        fov=1,
-        N=10240,
-        Nx=4,
-        yB_size=5120,
-        yN_size=6400,
-        yP_size=6400,
-        xA_size=220,
-        xM_size=256,
-    ),  # nfacet=2², eff 68.8%
-    "8k[1]-n5k-256": dict(
-        W=13.25,
-        fov=1,
-        N=8192,
-        Nx=4,
-        yB_size=4096,
-        yN_size=5120,
-        yP_size=5120,
-        xA_size=220,
-        xM_size=256,
-    ),  # nfacet=2², eff 68.8%
-    "7k[1]-n4480-256": dict(
-        W=13.25,
-        fov=1,
-        N=7168,
-        Nx=4,
-        yB_size=3584,
-        yN_size=4480,
-        yP_size=4480,
-        xA_size=220,
-        xM_size=256,
-    ),  # nfacet=2², eff 68.8%
-    "6k[1]-n3840-256": dict(
-        W=13.25,
-        fov=1,
-        N=6144,
-        Nx=4,
-        yB_size=3072,
-        yN_size=3840,
-        yP_size=3840,
-        xA_size=220,
-        xM_size=256,
-    ),  # nfacet=2², eff 68.8%
-    "5k[1]-n3200-256": dict(
-        W=13.25,
-        fov=1,
-        N=5120,
-        Nx=4,
-        yB_size=2560,
-        yN_size=3200,
-        yP_size=3200,
-        xA_size=220,
-        xM_size=256,
-    ),  # nfacet=2², eff 68.8%
-    "4k[1]-n2560-256": dict(
-        W=13.25,
-        fov=1,
-        N=4096,
-        Nx=4,
-        yB_size=2048,
-        yN_size=2560,
-        yP_size=2560,
-        xA_size=220,
-        xM_size=256,
-    ),  # nfacet=2², eff 68.8%
-    "3584[1]-n2240-256": dict(
-        W=13.25,
-        fov=1,
-        N=3584,
-        Nx=4,
-        yB_size=1792,
-        yN_size=2240,
-        yP_size=2240,
-        xA_size=220,
-        xM_size=256,
-    ),  # nfacet=2², eff 68.8%
-    "3k[1]-n1920-256": dict(
-        W=13.25,
-        fov=1,
-        N=3072,
-        Nx=4,
-        yB_size=1536,
-        yN_size=1920,
-        yP_size=1920,
-        xA_size=220,
-        xM_size=256,
-    ),  # nfacet=2², eff 68.8%
-    "2560[1]-n1600-256": dict(
-        W=13.25,
-        fov=1,
-        N=2560,
-        Nx=4,
-        yB_size=1280,
-        yN_size=1600,
-        yP_size=1600,
-        xA_size=220,
-        xM_size=256,
-    ),  # nfacet=2², eff 68.8%
-    "2k[1]-n1280-256": dict(
-        W=13.25,
-        fov=1,
-        N=2048,
-        Nx=4,
-        yB_size=1024,
-        yN_size=1280,
-        yP_size=1280,
-        xA_size=220,
-        xM_size=256,
-    ),  # nfacet=2², eff 68.8%
-    "1792[1]-n1120-256": dict(
-        W=13.25,
-        fov=1,
-        N=1792,
-        Nx=4,
-        yB_size=896,
-        yN_size=1120,
-        yP_size=1120,
-        xA_size=220,
-        xM_size=256,
-    ),  # nfacet=2², eff 68.8%
-    "1536[1]-n960-256": dict(
-        W=13.25,
-        fov=1,
-        N=1536,
-        Nx=4,
-        yB_size=768,
-        yN_size=960,
-        yP_size=960,
-        xA_size=220,
-        xM_size=256,
-    ),  # nfacet=2², eff 68.8%
-    "1280[1]-n800-256": dict(
-        W=13.25,
-        fov=1,
-        N=1280,
-        Nx=4,
-        yB_size=640,
-        yN_size=800,
-        yP_size=800,
-        xA_size=220,
-        xM_size=256,
-    ),  # nfacet=2², eff 68.8%
-    "1k[1]-n640-256": dict(
-        W=13.25,
-        fov=1,
-        N=1024,
-        Nx=4,
-        yB_size=512,
-        yN_size=640,
-        yP_size=640,
-        xA_size=220,
-        xM_size=256,
-    ),  # nfacet=2², eff 68.8%
-    "96k[1]-n24k-512": dict(
-        W=13.625,
-        fov=1,
-        N=98304,
-        Nx=64,
-        yB_size=19968,
-        yN_size=32768,
-        yP_size=32768,
-        xA_size=320,
-        xM_size=512,
-    ),  # nfacet=5², eff 50.0%
+    ),
     "64k[1]-n16k-512": dict(
         W=13.625,
         fov=1,
@@ -2050,7 +587,7 @@ SWIFT_CONFIGS = {
         yP_size=16384,
         xA_size=320,
         xM_size=512,
-    ),  # nfacet=5², eff 50.0%
+    ),
     "32k[1]-n8k-512": dict(
         W=13.625,
         fov=1,
@@ -2061,7 +598,7 @@ SWIFT_CONFIGS = {
         yP_size=8192,
         xA_size=320,
         xM_size=512,
-    ),  # nfacet=5², eff 50.0%
+    ),
     "16k[1]-n4k-512": dict(
         W=13.625,
         fov=1,
@@ -2072,7 +609,7 @@ SWIFT_CONFIGS = {
         yP_size=4096,
         xA_size=320,
         xM_size=512,
-    ),  # nfacet=5², eff 50.0%
+    ),
     "14k[1]-n3584-512": dict(
         W=13.625,
         fov=1,
@@ -2083,7 +620,7 @@ SWIFT_CONFIGS = {
         yP_size=3584,
         xA_size=320,
         xM_size=512,
-    ),  # nfacet=5², eff 50.0%
+    ),
     "12k[1]-n3k-512": dict(
         W=13.625,
         fov=1,
@@ -2094,7 +631,7 @@ SWIFT_CONFIGS = {
         yP_size=3072,
         xA_size=320,
         xM_size=512,
-    ),  # nfacet=5², eff 50.0%
+    ),
     "10k[1]-n2560-512": dict(
         W=13.625,
         fov=1,
@@ -2105,7 +642,7 @@ SWIFT_CONFIGS = {
         yP_size=2560,
         xA_size=320,
         xM_size=512,
-    ),  # nfacet=5², eff 50.0%
+    ),
     "8k[1]-n2k-512": dict(
         W=13.625,
         fov=1,
@@ -2116,7 +653,7 @@ SWIFT_CONFIGS = {
         yP_size=2048,
         xA_size=320,
         xM_size=512,
-    ),  # nfacet=5², eff 50.0%
+    ),
     "7k[1]-n1792-512": dict(
         W=13.625,
         fov=1,
@@ -2127,7 +664,7 @@ SWIFT_CONFIGS = {
         yP_size=1792,
         xA_size=320,
         xM_size=512,
-    ),  # nfacet=5², eff 50.0%
+    ),
     "6k[1]-n1536-512": dict(
         W=13.625,
         fov=1,
@@ -2138,7 +675,7 @@ SWIFT_CONFIGS = {
         yP_size=1536,
         xA_size=320,
         xM_size=512,
-    ),  # nfacet=5², eff 50.0%
+    ),
     "5k[1]-n1280-512": dict(
         W=13.625,
         fov=1,
@@ -2149,7 +686,7 @@ SWIFT_CONFIGS = {
         yP_size=1280,
         xA_size=320,
         xM_size=512,
-    ),  # nfacet=5², eff 50.0%
+    ),
     "4k[1]-n1k-512": dict(
         W=13.625,
         fov=1,
@@ -2160,7 +697,7 @@ SWIFT_CONFIGS = {
         yP_size=1024,
         xA_size=320,
         xM_size=512,
-    ),  # nfacet=5², eff 50.0%
+    ),
     "3584[1]-n896-512": dict(
         W=13.625,
         fov=1,
@@ -2171,7 +708,7 @@ SWIFT_CONFIGS = {
         yP_size=896,
         xA_size=320,
         xM_size=512,
-    ),  # nfacet=5², eff 50.0%
+    ),
     "3k[1]-n768-512": dict(
         W=13.625,
         fov=1,
@@ -2182,7 +719,7 @@ SWIFT_CONFIGS = {
         yP_size=768,
         xA_size=320,
         xM_size=512,
-    ),  # nfacet=5², eff 50.0%
+    ),
     "2560[1]-n640-512": dict(
         W=13.625,
         fov=1,
@@ -2193,7 +730,7 @@ SWIFT_CONFIGS = {
         yP_size=640,
         xA_size=320,
         xM_size=512,
-    ),  # nfacet=5², eff 50.0%
+    ),
     "2k[1]-n512-512": dict(
         W=13.625,
         fov=1,
@@ -2204,7 +741,7 @@ SWIFT_CONFIGS = {
         yP_size=512,
         xA_size=320,
         xM_size=512,
-    ),  # nfacet=5², eff 50.0%
+    ),
     "1536[1]-n384-512": dict(
         W=13.625,
         fov=1,
@@ -2215,7 +752,7 @@ SWIFT_CONFIGS = {
         yP_size=384,
         xA_size=320,
         xM_size=512,
-    ),  # nfacet=5², eff 50.0%
+    ),
     "1k[1]-n256-512": dict(
         W=13.625,
         fov=1,
@@ -2226,51 +763,7 @@ SWIFT_CONFIGS = {
         yP_size=256,
         xA_size=320,
         xM_size=512,
-    ),  # nfacet=5², eff 50.0%
-    "14k[1]-n4k-448": dict(
-        W=16.5,
-        fov=1,
-        N=14336,
-        Nx=8,
-        yB_size=3584,
-        yN_size=4096,
-        yP_size=4096,
-        xA_size=344,
-        xM_size=448,
-    ),  # nfacet=4², eff 67.2%
-    "7k[1]-n2k-448": dict(
-        W=16.5,
-        fov=1,
-        N=7168,
-        Nx=8,
-        yB_size=1792,
-        yN_size=2048,
-        yP_size=2048,
-        xA_size=344,
-        xM_size=448,
-    ),  # nfacet=4², eff 67.2%
-    "3584[1]-n1k-448": dict(
-        W=16.5,
-        fov=1,
-        N=3584,
-        Nx=8,
-        yB_size=896,
-        yN_size=1024,
-        yP_size=1024,
-        xA_size=344,
-        xM_size=448,
-    ),  # nfacet=4², eff 67.2%
-    "1792[1]-n512-448": dict(
-        W=16.5,
-        fov=1,
-        N=1792,
-        Nx=8,
-        yB_size=448,
-        yN_size=512,
-        yP_size=512,
-        xA_size=344,
-        xM_size=448,
-    ),  # nfacet=4², eff 67.2%
+    ),
     "12k[1]-n4k-384": dict(
         W=12.0,
         fov=1,
@@ -2281,7 +774,7 @@ SWIFT_CONFIGS = {
         yP_size=4096,
         xA_size=296,
         xM_size=384,
-    ),  # nfacet=4², eff 57.8%
+    ),
     "6k[1]-n2k-384": dict(
         W=12.0,
         fov=1,
@@ -2292,7 +785,7 @@ SWIFT_CONFIGS = {
         yP_size=2048,
         xA_size=296,
         xM_size=384,
-    ),  # nfacet=4², eff 57.8%
+    ),
     "3k[1]-n1k-384": dict(
         W=12.0,
         fov=1,
@@ -2303,7 +796,7 @@ SWIFT_CONFIGS = {
         yP_size=1024,
         xA_size=296,
         xM_size=384,
-    ),  # nfacet=4², eff 57.8%
+    ),
     "1536[1]-n512-384": dict(
         W=12.0,
         fov=1,
@@ -2314,51 +807,7 @@ SWIFT_CONFIGS = {
         yP_size=512,
         xA_size=296,
         xM_size=384,
-    ),  # nfacet=4², eff 57.8%
-    "10k[1]-n4k-320": dict(
-        W=15.625,
-        fov=1,
-        N=10240,
-        Nx=64,
-        yB_size=3520,
-        yN_size=4096,
-        yP_size=4096,
-        xA_size=256,
-        xM_size=320,
-    ),  # nfacet=3², eff 66.7%
-    "5k[1]-n2k-320": dict(
-        W=15.625,
-        fov=1,
-        N=5120,
-        Nx=64,
-        yB_size=1760,
-        yN_size=2048,
-        yP_size=2048,
-        xA_size=256,
-        xM_size=320,
-    ),  # nfacet=3², eff 66.7%
-    "2560[1]-n1k-320": dict(
-        W=15.625,
-        fov=1,
-        N=2560,
-        Nx=64,
-        yB_size=880,
-        yN_size=1024,
-        yP_size=1024,
-        xA_size=256,
-        xM_size=320,
-    ),  # nfacet=3², eff 66.7%
-    "1280[1]-n512-320": dict(
-        W=15.625,
-        fov=1,
-        N=1280,
-        Nx=64,
-        yB_size=440,
-        yN_size=512,
-        yP_size=512,
-        xA_size=256,
-        xM_size=320,
-    ),  # nfacet=3², eff 66.7%
+    ),
     "16k[1]-n8k-256": dict(
         W=11.0,
         fov=1,
@@ -2369,7 +818,7 @@ SWIFT_CONFIGS = {
         yP_size=8192,
         xA_size=160,
         xM_size=256,
-    ),  # nfacet=3², eff 41.7%
+    ),
     "14k[1]-n7k-256": dict(
         W=11.0,
         fov=1,
@@ -2380,7 +829,7 @@ SWIFT_CONFIGS = {
         yP_size=7168,
         xA_size=160,
         xM_size=256,
-    ),  # nfacet=3², eff 41.7%
+    ),
     "12k[1]-n6k-256": dict(
         W=11.0,
         fov=1,
@@ -2391,7 +840,7 @@ SWIFT_CONFIGS = {
         yP_size=6144,
         xA_size=160,
         xM_size=256,
-    ),  # nfacet=3², eff 41.7%
+    ),
     "10k[1]-n5k-256": dict(
         W=11.0,
         fov=1,
@@ -2402,7 +851,7 @@ SWIFT_CONFIGS = {
         yP_size=5120,
         xA_size=160,
         xM_size=256,
-    ),  # nfacet=3², eff 41.7%
+    ),
     "8k[1]-n4k-256": dict(
         W=11.0,
         fov=1,
@@ -2413,7 +862,7 @@ SWIFT_CONFIGS = {
         yP_size=4096,
         xA_size=160,
         xM_size=256,
-    ),  # nfacet=3², eff 41.7%
+    ),
     "7k[1]-n3584-256": dict(
         W=11.0,
         fov=1,
@@ -2424,7 +873,7 @@ SWIFT_CONFIGS = {
         yP_size=3584,
         xA_size=160,
         xM_size=256,
-    ),  # nfacet=3², eff 41.7%
+    ),
     "6k[1]-n3k-256": dict(
         W=11.0,
         fov=1,
@@ -2435,7 +884,7 @@ SWIFT_CONFIGS = {
         yP_size=3072,
         xA_size=160,
         xM_size=256,
-    ),  # nfacet=3², eff 41.7%
+    ),
     "5k[1]-n2560-256": dict(
         W=11.0,
         fov=1,
@@ -2446,7 +895,7 @@ SWIFT_CONFIGS = {
         yP_size=2560,
         xA_size=160,
         xM_size=256,
-    ),  # nfacet=3², eff 41.7%
+    ),
     "4k[1]-n2k-256": dict(
         W=11.0,
         fov=1,
@@ -2457,7 +906,7 @@ SWIFT_CONFIGS = {
         yP_size=2048,
         xA_size=160,
         xM_size=256,
-    ),  # nfacet=3², eff 41.7%
+    ),
     "3584[1]-n1792-256": dict(
         W=11.0,
         fov=1,
@@ -2468,7 +917,7 @@ SWIFT_CONFIGS = {
         yP_size=1792,
         xA_size=160,
         xM_size=256,
-    ),  # nfacet=3², eff 41.7%
+    ),
     "3k[1]-n1536-256": dict(
         W=11.0,
         fov=1,
@@ -2479,7 +928,7 @@ SWIFT_CONFIGS = {
         yP_size=1536,
         xA_size=160,
         xM_size=256,
-    ),  # nfacet=3², eff 41.7%
+    ),
     "2560[1]-n1280-256": dict(
         W=11.0,
         fov=1,
@@ -2490,7 +939,7 @@ SWIFT_CONFIGS = {
         yP_size=1280,
         xA_size=160,
         xM_size=256,
-    ),  # nfacet=3², eff 41.7%
+    ),
     "2k[1]-n1k-256": dict(
         W=11.0,
         fov=1,
@@ -2501,7 +950,7 @@ SWIFT_CONFIGS = {
         yP_size=1024,
         xA_size=160,
         xM_size=256,
-    ),  # nfacet=3², eff 41.7%
+    ),
     "1792[1]-n896-256": dict(
         W=11.0,
         fov=1,
@@ -2512,7 +961,7 @@ SWIFT_CONFIGS = {
         yP_size=896,
         xA_size=160,
         xM_size=256,
-    ),  # nfacet=3², eff 41.7%
+    ),
     "1536[1]-n768-256": dict(
         W=11.0,
         fov=1,
@@ -2523,7 +972,7 @@ SWIFT_CONFIGS = {
         yP_size=768,
         xA_size=160,
         xM_size=256,
-    ),  # nfacet=3², eff 41.7%
+    ),
     "1280[1]-n640-256": dict(
         W=11.0,
         fov=1,
@@ -2534,7 +983,7 @@ SWIFT_CONFIGS = {
         yP_size=640,
         xA_size=160,
         xM_size=256,
-    ),  # nfacet=3², eff 41.7%
+    ),
     "1k[1]-n512-256": dict(
         W=11.0,
         fov=1,
@@ -2545,7 +994,7 @@ SWIFT_CONFIGS = {
         yP_size=512,
         xA_size=160,
         xM_size=256,
-    ),  # nfacet=3², eff 41.7%
+    ),
     "128k[1]-n64k-1k": dict(
         W=10.875,
         fov=1,
@@ -2556,7 +1005,7 @@ SWIFT_CONFIGS = {
         yP_size=65536,
         xA_size=928,
         xM_size=1024,
-    ),  # nfacet=3², eff 60.4%
+    ),
     "112k[1]-n56k-1k": dict(
         W=10.875,
         fov=1,
@@ -2567,7 +1016,7 @@ SWIFT_CONFIGS = {
         yP_size=57344,
         xA_size=928,
         xM_size=1024,
-    ),  # nfacet=3², eff 60.4%
+    ),
     "96k[1]-n48k-1k": dict(
         W=10.875,
         fov=1,
@@ -2578,7 +1027,7 @@ SWIFT_CONFIGS = {
         yP_size=49152,
         xA_size=928,
         xM_size=1024,
-    ),  # nfacet=3², eff 60.4%
+    ),
     "80k[1]-n40k-1k": dict(
         W=10.875,
         fov=1,
@@ -2589,7 +1038,7 @@ SWIFT_CONFIGS = {
         yP_size=40960,
         xA_size=928,
         xM_size=1024,
-    ),  # nfacet=3², eff 60.4%
+    ),
     "64k[1]-n32k-1k": dict(
         W=10.875,
         fov=1,
@@ -2600,7 +1049,7 @@ SWIFT_CONFIGS = {
         yP_size=32768,
         xA_size=928,
         xM_size=1024,
-    ),  # nfacet=3², eff 60.4%
+    ),
     "56k[1]-n28k-1k": dict(
         W=10.875,
         fov=1,
@@ -2611,7 +1060,7 @@ SWIFT_CONFIGS = {
         yP_size=28672,
         xA_size=928,
         xM_size=1024,
-    ),  # nfacet=3², eff 60.4%
+    ),
     "48k[1]-n24k-1k": dict(
         W=10.875,
         fov=1,
@@ -2622,7 +1071,7 @@ SWIFT_CONFIGS = {
         yP_size=24576,
         xA_size=928,
         xM_size=1024,
-    ),  # nfacet=3², eff 60.4%
+    ),
     "40k[1]-n20k-1k": dict(
         W=10.875,
         fov=1,
@@ -2633,7 +1082,7 @@ SWIFT_CONFIGS = {
         yP_size=20480,
         xA_size=928,
         xM_size=1024,
-    ),  # nfacet=3², eff 60.4%
+    ),
     "32k[1]-n16k-1k": dict(
         W=10.875,
         fov=1,
@@ -2644,7 +1093,7 @@ SWIFT_CONFIGS = {
         yP_size=16384,
         xA_size=928,
         xM_size=1024,
-    ),  # nfacet=3², eff 60.4%
+    ),
     "28k[1]-n14k-1k": dict(
         W=10.875,
         fov=1,
@@ -2655,7 +1104,7 @@ SWIFT_CONFIGS = {
         yP_size=14336,
         xA_size=928,
         xM_size=1024,
-    ),  # nfacet=3², eff 60.4%
+    ),
     "24k[1]-n12k-1k": dict(
         W=10.875,
         fov=1,
@@ -2666,7 +1115,7 @@ SWIFT_CONFIGS = {
         yP_size=12288,
         xA_size=928,
         xM_size=1024,
-    ),  # nfacet=3², eff 60.4%
+    ),
     "20k[1]-n10k-1k": dict(
         W=10.875,
         fov=1,
@@ -2677,7 +1126,7 @@ SWIFT_CONFIGS = {
         yP_size=10240,
         xA_size=928,
         xM_size=1024,
-    ),  # nfacet=3², eff 60.4%
+    ),
     "16k[1]-n8k-1k": dict(
         W=10.875,
         fov=1,
@@ -2688,436 +1137,7 @@ SWIFT_CONFIGS = {
         yP_size=8192,
         xA_size=928,
         xM_size=1024,
-    ),  # nfacet=3², eff 60.4%
-    "128k[1]-n56k-1k": dict(
-        W=12.8125,
-        fov=1,
-        N=131072,
-        Nx=32,
-        yB_size=45056,
-        yN_size=57344,
-        yP_size=57344,
-        xA_size=928,
-        xM_size=1024,
-    ),  # nfacet=3², eff 69.0%
-    "112k[1]-n49k-1k": dict(
-        W=12.8125,
-        fov=1,
-        N=114688,
-        Nx=32,
-        yB_size=39424,
-        yN_size=50176,
-        yP_size=50176,
-        xA_size=928,
-        xM_size=1024,
-    ),  # nfacet=3², eff 69.0%
-    "96k[1]-n42k-1k": dict(
-        W=12.8125,
-        fov=1,
-        N=98304,
-        Nx=32,
-        yB_size=33792,
-        yN_size=43008,
-        yP_size=43008,
-        xA_size=928,
-        xM_size=1024,
-    ),  # nfacet=3², eff 69.0%
-    "80k[1]-n35k-1k": dict(
-        W=12.8125,
-        fov=1,
-        N=81920,
-        Nx=32,
-        yB_size=28160,
-        yN_size=35840,
-        yP_size=35840,
-        xA_size=928,
-        xM_size=1024,
-    ),  # nfacet=3², eff 69.0%
-    "64k[1]-n28k-1k": dict(
-        W=12.8125,
-        fov=1,
-        N=65536,
-        Nx=32,
-        yB_size=22528,
-        yN_size=28672,
-        yP_size=28672,
-        xA_size=928,
-        xM_size=1024,
-    ),  # nfacet=3², eff 69.0%
-    "56k[1]-n25088-1k": dict(
-        W=12.8125,
-        fov=1,
-        N=57344,
-        Nx=32,
-        yB_size=19712,
-        yN_size=25088,
-        yP_size=25088,
-        xA_size=928,
-        xM_size=1024,
-    ),  # nfacet=3², eff 69.0%
-    "48k[1]-n21k-1k": dict(
-        W=12.8125,
-        fov=1,
-        N=49152,
-        Nx=32,
-        yB_size=16896,
-        yN_size=21504,
-        yP_size=21504,
-        xA_size=928,
-        xM_size=1024,
-    ),  # nfacet=3², eff 69.0%
-    "40k[1]-n17920-1k": dict(
-        W=12.8125,
-        fov=1,
-        N=40960,
-        Nx=32,
-        yB_size=14080,
-        yN_size=17920,
-        yP_size=17920,
-        xA_size=928,
-        xM_size=1024,
-    ),  # nfacet=3², eff 69.0%
-    "32k[1]-n14k-1k": dict(
-        W=12.8125,
-        fov=1,
-        N=32768,
-        Nx=32,
-        yB_size=11264,
-        yN_size=14336,
-        yP_size=14336,
-        xA_size=928,
-        xM_size=1024,
-    ),  # nfacet=3², eff 69.0%
-    "28k[1]-n12544-1k": dict(
-        W=12.8125,
-        fov=1,
-        N=28672,
-        Nx=32,
-        yB_size=9856,
-        yN_size=12544,
-        yP_size=12544,
-        xA_size=928,
-        xM_size=1024,
-    ),  # nfacet=3², eff 69.0%
-    "24k[1]-n10752-1k": dict(
-        W=12.8125,
-        fov=1,
-        N=24576,
-        Nx=32,
-        yB_size=8448,
-        yN_size=10752,
-        yP_size=10752,
-        xA_size=928,
-        xM_size=1024,
-    ),  # nfacet=3², eff 69.0%
-    "20k[1]-n8960-1k": dict(
-        W=12.8125,
-        fov=1,
-        N=20480,
-        Nx=32,
-        yB_size=7040,
-        yN_size=8960,
-        yP_size=8960,
-        xA_size=928,
-        xM_size=1024,
-    ),  # nfacet=3², eff 69.0%
-    "16k[1]-n7k-1k": dict(
-        W=12.8125,
-        fov=1,
-        N=16384,
-        Nx=32,
-        yB_size=5632,
-        yN_size=7168,
-        yP_size=7168,
-        xA_size=928,
-        xM_size=1024,
-    ),  # nfacet=3², eff 69.0%
-    "128k[1]-n48k-1k": dict(
-        W=17.8125,
-        fov=1,
-        N=131072,
-        Nx=128,
-        yB_size=44032,
-        yN_size=49152,
-        yP_size=49152,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 77.8%
-    "112k[1]-n42k-1k": dict(
-        W=17.8125,
-        fov=1,
-        N=114688,
-        Nx=128,
-        yB_size=38528,
-        yN_size=43008,
-        yP_size=43008,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 77.8%
-    "96k[1]-n36k-1k": dict(
-        W=17.8125,
-        fov=1,
-        N=98304,
-        Nx=128,
-        yB_size=33024,
-        yN_size=36864,
-        yP_size=36864,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 77.8%
-    "80k[1]-n30k-1k": dict(
-        W=17.8125,
-        fov=1,
-        N=81920,
-        Nx=128,
-        yB_size=27520,
-        yN_size=30720,
-        yP_size=30720,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 77.8%
-    "64k[1]-n24k-1k": dict(
-        W=17.8125,
-        fov=1,
-        N=65536,
-        Nx=128,
-        yB_size=22016,
-        yN_size=24576,
-        yP_size=24576,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 77.8%
-    "56k[1]-n21k-1k": dict(
-        W=17.8125,
-        fov=1,
-        N=57344,
-        Nx=128,
-        yB_size=19264,
-        yN_size=21504,
-        yP_size=21504,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 77.8%
-    "48k[1]-n18k-1k": dict(
-        W=17.8125,
-        fov=1,
-        N=49152,
-        Nx=128,
-        yB_size=16512,
-        yN_size=18432,
-        yP_size=18432,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 77.8%
-    "40k[1]-n15k-1k": dict(
-        W=17.8125,
-        fov=1,
-        N=40960,
-        Nx=128,
-        yB_size=13760,
-        yN_size=15360,
-        yP_size=15360,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 77.8%
-    "32k[1]-n12k-1k": dict(
-        W=17.8125,
-        fov=1,
-        N=32768,
-        Nx=128,
-        yB_size=11008,
-        yN_size=12288,
-        yP_size=12288,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 77.8%
-    "28k[1]-n10752-1k": dict(
-        W=17.8125,
-        fov=1,
-        N=28672,
-        Nx=128,
-        yB_size=9632,
-        yN_size=10752,
-        yP_size=10752,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 77.8%
-    "24k[1]-n9k-1k": dict(
-        W=17.8125,
-        fov=1,
-        N=24576,
-        Nx=128,
-        yB_size=8256,
-        yN_size=9216,
-        yP_size=9216,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 77.8%
-    "20k[1]-n7680-1k": dict(
-        W=17.8125,
-        fov=1,
-        N=20480,
-        Nx=128,
-        yB_size=6880,
-        yN_size=7680,
-        yP_size=7680,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 77.8%
-    "16k[1]-n6k-1k": dict(
-        W=17.8125,
-        fov=1,
-        N=16384,
-        Nx=128,
-        yB_size=5504,
-        yN_size=6144,
-        yP_size=6144,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 77.8%
-    "128k[1]-n40k-1k": dict(
-        W=13.1875,
-        fov=1,
-        N=131072,
-        Nx=16,
-        yB_size=32768,
-        yN_size=40960,
-        yP_size=40960,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=4², eff 73.8%
-    "112k[1]-n35k-1k": dict(
-        W=13.1875,
-        fov=1,
-        N=114688,
-        Nx=16,
-        yB_size=28672,
-        yN_size=35840,
-        yP_size=35840,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=4², eff 73.8%
-    "96k[1]-n30k-1k": dict(
-        W=13.1875,
-        fov=1,
-        N=98304,
-        Nx=16,
-        yB_size=24576,
-        yN_size=30720,
-        yP_size=30720,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=4², eff 73.8%
-    "80k[1]-n25k-1k": dict(
-        W=13.1875,
-        fov=1,
-        N=81920,
-        Nx=16,
-        yB_size=20480,
-        yN_size=25600,
-        yP_size=25600,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=4², eff 73.8%
-    "64k[1]-n20k-1k": dict(
-        W=13.1875,
-        fov=1,
-        N=65536,
-        Nx=16,
-        yB_size=16384,
-        yN_size=20480,
-        yP_size=20480,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=4², eff 73.8%
-    "56k[1]-n17920-1k": dict(
-        W=13.1875,
-        fov=1,
-        N=57344,
-        Nx=16,
-        yB_size=14336,
-        yN_size=17920,
-        yP_size=17920,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=4², eff 73.8%
-    "48k[1]-n15k-1k": dict(
-        W=13.1875,
-        fov=1,
-        N=49152,
-        Nx=16,
-        yB_size=12288,
-        yN_size=15360,
-        yP_size=15360,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=4², eff 73.8%
-    "40k[1]-n12800-1k": dict(
-        W=13.1875,
-        fov=1,
-        N=40960,
-        Nx=16,
-        yB_size=10240,
-        yN_size=12800,
-        yP_size=12800,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=4², eff 73.8%
-    "32k[1]-n10k-1k": dict(
-        W=13.1875,
-        fov=1,
-        N=32768,
-        Nx=16,
-        yB_size=8192,
-        yN_size=10240,
-        yP_size=10240,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=4², eff 73.8%
-    "28k[1]-n8960-1k": dict(
-        W=13.1875,
-        fov=1,
-        N=28672,
-        Nx=16,
-        yB_size=7168,
-        yN_size=8960,
-        yP_size=8960,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=4², eff 73.8%
-    "24k[1]-n7680-1k": dict(
-        W=13.1875,
-        fov=1,
-        N=24576,
-        Nx=16,
-        yB_size=6144,
-        yN_size=7680,
-        yP_size=7680,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=4², eff 73.8%
-    "20k[1]-n6400-1k": dict(
-        W=13.1875,
-        fov=1,
-        N=20480,
-        Nx=16,
-        yB_size=5120,
-        yN_size=6400,
-        yP_size=6400,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=4², eff 73.8%
-    "16k[1]-n5k-1k": dict(
-        W=13.1875,
-        fov=1,
-        N=16384,
-        Nx=16,
-        yB_size=4096,
-        yN_size=5120,
-        yP_size=5120,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=4², eff 73.8%
+    ),
     "128k[1]-n32k-1k": dict(
         W=13.5625,
         fov=1,
@@ -3128,7 +1148,7 @@ SWIFT_CONFIGS = {
         yP_size=32768,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
+    ),
     "112k[1]-n28k-1k": dict(
         W=13.5625,
         fov=1,
@@ -3139,7 +1159,7 @@ SWIFT_CONFIGS = {
         yP_size=28672,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
+    ),
     "96k[1]-n24k-1k": dict(
         W=13.5625,
         fov=1,
@@ -3150,7 +1170,7 @@ SWIFT_CONFIGS = {
         yP_size=24576,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
+    ),
     "80k[1]-n20k-1k": dict(
         W=13.5625,
         fov=1,
@@ -3161,7 +1181,7 @@ SWIFT_CONFIGS = {
         yP_size=20480,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
+    ),
     "64k[1]-n16k-1k": dict(
         W=13.5625,
         fov=1,
@@ -3172,7 +1192,7 @@ SWIFT_CONFIGS = {
         yP_size=16384,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
+    ),
     "56k[1]-n14k-1k": dict(
         W=13.5625,
         fov=1,
@@ -3183,7 +1203,7 @@ SWIFT_CONFIGS = {
         yP_size=14336,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
+    ),
     "48k[1]-n12k-1k": dict(
         W=13.5625,
         fov=1,
@@ -3194,7 +1214,7 @@ SWIFT_CONFIGS = {
         yP_size=12288,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
+    ),
     "40k[1]-n10k-1k": dict(
         W=13.5625,
         fov=1,
@@ -3205,7 +1225,7 @@ SWIFT_CONFIGS = {
         yP_size=10240,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
+    ),
     "32k[1]-n8k-1k": dict(
         W=13.5625,
         fov=1,
@@ -3216,7 +1236,7 @@ SWIFT_CONFIGS = {
         yP_size=8192,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
+    ),
     "28k[1]-n7k-1k": dict(
         W=13.5625,
         fov=1,
@@ -3227,7 +1247,7 @@ SWIFT_CONFIGS = {
         yP_size=7168,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
+    ),
     "24k[1]-n6k-1k": dict(
         W=13.5625,
         fov=1,
@@ -3238,7 +1258,7 @@ SWIFT_CONFIGS = {
         yP_size=6144,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
+    ),
     "20k[1]-n5k-1k": dict(
         W=13.5625,
         fov=1,
@@ -3249,7 +1269,7 @@ SWIFT_CONFIGS = {
         yP_size=5120,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
+    ),
     "16k[1]-n4k-1k": dict(
         W=13.5625,
         fov=1,
@@ -3260,436 +1280,7 @@ SWIFT_CONFIGS = {
         yP_size=4096,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
-    "128k[1]-n28k-1k": dict(
-        W=21.375,
-        fov=1,
-        N=131072,
-        Nx=128,
-        yB_size=26624,
-        yN_size=28672,
-        yP_size=28672,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=5², eff 57.1%
-    "112k[1]-n25088-1k": dict(
-        W=21.375,
-        fov=1,
-        N=114688,
-        Nx=128,
-        yB_size=23296,
-        yN_size=25088,
-        yP_size=25088,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=5², eff 57.1%
-    "96k[1]-n21k-1k": dict(
-        W=21.375,
-        fov=1,
-        N=98304,
-        Nx=128,
-        yB_size=19968,
-        yN_size=21504,
-        yP_size=21504,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=5², eff 57.1%
-    "80k[1]-n17920-1k": dict(
-        W=21.375,
-        fov=1,
-        N=81920,
-        Nx=128,
-        yB_size=16640,
-        yN_size=17920,
-        yP_size=17920,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=5², eff 57.1%
-    "64k[1]-n14k-1k": dict(
-        W=21.375,
-        fov=1,
-        N=65536,
-        Nx=128,
-        yB_size=13312,
-        yN_size=14336,
-        yP_size=14336,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=5², eff 57.1%
-    "56k[1]-n12544-1k": dict(
-        W=21.375,
-        fov=1,
-        N=57344,
-        Nx=128,
-        yB_size=11648,
-        yN_size=12544,
-        yP_size=12544,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=5², eff 57.1%
-    "48k[1]-n10752-1k": dict(
-        W=21.375,
-        fov=1,
-        N=49152,
-        Nx=128,
-        yB_size=9984,
-        yN_size=10752,
-        yP_size=10752,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=5², eff 57.1%
-    "40k[1]-n8960-1k": dict(
-        W=21.375,
-        fov=1,
-        N=40960,
-        Nx=128,
-        yB_size=8320,
-        yN_size=8960,
-        yP_size=8960,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=5², eff 57.1%
-    "32k[1]-n7k-1k": dict(
-        W=21.375,
-        fov=1,
-        N=32768,
-        Nx=128,
-        yB_size=6656,
-        yN_size=7168,
-        yP_size=7168,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=5², eff 57.1%
-    "28k[1]-n6272-1k": dict(
-        W=21.375,
-        fov=1,
-        N=28672,
-        Nx=128,
-        yB_size=5824,
-        yN_size=6272,
-        yP_size=6272,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=5², eff 57.1%
-    "24k[1]-n5376-1k": dict(
-        W=21.375,
-        fov=1,
-        N=24576,
-        Nx=128,
-        yB_size=4992,
-        yN_size=5376,
-        yP_size=5376,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=5², eff 57.1%
-    "20k[1]-n4480-1k": dict(
-        W=21.375,
-        fov=1,
-        N=20480,
-        Nx=128,
-        yB_size=4160,
-        yN_size=4480,
-        yP_size=4480,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=5², eff 57.1%
-    "16k[1]-n3584-1k": dict(
-        W=21.375,
-        fov=1,
-        N=16384,
-        Nx=128,
-        yB_size=3328,
-        yN_size=3584,
-        yP_size=3584,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=5², eff 57.1%
-    "128k[1]-n24k-1k": dict(
-        W=19.8125,
-        fov=1,
-        N=131072,
-        Nx=128,
-        yB_size=22528,
-        yN_size=24576,
-        yP_size=24576,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 55.6%
-    "112k[1]-n21k-1k": dict(
-        W=19.8125,
-        fov=1,
-        N=114688,
-        Nx=128,
-        yB_size=19712,
-        yN_size=21504,
-        yP_size=21504,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 55.6%
-    "96k[1]-n18k-1k": dict(
-        W=19.8125,
-        fov=1,
-        N=98304,
-        Nx=128,
-        yB_size=16896,
-        yN_size=18432,
-        yP_size=18432,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 55.6%
-    "80k[1]-n15k-1k": dict(
-        W=19.8125,
-        fov=1,
-        N=81920,
-        Nx=128,
-        yB_size=14080,
-        yN_size=15360,
-        yP_size=15360,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 55.6%
-    "64k[1]-n12k-1k": dict(
-        W=19.8125,
-        fov=1,
-        N=65536,
-        Nx=128,
-        yB_size=11264,
-        yN_size=12288,
-        yP_size=12288,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 55.6%
-    "56k[1]-n10752-1k": dict(
-        W=19.8125,
-        fov=1,
-        N=57344,
-        Nx=128,
-        yB_size=9856,
-        yN_size=10752,
-        yP_size=10752,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 55.6%
-    "48k[1]-n9k-1k": dict(
-        W=19.8125,
-        fov=1,
-        N=49152,
-        Nx=128,
-        yB_size=8448,
-        yN_size=9216,
-        yP_size=9216,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 55.6%
-    "40k[1]-n7680-1k": dict(
-        W=19.8125,
-        fov=1,
-        N=40960,
-        Nx=128,
-        yB_size=7040,
-        yN_size=7680,
-        yP_size=7680,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 55.6%
-    "32k[1]-n6k-1k": dict(
-        W=19.8125,
-        fov=1,
-        N=32768,
-        Nx=128,
-        yB_size=5632,
-        yN_size=6144,
-        yP_size=6144,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 55.6%
-    "28k[1]-n5376-1k": dict(
-        W=19.8125,
-        fov=1,
-        N=28672,
-        Nx=128,
-        yB_size=4928,
-        yN_size=5376,
-        yP_size=5376,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 55.6%
-    "24k[1]-n4608-1k": dict(
-        W=19.8125,
-        fov=1,
-        N=24576,
-        Nx=128,
-        yB_size=4224,
-        yN_size=4608,
-        yP_size=4608,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 55.6%
-    "20k[1]-n3840-1k": dict(
-        W=19.8125,
-        fov=1,
-        N=20480,
-        Nx=128,
-        yB_size=3520,
-        yN_size=3840,
-        yP_size=3840,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 55.6%
-    "16k[1]-n3k-1k": dict(
-        W=19.8125,
-        fov=1,
-        N=16384,
-        Nx=128,
-        yB_size=2816,
-        yN_size=3072,
-        yP_size=3072,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 55.6%
-    "128k[1]-n20k-1k": dict(
-        W=20.875,
-        fov=1,
-        N=131072,
-        Nx=512,
-        yB_size=18944,
-        yN_size=20480,
-        yP_size=20480,
-        xA_size=512,
-        xM_size=1024,
-    ),  # nfacet=7², eff 45.7%
-    "112k[1]-n17920-1k": dict(
-        W=20.875,
-        fov=1,
-        N=114688,
-        Nx=512,
-        yB_size=16576,
-        yN_size=17920,
-        yP_size=17920,
-        xA_size=512,
-        xM_size=1024,
-    ),  # nfacet=7², eff 45.7%
-    "96k[1]-n15k-1k": dict(
-        W=20.875,
-        fov=1,
-        N=98304,
-        Nx=512,
-        yB_size=14208,
-        yN_size=15360,
-        yP_size=15360,
-        xA_size=512,
-        xM_size=1024,
-    ),  # nfacet=7², eff 45.7%
-    "80k[1]-n12800-1k": dict(
-        W=20.875,
-        fov=1,
-        N=81920,
-        Nx=512,
-        yB_size=11840,
-        yN_size=12800,
-        yP_size=12800,
-        xA_size=512,
-        xM_size=1024,
-    ),  # nfacet=7², eff 45.7%
-    "64k[1]-n10k-1k": dict(
-        W=20.875,
-        fov=1,
-        N=65536,
-        Nx=512,
-        yB_size=9472,
-        yN_size=10240,
-        yP_size=10240,
-        xA_size=512,
-        xM_size=1024,
-    ),  # nfacet=7², eff 45.7%
-    "56k[1]-n8960-1k": dict(
-        W=20.875,
-        fov=1,
-        N=57344,
-        Nx=512,
-        yB_size=8288,
-        yN_size=8960,
-        yP_size=8960,
-        xA_size=512,
-        xM_size=1024,
-    ),  # nfacet=7², eff 45.7%
-    "48k[1]-n7680-1k": dict(
-        W=20.875,
-        fov=1,
-        N=49152,
-        Nx=512,
-        yB_size=7104,
-        yN_size=7680,
-        yP_size=7680,
-        xA_size=512,
-        xM_size=1024,
-    ),  # nfacet=7², eff 45.7%
-    "40k[1]-n6400-1k": dict(
-        W=20.875,
-        fov=1,
-        N=40960,
-        Nx=512,
-        yB_size=5920,
-        yN_size=6400,
-        yP_size=6400,
-        xA_size=512,
-        xM_size=1024,
-    ),  # nfacet=7², eff 45.7%
-    "32k[1]-n5k-1k": dict(
-        W=20.875,
-        fov=1,
-        N=32768,
-        Nx=512,
-        yB_size=4736,
-        yN_size=5120,
-        yP_size=5120,
-        xA_size=512,
-        xM_size=1024,
-    ),  # nfacet=7², eff 45.7%
-    "28k[1]-n4480-1k": dict(
-        W=20.875,
-        fov=1,
-        N=28672,
-        Nx=512,
-        yB_size=4144,
-        yN_size=4480,
-        yP_size=4480,
-        xA_size=512,
-        xM_size=1024,
-    ),  # nfacet=7², eff 45.7%
-    "24k[1]-n3840-1k": dict(
-        W=20.875,
-        fov=1,
-        N=24576,
-        Nx=512,
-        yB_size=3552,
-        yN_size=3840,
-        yP_size=3840,
-        xA_size=512,
-        xM_size=1024,
-    ),  # nfacet=7², eff 45.7%
-    "20k[1]-n3200-1k": dict(
-        W=20.875,
-        fov=1,
-        N=20480,
-        Nx=512,
-        yB_size=2960,
-        yN_size=3200,
-        yP_size=3200,
-        xA_size=512,
-        xM_size=1024,
-    ),  # nfacet=7², eff 45.7%
-    "16k[1]-n2560-1k": dict(
-        W=20.875,
-        fov=1,
-        N=16384,
-        Nx=512,
-        yB_size=2368,
-        yN_size=2560,
-        yP_size=2560,
-        xA_size=512,
-        xM_size=1024,
-    ),  # nfacet=7², eff 45.7%
+    ),
     "128k[1]-n16k-1k": dict(
         W=17.375,
         fov=1,
@@ -3700,7 +1291,7 @@ SWIFT_CONFIGS = {
         yP_size=16384,
         xA_size=512,
         xM_size=1024,
-    ),  # nfacet=9², eff 44.4%
+    ),
     "112k[1]-n14k-1k": dict(
         W=17.375,
         fov=1,
@@ -3711,7 +1302,7 @@ SWIFT_CONFIGS = {
         yP_size=14336,
         xA_size=512,
         xM_size=1024,
-    ),  # nfacet=9², eff 44.4%
+    ),
     "96k[1]-n12k-1k": dict(
         W=17.375,
         fov=1,
@@ -3722,7 +1313,7 @@ SWIFT_CONFIGS = {
         yP_size=12288,
         xA_size=512,
         xM_size=1024,
-    ),  # nfacet=9², eff 44.4%
+    ),
     "80k[1]-n10k-1k": dict(
         W=17.375,
         fov=1,
@@ -3733,7 +1324,7 @@ SWIFT_CONFIGS = {
         yP_size=10240,
         xA_size=512,
         xM_size=1024,
-    ),  # nfacet=9², eff 44.4%
+    ),
     "64k[1]-n8k-1k": dict(
         W=17.375,
         fov=1,
@@ -3744,7 +1335,7 @@ SWIFT_CONFIGS = {
         yP_size=8192,
         xA_size=512,
         xM_size=1024,
-    ),  # nfacet=9², eff 44.4%
+    ),
     "56k[1]-n7k-1k": dict(
         W=17.375,
         fov=1,
@@ -3755,7 +1346,7 @@ SWIFT_CONFIGS = {
         yP_size=7168,
         xA_size=512,
         xM_size=1024,
-    ),  # nfacet=9², eff 44.4%
+    ),
     "48k[1]-n6k-1k": dict(
         W=17.375,
         fov=1,
@@ -3766,7 +1357,7 @@ SWIFT_CONFIGS = {
         yP_size=6144,
         xA_size=512,
         xM_size=1024,
-    ),  # nfacet=9², eff 44.4%
+    ),
     "40k[1]-n5k-1k": dict(
         W=17.375,
         fov=1,
@@ -3777,7 +1368,7 @@ SWIFT_CONFIGS = {
         yP_size=5120,
         xA_size=512,
         xM_size=1024,
-    ),  # nfacet=9², eff 44.4%
+    ),
     "32k[1]-n4k-1k": dict(
         W=17.375,
         fov=1,
@@ -3788,7 +1379,7 @@ SWIFT_CONFIGS = {
         yP_size=4096,
         xA_size=512,
         xM_size=1024,
-    ),  # nfacet=9², eff 44.4%
+    ),
     "28k[1]-n3584-1k": dict(
         W=17.375,
         fov=1,
@@ -3799,7 +1390,7 @@ SWIFT_CONFIGS = {
         yP_size=3584,
         xA_size=512,
         xM_size=1024,
-    ),  # nfacet=9², eff 44.4%
+    ),
     "24k[1]-n3k-1k": dict(
         W=17.375,
         fov=1,
@@ -3810,7 +1401,7 @@ SWIFT_CONFIGS = {
         yP_size=3072,
         xA_size=512,
         xM_size=1024,
-    ),  # nfacet=9², eff 44.4%
+    ),
     "20k[1]-n2560-1k": dict(
         W=17.375,
         fov=1,
@@ -3821,7 +1412,7 @@ SWIFT_CONFIGS = {
         yP_size=2560,
         xA_size=512,
         xM_size=1024,
-    ),  # nfacet=9², eff 44.4%
+    ),
     "16k[1]-n2k-1k": dict(
         W=17.375,
         fov=1,
@@ -3832,7 +1423,7 @@ SWIFT_CONFIGS = {
         yP_size=2048,
         xA_size=512,
         xM_size=1024,
-    ),  # nfacet=9², eff 44.4%
+    ),
     "128k[.875]-n64k-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -3843,7 +1434,7 @@ SWIFT_CONFIGS = {
         yP_size=65536,
         xA_size=928,
         xM_size=1024,
-    ),  # nfacet=2², eff 79.3%
+    ),
     "112k[.875]-n56k-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -3854,7 +1445,7 @@ SWIFT_CONFIGS = {
         yP_size=57344,
         xA_size=928,
         xM_size=1024,
-    ),  # nfacet=2², eff 79.3%
+    ),
     "96k[.875]-n48k-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -3865,7 +1456,7 @@ SWIFT_CONFIGS = {
         yP_size=49152,
         xA_size=928,
         xM_size=1024,
-    ),  # nfacet=2², eff 79.3%
+    ),
     "80k[.875]-n40k-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -3876,7 +1467,7 @@ SWIFT_CONFIGS = {
         yP_size=40960,
         xA_size=928,
         xM_size=1024,
-    ),  # nfacet=2², eff 79.3%
+    ),
     "64k[.875]-n32k-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -3887,7 +1478,7 @@ SWIFT_CONFIGS = {
         yP_size=32768,
         xA_size=928,
         xM_size=1024,
-    ),  # nfacet=2², eff 79.3%
+    ),
     "56k[.875]-n28k-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -3898,7 +1489,7 @@ SWIFT_CONFIGS = {
         yP_size=28672,
         xA_size=928,
         xM_size=1024,
-    ),  # nfacet=2², eff 79.3%
+    ),
     "48k[.875]-n24k-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -3909,7 +1500,7 @@ SWIFT_CONFIGS = {
         yP_size=24576,
         xA_size=928,
         xM_size=1024,
-    ),  # nfacet=2², eff 79.3%
+    ),
     "40k[.875]-n20k-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -3920,7 +1511,7 @@ SWIFT_CONFIGS = {
         yP_size=20480,
         xA_size=928,
         xM_size=1024,
-    ),  # nfacet=2², eff 79.3%
+    ),
     "32k[.875]-n16k-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -3931,7 +1522,7 @@ SWIFT_CONFIGS = {
         yP_size=16384,
         xA_size=928,
         xM_size=1024,
-    ),  # nfacet=2², eff 79.3%
+    ),
     "28k[.875]-n14k-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -3942,7 +1533,7 @@ SWIFT_CONFIGS = {
         yP_size=14336,
         xA_size=928,
         xM_size=1024,
-    ),  # nfacet=2², eff 79.3%
+    ),
     "24k[.875]-n12k-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -3953,7 +1544,7 @@ SWIFT_CONFIGS = {
         yP_size=12288,
         xA_size=928,
         xM_size=1024,
-    ),  # nfacet=2², eff 79.3%
+    ),
     "20k[.875]-n10k-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -3964,7 +1555,7 @@ SWIFT_CONFIGS = {
         yP_size=10240,
         xA_size=928,
         xM_size=1024,
-    ),  # nfacet=2², eff 79.3%
+    ),
     "16k[.875]-n8k-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -3975,436 +1566,7 @@ SWIFT_CONFIGS = {
         yP_size=8192,
         xA_size=928,
         xM_size=1024,
-    ),  # nfacet=2², eff 79.3%
-    "128k[.875]-n56k-1k": dict(
-        W=11.3125,
-        fov=0.875,
-        N=131072,
-        Nx=32,
-        yB_size=40960,
-        yN_size=57344,
-        yP_size=57344,
-        xA_size=928,
-        xM_size=1024,
-    ),  # nfacet=3², eff 60.4%
-    "112k[.875]-n49k-1k": dict(
-        W=11.3125,
-        fov=0.875,
-        N=114688,
-        Nx=32,
-        yB_size=35840,
-        yN_size=50176,
-        yP_size=50176,
-        xA_size=928,
-        xM_size=1024,
-    ),  # nfacet=3², eff 60.4%
-    "96k[.875]-n42k-1k": dict(
-        W=11.3125,
-        fov=0.875,
-        N=98304,
-        Nx=32,
-        yB_size=30720,
-        yN_size=43008,
-        yP_size=43008,
-        xA_size=928,
-        xM_size=1024,
-    ),  # nfacet=3², eff 60.4%
-    "80k[.875]-n35k-1k": dict(
-        W=11.3125,
-        fov=0.875,
-        N=81920,
-        Nx=32,
-        yB_size=25600,
-        yN_size=35840,
-        yP_size=35840,
-        xA_size=928,
-        xM_size=1024,
-    ),  # nfacet=3², eff 60.4%
-    "64k[.875]-n28k-1k": dict(
-        W=11.3125,
-        fov=0.875,
-        N=65536,
-        Nx=32,
-        yB_size=20480,
-        yN_size=28672,
-        yP_size=28672,
-        xA_size=928,
-        xM_size=1024,
-    ),  # nfacet=3², eff 60.4%
-    "56k[.875]-n25088-1k": dict(
-        W=11.3125,
-        fov=0.875,
-        N=57344,
-        Nx=32,
-        yB_size=17920,
-        yN_size=25088,
-        yP_size=25088,
-        xA_size=928,
-        xM_size=1024,
-    ),  # nfacet=3², eff 60.4%
-    "48k[.875]-n21k-1k": dict(
-        W=11.3125,
-        fov=0.875,
-        N=49152,
-        Nx=32,
-        yB_size=15360,
-        yN_size=21504,
-        yP_size=21504,
-        xA_size=928,
-        xM_size=1024,
-    ),  # nfacet=3², eff 60.4%
-    "40k[.875]-n17920-1k": dict(
-        W=11.3125,
-        fov=0.875,
-        N=40960,
-        Nx=32,
-        yB_size=12800,
-        yN_size=17920,
-        yP_size=17920,
-        xA_size=928,
-        xM_size=1024,
-    ),  # nfacet=3², eff 60.4%
-    "32k[.875]-n14k-1k": dict(
-        W=11.3125,
-        fov=0.875,
-        N=32768,
-        Nx=32,
-        yB_size=10240,
-        yN_size=14336,
-        yP_size=14336,
-        xA_size=928,
-        xM_size=1024,
-    ),  # nfacet=3², eff 60.4%
-    "28k[.875]-n12544-1k": dict(
-        W=11.3125,
-        fov=0.875,
-        N=28672,
-        Nx=32,
-        yB_size=8960,
-        yN_size=12544,
-        yP_size=12544,
-        xA_size=928,
-        xM_size=1024,
-    ),  # nfacet=3², eff 60.4%
-    "24k[.875]-n10752-1k": dict(
-        W=11.3125,
-        fov=0.875,
-        N=24576,
-        Nx=32,
-        yB_size=7680,
-        yN_size=10752,
-        yP_size=10752,
-        xA_size=928,
-        xM_size=1024,
-    ),  # nfacet=3², eff 60.4%
-    "20k[.875]-n8960-1k": dict(
-        W=11.3125,
-        fov=0.875,
-        N=20480,
-        Nx=32,
-        yB_size=6400,
-        yN_size=8960,
-        yP_size=8960,
-        xA_size=928,
-        xM_size=1024,
-    ),  # nfacet=3², eff 60.4%
-    "16k[.875]-n7k-1k": dict(
-        W=11.3125,
-        fov=0.875,
-        N=16384,
-        Nx=32,
-        yB_size=5120,
-        yN_size=7168,
-        yP_size=7168,
-        xA_size=928,
-        xM_size=1024,
-    ),  # nfacet=3², eff 60.4%
-    "128k[.875]-n48k-1k": dict(
-        W=12.9375,
-        fov=0.875,
-        N=131072,
-        Nx=128,
-        yB_size=38912,
-        yN_size=49152,
-        yP_size=49152,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 68.1%
-    "112k[.875]-n42k-1k": dict(
-        W=12.9375,
-        fov=0.875,
-        N=114688,
-        Nx=128,
-        yB_size=34048,
-        yN_size=43008,
-        yP_size=43008,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 68.1%
-    "96k[.875]-n36k-1k": dict(
-        W=12.9375,
-        fov=0.875,
-        N=98304,
-        Nx=128,
-        yB_size=29184,
-        yN_size=36864,
-        yP_size=36864,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 68.1%
-    "80k[.875]-n30k-1k": dict(
-        W=12.9375,
-        fov=0.875,
-        N=81920,
-        Nx=128,
-        yB_size=24320,
-        yN_size=30720,
-        yP_size=30720,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 68.1%
-    "64k[.875]-n24k-1k": dict(
-        W=12.9375,
-        fov=0.875,
-        N=65536,
-        Nx=128,
-        yB_size=19456,
-        yN_size=24576,
-        yP_size=24576,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 68.1%
-    "56k[.875]-n21k-1k": dict(
-        W=12.9375,
-        fov=0.875,
-        N=57344,
-        Nx=128,
-        yB_size=17024,
-        yN_size=21504,
-        yP_size=21504,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 68.1%
-    "48k[.875]-n18k-1k": dict(
-        W=12.9375,
-        fov=0.875,
-        N=49152,
-        Nx=128,
-        yB_size=14592,
-        yN_size=18432,
-        yP_size=18432,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 68.1%
-    "40k[.875]-n15k-1k": dict(
-        W=12.9375,
-        fov=0.875,
-        N=40960,
-        Nx=128,
-        yB_size=12160,
-        yN_size=15360,
-        yP_size=15360,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 68.1%
-    "32k[.875]-n12k-1k": dict(
-        W=12.9375,
-        fov=0.875,
-        N=32768,
-        Nx=128,
-        yB_size=9728,
-        yN_size=12288,
-        yP_size=12288,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 68.1%
-    "28k[.875]-n10752-1k": dict(
-        W=12.9375,
-        fov=0.875,
-        N=28672,
-        Nx=128,
-        yB_size=8512,
-        yN_size=10752,
-        yP_size=10752,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 68.1%
-    "24k[.875]-n9k-1k": dict(
-        W=12.9375,
-        fov=0.875,
-        N=24576,
-        Nx=128,
-        yB_size=7296,
-        yN_size=9216,
-        yP_size=9216,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 68.1%
-    "20k[.875]-n7680-1k": dict(
-        W=12.9375,
-        fov=0.875,
-        N=20480,
-        Nx=128,
-        yB_size=6080,
-        yN_size=7680,
-        yP_size=7680,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 68.1%
-    "16k[.875]-n6k-1k": dict(
-        W=12.9375,
-        fov=0.875,
-        N=16384,
-        Nx=128,
-        yB_size=4864,
-        yN_size=6144,
-        yP_size=6144,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 68.1%
-    "128k[.875]-n40k-1k": dict(
-        W=11.0625,
-        fov=0.875,
-        N=131072,
-        Nx=128,
-        yB_size=28672,
-        yN_size=40960,
-        yP_size=40960,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=4², eff 61.2%
-    "112k[.875]-n35k-1k": dict(
-        W=11.0625,
-        fov=0.875,
-        N=114688,
-        Nx=128,
-        yB_size=25088,
-        yN_size=35840,
-        yP_size=35840,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=4², eff 61.2%
-    "96k[.875]-n30k-1k": dict(
-        W=11.0625,
-        fov=0.875,
-        N=98304,
-        Nx=128,
-        yB_size=21504,
-        yN_size=30720,
-        yP_size=30720,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=4², eff 61.2%
-    "80k[.875]-n25k-1k": dict(
-        W=11.0625,
-        fov=0.875,
-        N=81920,
-        Nx=128,
-        yB_size=17920,
-        yN_size=25600,
-        yP_size=25600,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=4², eff 61.2%
-    "64k[.875]-n20k-1k": dict(
-        W=11.0625,
-        fov=0.875,
-        N=65536,
-        Nx=128,
-        yB_size=14336,
-        yN_size=20480,
-        yP_size=20480,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=4², eff 61.2%
-    "56k[.875]-n17920-1k": dict(
-        W=11.0625,
-        fov=0.875,
-        N=57344,
-        Nx=128,
-        yB_size=12544,
-        yN_size=17920,
-        yP_size=17920,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=4², eff 61.2%
-    "48k[.875]-n15k-1k": dict(
-        W=11.0625,
-        fov=0.875,
-        N=49152,
-        Nx=128,
-        yB_size=10752,
-        yN_size=15360,
-        yP_size=15360,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=4², eff 61.2%
-    "40k[.875]-n12800-1k": dict(
-        W=11.0625,
-        fov=0.875,
-        N=40960,
-        Nx=128,
-        yB_size=8960,
-        yN_size=12800,
-        yP_size=12800,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=4², eff 61.2%
-    "32k[.875]-n10k-1k": dict(
-        W=11.0625,
-        fov=0.875,
-        N=32768,
-        Nx=128,
-        yB_size=7168,
-        yN_size=10240,
-        yP_size=10240,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=4², eff 61.2%
-    "28k[.875]-n8960-1k": dict(
-        W=11.0625,
-        fov=0.875,
-        N=28672,
-        Nx=128,
-        yB_size=6272,
-        yN_size=8960,
-        yP_size=8960,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=4², eff 61.2%
-    "24k[.875]-n7680-1k": dict(
-        W=11.0625,
-        fov=0.875,
-        N=24576,
-        Nx=128,
-        yB_size=5376,
-        yN_size=7680,
-        yP_size=7680,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=4², eff 61.2%
-    "20k[.875]-n6400-1k": dict(
-        W=11.0625,
-        fov=0.875,
-        N=20480,
-        Nx=128,
-        yB_size=4480,
-        yN_size=6400,
-        yP_size=6400,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=4², eff 61.2%
-    "16k[.875]-n5k-1k": dict(
-        W=11.0625,
-        fov=0.875,
-        N=16384,
-        Nx=128,
-        yB_size=3584,
-        yN_size=5120,
-        yP_size=5120,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=4², eff 61.2%
+    ),
     "128k[.875]-n32k-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -4415,7 +1577,7 @@ SWIFT_CONFIGS = {
         yP_size=32768,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=4², eff 76.6%
+    ),
     "112k[.875]-n28k-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -4426,7 +1588,7 @@ SWIFT_CONFIGS = {
         yP_size=28672,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=4², eff 76.6%
+    ),
     "96k[.875]-n24k-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -4437,7 +1599,7 @@ SWIFT_CONFIGS = {
         yP_size=24576,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=4², eff 76.6%
+    ),
     "80k[.875]-n20k-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -4448,7 +1610,7 @@ SWIFT_CONFIGS = {
         yP_size=20480,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=4², eff 76.6%
+    ),
     "64k[.875]-n16k-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -4459,7 +1621,7 @@ SWIFT_CONFIGS = {
         yP_size=16384,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=4², eff 76.6%
+    ),
     "56k[.875]-n14k-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -4470,7 +1632,7 @@ SWIFT_CONFIGS = {
         yP_size=14336,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=4², eff 76.6%
+    ),
     "48k[.875]-n12k-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -4481,7 +1643,7 @@ SWIFT_CONFIGS = {
         yP_size=12288,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=4², eff 76.6%
+    ),
     "40k[.875]-n10k-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -4492,7 +1654,7 @@ SWIFT_CONFIGS = {
         yP_size=10240,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=4², eff 76.6%
+    ),
     "32k[.875]-n8k-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -4503,7 +1665,7 @@ SWIFT_CONFIGS = {
         yP_size=8192,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=4², eff 76.6%
+    ),
     "28k[.875]-n7k-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -4514,7 +1676,7 @@ SWIFT_CONFIGS = {
         yP_size=7168,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=4², eff 76.6%
+    ),
     "24k[.875]-n6k-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -4525,7 +1687,7 @@ SWIFT_CONFIGS = {
         yP_size=6144,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=4², eff 76.6%
+    ),
     "20k[.875]-n5k-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -4536,7 +1698,7 @@ SWIFT_CONFIGS = {
         yP_size=5120,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=4², eff 76.6%
+    ),
     "16k[.875]-n4k-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -4547,436 +1709,7 @@ SWIFT_CONFIGS = {
         yP_size=4096,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=4², eff 76.6%
-    "128k[.875]-n28k-1k": dict(
-        W=13.875,
-        fov=0.875,
-        N=131072,
-        Nx=128,
-        yB_size=23552,
-        yN_size=28672,
-        yP_size=28672,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
-    "112k[.875]-n25088-1k": dict(
-        W=13.875,
-        fov=0.875,
-        N=114688,
-        Nx=128,
-        yB_size=20608,
-        yN_size=25088,
-        yP_size=25088,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
-    "96k[.875]-n21k-1k": dict(
-        W=13.875,
-        fov=0.875,
-        N=98304,
-        Nx=128,
-        yB_size=17664,
-        yN_size=21504,
-        yP_size=21504,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
-    "80k[.875]-n17920-1k": dict(
-        W=13.875,
-        fov=0.875,
-        N=81920,
-        Nx=128,
-        yB_size=14720,
-        yN_size=17920,
-        yP_size=17920,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
-    "64k[.875]-n14k-1k": dict(
-        W=13.875,
-        fov=0.875,
-        N=65536,
-        Nx=128,
-        yB_size=11776,
-        yN_size=14336,
-        yP_size=14336,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
-    "56k[.875]-n12544-1k": dict(
-        W=13.875,
-        fov=0.875,
-        N=57344,
-        Nx=128,
-        yB_size=10304,
-        yN_size=12544,
-        yP_size=12544,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
-    "48k[.875]-n10752-1k": dict(
-        W=13.875,
-        fov=0.875,
-        N=49152,
-        Nx=128,
-        yB_size=8832,
-        yN_size=10752,
-        yP_size=10752,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
-    "40k[.875]-n8960-1k": dict(
-        W=13.875,
-        fov=0.875,
-        N=40960,
-        Nx=128,
-        yB_size=7360,
-        yN_size=8960,
-        yP_size=8960,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
-    "32k[.875]-n7k-1k": dict(
-        W=13.875,
-        fov=0.875,
-        N=32768,
-        Nx=128,
-        yB_size=5888,
-        yN_size=7168,
-        yP_size=7168,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
-    "28k[.875]-n6272-1k": dict(
-        W=13.875,
-        fov=0.875,
-        N=28672,
-        Nx=128,
-        yB_size=5152,
-        yN_size=6272,
-        yP_size=6272,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
-    "24k[.875]-n5376-1k": dict(
-        W=13.875,
-        fov=0.875,
-        N=24576,
-        Nx=128,
-        yB_size=4416,
-        yN_size=5376,
-        yP_size=5376,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
-    "20k[.875]-n4480-1k": dict(
-        W=13.875,
-        fov=0.875,
-        N=20480,
-        Nx=128,
-        yB_size=3680,
-        yN_size=4480,
-        yP_size=4480,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
-    "16k[.875]-n3584-1k": dict(
-        W=13.875,
-        fov=0.875,
-        N=16384,
-        Nx=128,
-        yB_size=2944,
-        yN_size=3584,
-        yP_size=3584,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
-    "128k[.875]-n24k-1k": dict(
-        W=14.3125,
-        fov=0.875,
-        N=131072,
-        Nx=128,
-        yB_size=20480,
-        yN_size=24576,
-        yP_size=24576,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=6², eff 68.1%
-    "112k[.875]-n21k-1k": dict(
-        W=14.3125,
-        fov=0.875,
-        N=114688,
-        Nx=128,
-        yB_size=17920,
-        yN_size=21504,
-        yP_size=21504,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=6², eff 68.1%
-    "96k[.875]-n18k-1k": dict(
-        W=14.3125,
-        fov=0.875,
-        N=98304,
-        Nx=128,
-        yB_size=15360,
-        yN_size=18432,
-        yP_size=18432,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=6², eff 68.1%
-    "80k[.875]-n15k-1k": dict(
-        W=14.3125,
-        fov=0.875,
-        N=81920,
-        Nx=128,
-        yB_size=12800,
-        yN_size=15360,
-        yP_size=15360,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=6², eff 68.1%
-    "64k[.875]-n12k-1k": dict(
-        W=14.3125,
-        fov=0.875,
-        N=65536,
-        Nx=128,
-        yB_size=10240,
-        yN_size=12288,
-        yP_size=12288,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=6², eff 68.1%
-    "56k[.875]-n10752-1k": dict(
-        W=14.3125,
-        fov=0.875,
-        N=57344,
-        Nx=128,
-        yB_size=8960,
-        yN_size=10752,
-        yP_size=10752,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=6², eff 68.1%
-    "48k[.875]-n9k-1k": dict(
-        W=14.3125,
-        fov=0.875,
-        N=49152,
-        Nx=128,
-        yB_size=7680,
-        yN_size=9216,
-        yP_size=9216,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=6², eff 68.1%
-    "40k[.875]-n7680-1k": dict(
-        W=14.3125,
-        fov=0.875,
-        N=40960,
-        Nx=128,
-        yB_size=6400,
-        yN_size=7680,
-        yP_size=7680,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=6², eff 68.1%
-    "32k[.875]-n6k-1k": dict(
-        W=14.3125,
-        fov=0.875,
-        N=32768,
-        Nx=128,
-        yB_size=5120,
-        yN_size=6144,
-        yP_size=6144,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=6², eff 68.1%
-    "28k[.875]-n5376-1k": dict(
-        W=14.3125,
-        fov=0.875,
-        N=28672,
-        Nx=128,
-        yB_size=4480,
-        yN_size=5376,
-        yP_size=5376,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=6², eff 68.1%
-    "24k[.875]-n4608-1k": dict(
-        W=14.3125,
-        fov=0.875,
-        N=24576,
-        Nx=128,
-        yB_size=3840,
-        yN_size=4608,
-        yP_size=4608,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=6², eff 68.1%
-    "20k[.875]-n3840-1k": dict(
-        W=14.3125,
-        fov=0.875,
-        N=20480,
-        Nx=128,
-        yB_size=3200,
-        yN_size=3840,
-        yP_size=3840,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=6², eff 68.1%
-    "16k[.875]-n3k-1k": dict(
-        W=14.3125,
-        fov=0.875,
-        N=16384,
-        Nx=128,
-        yB_size=2560,
-        yN_size=3072,
-        yP_size=3072,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=6², eff 68.1%
-    "128k[.875]-n20k-1k": dict(
-        W=13.1875,
-        fov=0.875,
-        N=131072,
-        Nx=128,
-        yB_size=16384,
-        yN_size=20480,
-        yP_size=20480,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=7², eff 50.0%
-    "112k[.875]-n17920-1k": dict(
-        W=13.1875,
-        fov=0.875,
-        N=114688,
-        Nx=128,
-        yB_size=14336,
-        yN_size=17920,
-        yP_size=17920,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=7², eff 50.0%
-    "96k[.875]-n15k-1k": dict(
-        W=13.1875,
-        fov=0.875,
-        N=98304,
-        Nx=128,
-        yB_size=12288,
-        yN_size=15360,
-        yP_size=15360,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=7², eff 50.0%
-    "80k[.875]-n12800-1k": dict(
-        W=13.1875,
-        fov=0.875,
-        N=81920,
-        Nx=128,
-        yB_size=10240,
-        yN_size=12800,
-        yP_size=12800,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=7², eff 50.0%
-    "64k[.875]-n10k-1k": dict(
-        W=13.1875,
-        fov=0.875,
-        N=65536,
-        Nx=128,
-        yB_size=8192,
-        yN_size=10240,
-        yP_size=10240,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=7², eff 50.0%
-    "56k[.875]-n8960-1k": dict(
-        W=13.1875,
-        fov=0.875,
-        N=57344,
-        Nx=128,
-        yB_size=7168,
-        yN_size=8960,
-        yP_size=8960,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=7², eff 50.0%
-    "48k[.875]-n7680-1k": dict(
-        W=13.1875,
-        fov=0.875,
-        N=49152,
-        Nx=128,
-        yB_size=6144,
-        yN_size=7680,
-        yP_size=7680,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=7², eff 50.0%
-    "40k[.875]-n6400-1k": dict(
-        W=13.1875,
-        fov=0.875,
-        N=40960,
-        Nx=128,
-        yB_size=5120,
-        yN_size=6400,
-        yP_size=6400,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=7², eff 50.0%
-    "32k[.875]-n5k-1k": dict(
-        W=13.1875,
-        fov=0.875,
-        N=32768,
-        Nx=128,
-        yB_size=4096,
-        yN_size=5120,
-        yP_size=5120,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=7², eff 50.0%
-    "28k[.875]-n4480-1k": dict(
-        W=13.1875,
-        fov=0.875,
-        N=28672,
-        Nx=128,
-        yB_size=3584,
-        yN_size=4480,
-        yP_size=4480,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=7², eff 50.0%
-    "24k[.875]-n3840-1k": dict(
-        W=13.1875,
-        fov=0.875,
-        N=24576,
-        Nx=128,
-        yB_size=3072,
-        yN_size=3840,
-        yP_size=3840,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=7², eff 50.0%
-    "20k[.875]-n3200-1k": dict(
-        W=13.1875,
-        fov=0.875,
-        N=20480,
-        Nx=128,
-        yB_size=2560,
-        yN_size=3200,
-        yP_size=3200,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=7², eff 50.0%
-    "16k[.875]-n2560-1k": dict(
-        W=13.1875,
-        fov=0.875,
-        N=16384,
-        Nx=128,
-        yB_size=2048,
-        yN_size=2560,
-        yP_size=2560,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=7², eff 50.0%
+    ),
     "128k[.875]-n16k-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -4987,7 +1720,7 @@ SWIFT_CONFIGS = {
         yP_size=16384,
         xA_size=640,
         xM_size=1024,
-    ),  # nfacet=8², eff 54.7%
+    ),
     "112k[.875]-n14k-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -4998,7 +1731,7 @@ SWIFT_CONFIGS = {
         yP_size=14336,
         xA_size=640,
         xM_size=1024,
-    ),  # nfacet=8², eff 54.7%
+    ),
     "96k[.875]-n12k-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -5009,7 +1742,7 @@ SWIFT_CONFIGS = {
         yP_size=12288,
         xA_size=640,
         xM_size=1024,
-    ),  # nfacet=8², eff 54.7%
+    ),
     "80k[.875]-n10k-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -5020,7 +1753,7 @@ SWIFT_CONFIGS = {
         yP_size=10240,
         xA_size=640,
         xM_size=1024,
-    ),  # nfacet=8², eff 54.7%
+    ),
     "64k[.875]-n8k-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -5031,7 +1764,7 @@ SWIFT_CONFIGS = {
         yP_size=8192,
         xA_size=640,
         xM_size=1024,
-    ),  # nfacet=8², eff 54.7%
+    ),
     "56k[.875]-n7k-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -5042,7 +1775,7 @@ SWIFT_CONFIGS = {
         yP_size=7168,
         xA_size=640,
         xM_size=1024,
-    ),  # nfacet=8², eff 54.7%
+    ),
     "48k[.875]-n6k-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -5053,7 +1786,7 @@ SWIFT_CONFIGS = {
         yP_size=6144,
         xA_size=640,
         xM_size=1024,
-    ),  # nfacet=8², eff 54.7%
+    ),
     "40k[.875]-n5k-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -5064,7 +1797,7 @@ SWIFT_CONFIGS = {
         yP_size=5120,
         xA_size=640,
         xM_size=1024,
-    ),  # nfacet=8², eff 54.7%
+    ),
     "32k[.875]-n4k-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -5075,7 +1808,7 @@ SWIFT_CONFIGS = {
         yP_size=4096,
         xA_size=640,
         xM_size=1024,
-    ),  # nfacet=8², eff 54.7%
+    ),
     "28k[.875]-n3584-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -5086,7 +1819,7 @@ SWIFT_CONFIGS = {
         yP_size=3584,
         xA_size=640,
         xM_size=1024,
-    ),  # nfacet=8², eff 54.7%
+    ),
     "24k[.875]-n3k-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -5097,7 +1830,7 @@ SWIFT_CONFIGS = {
         yP_size=3072,
         xA_size=640,
         xM_size=1024,
-    ),  # nfacet=8², eff 54.7%
+    ),
     "20k[.875]-n2560-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -5108,7 +1841,7 @@ SWIFT_CONFIGS = {
         yP_size=2560,
         xA_size=640,
         xM_size=1024,
-    ),  # nfacet=8², eff 54.7%
+    ),
     "16k[.875]-n2k-1k": dict(
         W=16.3125,
         fov=0.875,
@@ -5119,7 +1852,7 @@ SWIFT_CONFIGS = {
         yP_size=2048,
         xA_size=640,
         xM_size=1024,
-    ),  # nfacet=8², eff 54.7%
+    ),
     "128k[.8125]-n64k-1k": dict(
         W=13.5625,
         fov=0.8125,
@@ -5130,7 +1863,7 @@ SWIFT_CONFIGS = {
         yP_size=65536,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=2², eff 71.1%
+    ),
     "112k[.8125]-n56k-1k": dict(
         W=13.5625,
         fov=0.8125,
@@ -5141,7 +1874,7 @@ SWIFT_CONFIGS = {
         yP_size=57344,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=2², eff 71.1%
+    ),
     "96k[.8125]-n48k-1k": dict(
         W=13.5625,
         fov=0.8125,
@@ -5152,7 +1885,7 @@ SWIFT_CONFIGS = {
         yP_size=49152,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=2², eff 71.1%
+    ),
     "80k[.8125]-n40k-1k": dict(
         W=13.5625,
         fov=0.8125,
@@ -5174,7 +1907,7 @@ SWIFT_CONFIGS = {
         yP_size=32768,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=2², eff 71.1%
+    ),
     "56k[.8125]-n28k-1k": dict(
         W=13.5625,
         fov=0.8125,
@@ -5185,7 +1918,7 @@ SWIFT_CONFIGS = {
         yP_size=28672,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=2², eff 71.1%
+    ),
     "48k[.8125]-n24k-1k": dict(
         W=13.5625,
         fov=0.8125,
@@ -5196,7 +1929,7 @@ SWIFT_CONFIGS = {
         yP_size=24576,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=2², eff 71.1%
+    ),
     "40k[.8125]-n20k-1k": dict(
         W=13.5625,
         fov=0.8125,
@@ -5207,7 +1940,7 @@ SWIFT_CONFIGS = {
         yP_size=20480,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=2², eff 71.1%
+    ),
     "32k[.8125]-n16k-1k": dict(
         W=13.5625,
         fov=0.8125,
@@ -5218,7 +1951,7 @@ SWIFT_CONFIGS = {
         yP_size=16384,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=2², eff 71.1%
+    ),
     "28k[.8125]-n14k-1k": dict(
         W=13.5625,
         fov=0.8125,
@@ -5229,7 +1962,7 @@ SWIFT_CONFIGS = {
         yP_size=14336,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=2², eff 71.1%
+    ),
     "24k[.8125]-n12k-1k": dict(
         W=13.5625,
         fov=0.8125,
@@ -5240,7 +1973,7 @@ SWIFT_CONFIGS = {
         yP_size=12288,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=2², eff 71.1%
+    ),
     "20k[.8125]-n10k-1k": dict(
         W=13.5625,
         fov=0.8125,
@@ -5251,7 +1984,7 @@ SWIFT_CONFIGS = {
         yP_size=10240,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=2², eff 71.1%
+    ),
     "16k[.8125]-n8k-1k": dict(
         W=13.5625,
         fov=0.8125,
@@ -5262,436 +1995,7 @@ SWIFT_CONFIGS = {
         yP_size=8192,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=2², eff 71.1%
-    "128k[.8125]-n56k-1k": dict(
-        W=21.375,
-        fov=0.8125,
-        N=131072,
-        Nx=128,
-        yB_size=53248,
-        yN_size=57344,
-        yP_size=57344,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=2², eff 81.2%
-    "112k[.8125]-n49k-1k": dict(
-        W=21.375,
-        fov=0.8125,
-        N=114688,
-        Nx=128,
-        yB_size=46592,
-        yN_size=50176,
-        yP_size=50176,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=2², eff 81.2%
-    "96k[.8125]-n42k-1k": dict(
-        W=21.375,
-        fov=0.8125,
-        N=98304,
-        Nx=128,
-        yB_size=39936,
-        yN_size=43008,
-        yP_size=43008,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=2², eff 81.2%
-    "80k[.8125]-n35k-1k": dict(
-        W=21.375,
-        fov=0.8125,
-        N=81920,
-        Nx=128,
-        yB_size=33280,
-        yN_size=35840,
-        yP_size=35840,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=2², eff 81.2%
-    "64k[.8125]-n28k-1k": dict(
-        W=21.375,
-        fov=0.8125,
-        N=65536,
-        Nx=128,
-        yB_size=26624,
-        yN_size=28672,
-        yP_size=28672,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=2², eff 81.2%
-    "56k[.8125]-n25088-1k": dict(
-        W=21.375,
-        fov=0.8125,
-        N=57344,
-        Nx=128,
-        yB_size=23296,
-        yN_size=25088,
-        yP_size=25088,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=2², eff 81.2%
-    "48k[.8125]-n21k-1k": dict(
-        W=21.375,
-        fov=0.8125,
-        N=49152,
-        Nx=128,
-        yB_size=19968,
-        yN_size=21504,
-        yP_size=21504,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=2², eff 81.2%
-    "40k[.8125]-n17920-1k": dict(
-        W=21.375,
-        fov=0.8125,
-        N=40960,
-        Nx=128,
-        yB_size=16640,
-        yN_size=17920,
-        yP_size=17920,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=2², eff 81.2%
-    "32k[.8125]-n14k-1k": dict(
-        W=21.375,
-        fov=0.8125,
-        N=32768,
-        Nx=128,
-        yB_size=13312,
-        yN_size=14336,
-        yP_size=14336,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=2², eff 81.2%
-    "28k[.8125]-n12544-1k": dict(
-        W=21.375,
-        fov=0.8125,
-        N=28672,
-        Nx=128,
-        yB_size=11648,
-        yN_size=12544,
-        yP_size=12544,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=2², eff 81.2%
-    "24k[.8125]-n10752-1k": dict(
-        W=21.375,
-        fov=0.8125,
-        N=24576,
-        Nx=128,
-        yB_size=9984,
-        yN_size=10752,
-        yP_size=10752,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=2², eff 81.2%
-    "20k[.8125]-n8960-1k": dict(
-        W=21.375,
-        fov=0.8125,
-        N=20480,
-        Nx=128,
-        yB_size=8320,
-        yN_size=8960,
-        yP_size=8960,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=2², eff 81.2%
-    "16k[.8125]-n7k-1k": dict(
-        W=21.375,
-        fov=0.8125,
-        N=16384,
-        Nx=128,
-        yB_size=6656,
-        yN_size=7168,
-        yP_size=7168,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=2², eff 81.2%
-    "128k[.8125]-n48k-1k": dict(
-        W=11.5625,
-        fov=0.8125,
-        N=131072,
-        Nx=128,
-        yB_size=35840,
-        yN_size=49152,
-        yP_size=49152,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 63.2%
-    "112k[.8125]-n42k-1k": dict(
-        W=11.5625,
-        fov=0.8125,
-        N=114688,
-        Nx=128,
-        yB_size=31360,
-        yN_size=43008,
-        yP_size=43008,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 63.2%
-    "96k[.8125]-n36k-1k": dict(
-        W=11.5625,
-        fov=0.8125,
-        N=98304,
-        Nx=128,
-        yB_size=26880,
-        yN_size=36864,
-        yP_size=36864,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 63.2%
-    "80k[.8125]-n30k-1k": dict(
-        W=11.5625,
-        fov=0.8125,
-        N=81920,
-        Nx=128,
-        yB_size=22400,
-        yN_size=30720,
-        yP_size=30720,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 63.2%
-    "64k[.8125]-n24k-1k": dict(
-        W=11.5625,
-        fov=0.8125,
-        N=65536,
-        Nx=128,
-        yB_size=17920,
-        yN_size=24576,
-        yP_size=24576,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 63.2%
-    "56k[.8125]-n21k-1k": dict(
-        W=11.5625,
-        fov=0.8125,
-        N=57344,
-        Nx=128,
-        yB_size=15680,
-        yN_size=21504,
-        yP_size=21504,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 63.2%
-    "48k[.8125]-n18k-1k": dict(
-        W=11.5625,
-        fov=0.8125,
-        N=49152,
-        Nx=128,
-        yB_size=13440,
-        yN_size=18432,
-        yP_size=18432,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 63.2%
-    "40k[.8125]-n15k-1k": dict(
-        W=11.5625,
-        fov=0.8125,
-        N=40960,
-        Nx=128,
-        yB_size=11200,
-        yN_size=15360,
-        yP_size=15360,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 63.2%
-    "32k[.8125]-n12k-1k": dict(
-        W=11.5625,
-        fov=0.8125,
-        N=32768,
-        Nx=128,
-        yB_size=8960,
-        yN_size=12288,
-        yP_size=12288,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 63.2%
-    "28k[.8125]-n10752-1k": dict(
-        W=11.5625,
-        fov=0.8125,
-        N=28672,
-        Nx=128,
-        yB_size=7840,
-        yN_size=10752,
-        yP_size=10752,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 63.2%
-    "24k[.8125]-n9k-1k": dict(
-        W=11.5625,
-        fov=0.8125,
-        N=24576,
-        Nx=128,
-        yB_size=6720,
-        yN_size=9216,
-        yP_size=9216,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 63.2%
-    "20k[.8125]-n7680-1k": dict(
-        W=11.5625,
-        fov=0.8125,
-        N=20480,
-        Nx=128,
-        yB_size=5600,
-        yN_size=7680,
-        yP_size=7680,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 63.2%
-    "16k[.8125]-n6k-1k": dict(
-        W=11.5625,
-        fov=0.8125,
-        N=16384,
-        Nx=128,
-        yB_size=4480,
-        yN_size=6144,
-        yP_size=6144,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 63.2%
-    "128k[.8125]-n40k-1k": dict(
-        W=16.3125,
-        fov=0.8125,
-        N=131072,
-        Nx=128,
-        yB_size=35840,
-        yN_size=40960,
-        yP_size=40960,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 75.8%
-    "112k[.8125]-n35k-1k": dict(
-        W=16.3125,
-        fov=0.8125,
-        N=114688,
-        Nx=128,
-        yB_size=31360,
-        yN_size=35840,
-        yP_size=35840,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 75.8%
-    "96k[.8125]-n30k-1k": dict(
-        W=16.3125,
-        fov=0.8125,
-        N=98304,
-        Nx=128,
-        yB_size=26880,
-        yN_size=30720,
-        yP_size=30720,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 75.8%
-    "80k[.8125]-n25k-1k": dict(
-        W=16.3125,
-        fov=0.8125,
-        N=81920,
-        Nx=128,
-        yB_size=22400,
-        yN_size=25600,
-        yP_size=25600,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 75.8%
-    "64k[.8125]-n20k-1k": dict(
-        W=16.3125,
-        fov=0.8125,
-        N=65536,
-        Nx=128,
-        yB_size=17920,
-        yN_size=20480,
-        yP_size=20480,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 75.8%
-    "56k[.8125]-n17920-1k": dict(
-        W=16.3125,
-        fov=0.8125,
-        N=57344,
-        Nx=128,
-        yB_size=15680,
-        yN_size=17920,
-        yP_size=17920,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 75.8%
-    "48k[.8125]-n15k-1k": dict(
-        W=16.3125,
-        fov=0.8125,
-        N=49152,
-        Nx=128,
-        yB_size=13440,
-        yN_size=15360,
-        yP_size=15360,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 75.8%
-    "40k[.8125]-n12800-1k": dict(
-        W=16.3125,
-        fov=0.8125,
-        N=40960,
-        Nx=128,
-        yB_size=11200,
-        yN_size=12800,
-        yP_size=12800,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 75.8%
-    "32k[.8125]-n10k-1k": dict(
-        W=16.3125,
-        fov=0.8125,
-        N=32768,
-        Nx=128,
-        yB_size=8960,
-        yN_size=10240,
-        yP_size=10240,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 75.8%
-    "28k[.8125]-n8960-1k": dict(
-        W=16.3125,
-        fov=0.8125,
-        N=28672,
-        Nx=128,
-        yB_size=7840,
-        yN_size=8960,
-        yP_size=8960,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 75.8%
-    "24k[.8125]-n7680-1k": dict(
-        W=16.3125,
-        fov=0.8125,
-        N=24576,
-        Nx=128,
-        yB_size=6720,
-        yN_size=7680,
-        yP_size=7680,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 75.8%
-    "20k[.8125]-n6400-1k": dict(
-        W=16.3125,
-        fov=0.8125,
-        N=20480,
-        Nx=128,
-        yB_size=5600,
-        yN_size=6400,
-        yP_size=6400,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 75.8%
-    "16k[.8125]-n5k-1k": dict(
-        W=16.3125,
-        fov=0.8125,
-        N=16384,
-        Nx=128,
-        yB_size=4480,
-        yN_size=5120,
-        yP_size=5120,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=3², eff 75.8%
+    ),
     "128k[.8125]-n32k-1k": dict(
         W=13.5625,
         fov=0.8125,
@@ -5713,7 +2017,7 @@ SWIFT_CONFIGS = {
         yP_size=28672,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=4², eff 71.1%
+    ),
     "96k[.8125]-n24k-1k": dict(
         W=13.5625,
         fov=0.8125,
@@ -5724,7 +2028,7 @@ SWIFT_CONFIGS = {
         yP_size=24576,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=4², eff 71.1%
+    ),
     "80k[.8125]-n20k-1k": dict(
         W=13.5625,
         fov=0.8125,
@@ -5735,7 +2039,7 @@ SWIFT_CONFIGS = {
         yP_size=20480,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=4², eff 71.1%
+    ),
     "64k[.8125]-n16k-1k": dict(
         W=13.5625,
         fov=0.8125,
@@ -5746,7 +2050,7 @@ SWIFT_CONFIGS = {
         yP_size=16384,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=4², eff 71.1%
+    ),
     "56k[.8125]-n14k-1k": dict(
         W=13.5625,
         fov=0.8125,
@@ -5757,7 +2061,7 @@ SWIFT_CONFIGS = {
         yP_size=14336,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=4², eff 71.1%
+    ),
     "48k[.8125]-n12k-1k": dict(
         W=13.5625,
         fov=0.8125,
@@ -5768,7 +2072,7 @@ SWIFT_CONFIGS = {
         yP_size=12288,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=4², eff 71.1%
+    ),
     "40k[.8125]-n10k-1k": dict(
         W=13.5625,
         fov=0.8125,
@@ -5779,7 +2083,7 @@ SWIFT_CONFIGS = {
         yP_size=10240,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=4², eff 71.1%
+    ),
     "32k[.8125]-n8k-1k": dict(
         W=13.5625,
         fov=0.8125,
@@ -5790,7 +2094,7 @@ SWIFT_CONFIGS = {
         yP_size=8192,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=4², eff 71.1%
+    ),
     "28k[.8125]-n7k-1k": dict(
         W=13.5625,
         fov=0.8125,
@@ -5801,7 +2105,7 @@ SWIFT_CONFIGS = {
         yP_size=7168,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=4², eff 71.1%
+    ),
     "24k[.8125]-n6k-1k": dict(
         W=13.5625,
         fov=0.8125,
@@ -5812,7 +2116,7 @@ SWIFT_CONFIGS = {
         yP_size=6144,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=4², eff 71.1%
+    ),
     "20k[.8125]-n5k-1k": dict(
         W=13.5625,
         fov=0.8125,
@@ -5823,7 +2127,7 @@ SWIFT_CONFIGS = {
         yP_size=5120,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=4², eff 71.1%
+    ),
     "16k[.8125]-n4k-1k": dict(
         W=13.5625,
         fov=0.8125,
@@ -5834,436 +2138,7 @@ SWIFT_CONFIGS = {
         yP_size=4096,
         xA_size=896,
         xM_size=1024,
-    ),  # nfacet=4², eff 71.1%
-    "128k[.8125]-n28k-1k": dict(
-        W=21.375,
-        fov=0.8125,
-        N=131072,
-        Nx=128,
-        yB_size=26624,
-        yN_size=28672,
-        yP_size=28672,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=4², eff 58.0%
-    "112k[.8125]-n25088-1k": dict(
-        W=21.375,
-        fov=0.8125,
-        N=114688,
-        Nx=128,
-        yB_size=23296,
-        yN_size=25088,
-        yP_size=25088,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=4², eff 58.0%
-    "96k[.8125]-n21k-1k": dict(
-        W=21.375,
-        fov=0.8125,
-        N=98304,
-        Nx=128,
-        yB_size=19968,
-        yN_size=21504,
-        yP_size=21504,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=4², eff 58.0%
-    "80k[.8125]-n17920-1k": dict(
-        W=21.375,
-        fov=0.8125,
-        N=81920,
-        Nx=128,
-        yB_size=16640,
-        yN_size=17920,
-        yP_size=17920,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=4², eff 58.0%
-    "64k[.8125]-n14k-1k": dict(
-        W=21.375,
-        fov=0.8125,
-        N=65536,
-        Nx=128,
-        yB_size=13312,
-        yN_size=14336,
-        yP_size=14336,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=4², eff 58.0%
-    "56k[.8125]-n12544-1k": dict(
-        W=21.375,
-        fov=0.8125,
-        N=57344,
-        Nx=128,
-        yB_size=11648,
-        yN_size=12544,
-        yP_size=12544,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=4², eff 58.0%
-    "48k[.8125]-n10752-1k": dict(
-        W=21.375,
-        fov=0.8125,
-        N=49152,
-        Nx=128,
-        yB_size=9984,
-        yN_size=10752,
-        yP_size=10752,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=4², eff 58.0%
-    "40k[.8125]-n8960-1k": dict(
-        W=21.375,
-        fov=0.8125,
-        N=40960,
-        Nx=128,
-        yB_size=8320,
-        yN_size=8960,
-        yP_size=8960,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=4², eff 58.0%
-    "32k[.8125]-n7k-1k": dict(
-        W=21.375,
-        fov=0.8125,
-        N=32768,
-        Nx=128,
-        yB_size=6656,
-        yN_size=7168,
-        yP_size=7168,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=4², eff 58.0%
-    "28k[.8125]-n6272-1k": dict(
-        W=21.375,
-        fov=0.8125,
-        N=28672,
-        Nx=128,
-        yB_size=5824,
-        yN_size=6272,
-        yP_size=6272,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=4², eff 58.0%
-    "24k[.8125]-n5376-1k": dict(
-        W=21.375,
-        fov=0.8125,
-        N=24576,
-        Nx=128,
-        yB_size=4992,
-        yN_size=5376,
-        yP_size=5376,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=4², eff 58.0%
-    "20k[.8125]-n4480-1k": dict(
-        W=21.375,
-        fov=0.8125,
-        N=20480,
-        Nx=128,
-        yB_size=4160,
-        yN_size=4480,
-        yP_size=4480,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=4², eff 58.0%
-    "16k[.8125]-n3584-1k": dict(
-        W=21.375,
-        fov=0.8125,
-        N=16384,
-        Nx=128,
-        yB_size=3328,
-        yN_size=3584,
-        yP_size=3584,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=4², eff 58.0%
-    "128k[.8125]-n24k-1k": dict(
-        W=16.3125,
-        fov=0.8125,
-        N=131072,
-        Nx=128,
-        yB_size=21504,
-        yN_size=24576,
-        yP_size=24576,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=5², eff 54.2%
-    "112k[.8125]-n21k-1k": dict(
-        W=16.3125,
-        fov=0.8125,
-        N=114688,
-        Nx=128,
-        yB_size=18816,
-        yN_size=21504,
-        yP_size=21504,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=5², eff 54.2%
-    "96k[.8125]-n18k-1k": dict(
-        W=16.3125,
-        fov=0.8125,
-        N=98304,
-        Nx=128,
-        yB_size=16128,
-        yN_size=18432,
-        yP_size=18432,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=5², eff 54.2%
-    "80k[.8125]-n15k-1k": dict(
-        W=16.3125,
-        fov=0.8125,
-        N=81920,
-        Nx=128,
-        yB_size=13440,
-        yN_size=15360,
-        yP_size=15360,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=5², eff 54.2%
-    "64k[.8125]-n12k-1k": dict(
-        W=16.3125,
-        fov=0.8125,
-        N=65536,
-        Nx=128,
-        yB_size=10752,
-        yN_size=12288,
-        yP_size=12288,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=5², eff 54.2%
-    "56k[.8125]-n10752-1k": dict(
-        W=16.3125,
-        fov=0.8125,
-        N=57344,
-        Nx=128,
-        yB_size=9408,
-        yN_size=10752,
-        yP_size=10752,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=5², eff 54.2%
-    "48k[.8125]-n9k-1k": dict(
-        W=16.3125,
-        fov=0.8125,
-        N=49152,
-        Nx=128,
-        yB_size=8064,
-        yN_size=9216,
-        yP_size=9216,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=5², eff 54.2%
-    "40k[.8125]-n7680-1k": dict(
-        W=16.3125,
-        fov=0.8125,
-        N=40960,
-        Nx=128,
-        yB_size=6720,
-        yN_size=7680,
-        yP_size=7680,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=5², eff 54.2%
-    "32k[.8125]-n6k-1k": dict(
-        W=16.3125,
-        fov=0.8125,
-        N=32768,
-        Nx=128,
-        yB_size=5376,
-        yN_size=6144,
-        yP_size=6144,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=5², eff 54.2%
-    "28k[.8125]-n5376-1k": dict(
-        W=16.3125,
-        fov=0.8125,
-        N=28672,
-        Nx=128,
-        yB_size=4704,
-        yN_size=5376,
-        yP_size=5376,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=5², eff 54.2%
-    "24k[.8125]-n4608-1k": dict(
-        W=16.3125,
-        fov=0.8125,
-        N=24576,
-        Nx=128,
-        yB_size=4032,
-        yN_size=4608,
-        yP_size=4608,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=5², eff 54.2%
-    "20k[.8125]-n3840-1k": dict(
-        W=16.3125,
-        fov=0.8125,
-        N=20480,
-        Nx=128,
-        yB_size=3360,
-        yN_size=3840,
-        yP_size=3840,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=5², eff 54.2%
-    "16k[.8125]-n3k-1k": dict(
-        W=16.3125,
-        fov=0.8125,
-        N=16384,
-        Nx=128,
-        yB_size=2688,
-        yN_size=3072,
-        yP_size=3072,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=5², eff 54.2%
-    "128k[.8125]-n20k-1k": dict(
-        W=18.125,
-        fov=0.8125,
-        N=131072,
-        Nx=128,
-        yB_size=18432,
-        yN_size=20480,
-        yP_size=20480,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 54.2%
-    "112k[.8125]-n17920-1k": dict(
-        W=18.125,
-        fov=0.8125,
-        N=114688,
-        Nx=128,
-        yB_size=16128,
-        yN_size=17920,
-        yP_size=17920,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 54.2%
-    "96k[.8125]-n15k-1k": dict(
-        W=18.125,
-        fov=0.8125,
-        N=98304,
-        Nx=128,
-        yB_size=13824,
-        yN_size=15360,
-        yP_size=15360,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 54.2%
-    "80k[.8125]-n12800-1k": dict(
-        W=18.125,
-        fov=0.8125,
-        N=81920,
-        Nx=128,
-        yB_size=11520,
-        yN_size=12800,
-        yP_size=12800,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 54.2%
-    "64k[.8125]-n10k-1k": dict(
-        W=18.125,
-        fov=0.8125,
-        N=65536,
-        Nx=128,
-        yB_size=9216,
-        yN_size=10240,
-        yP_size=10240,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 54.2%
-    "56k[.8125]-n8960-1k": dict(
-        W=18.125,
-        fov=0.8125,
-        N=57344,
-        Nx=128,
-        yB_size=8064,
-        yN_size=8960,
-        yP_size=8960,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 54.2%
-    "48k[.8125]-n7680-1k": dict(
-        W=18.125,
-        fov=0.8125,
-        N=49152,
-        Nx=128,
-        yB_size=6912,
-        yN_size=7680,
-        yP_size=7680,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 54.2%
-    "40k[.8125]-n6400-1k": dict(
-        W=18.125,
-        fov=0.8125,
-        N=40960,
-        Nx=128,
-        yB_size=5760,
-        yN_size=6400,
-        yP_size=6400,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 54.2%
-    "32k[.8125]-n5k-1k": dict(
-        W=18.125,
-        fov=0.8125,
-        N=32768,
-        Nx=128,
-        yB_size=4608,
-        yN_size=5120,
-        yP_size=5120,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 54.2%
-    "28k[.8125]-n4480-1k": dict(
-        W=18.125,
-        fov=0.8125,
-        N=28672,
-        Nx=128,
-        yB_size=4032,
-        yN_size=4480,
-        yP_size=4480,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 54.2%
-    "24k[.8125]-n3840-1k": dict(
-        W=18.125,
-        fov=0.8125,
-        N=24576,
-        Nx=128,
-        yB_size=3456,
-        yN_size=3840,
-        yP_size=3840,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 54.2%
-    "20k[.8125]-n3200-1k": dict(
-        W=18.125,
-        fov=0.8125,
-        N=20480,
-        Nx=128,
-        yB_size=2880,
-        yN_size=3200,
-        yP_size=3200,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 54.2%
-    "16k[.8125]-n2560-1k": dict(
-        W=18.125,
-        fov=0.8125,
-        N=16384,
-        Nx=128,
-        yB_size=2304,
-        yN_size=2560,
-        yP_size=2560,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 54.2%
+    ),
     "128k[.8125]-n16k-1k": dict(
         W=13.5625,
         fov=0.8125,
@@ -6550,435 +2425,6 @@ SWIFT_CONFIGS = {
         xA_size=928,
         xM_size=1024,
     ),  # nfacet=2², eff 68.0%
-    "128k[.75]-n56k-1k": dict(
-        W=15.375,
-        fov=0.75,
-        N=131072,
-        Nx=16,
-        yB_size=49152,
-        yN_size=57344,
-        yP_size=57344,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=2², eff 79.0%
-    "112k[.75]-n49k-1k": dict(
-        W=15.375,
-        fov=0.75,
-        N=114688,
-        Nx=16,
-        yB_size=43008,
-        yN_size=50176,
-        yP_size=50176,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=2², eff 79.0%
-    "96k[.75]-n42k-1k": dict(
-        W=15.375,
-        fov=0.75,
-        N=98304,
-        Nx=16,
-        yB_size=36864,
-        yN_size=43008,
-        yP_size=43008,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=2², eff 79.0%
-    "80k[.75]-n35k-1k": dict(
-        W=15.375,
-        fov=0.75,
-        N=81920,
-        Nx=16,
-        yB_size=30720,
-        yN_size=35840,
-        yP_size=35840,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=2², eff 79.0%
-    "64k[.75]-n28k-1k": dict(
-        W=15.375,
-        fov=0.75,
-        N=65536,
-        Nx=16,
-        yB_size=24576,
-        yN_size=28672,
-        yP_size=28672,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=2², eff 79.0%
-    "56k[.75]-n25088-1k": dict(
-        W=15.375,
-        fov=0.75,
-        N=57344,
-        Nx=16,
-        yB_size=21504,
-        yN_size=25088,
-        yP_size=25088,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=2², eff 79.0%
-    "48k[.75]-n21k-1k": dict(
-        W=15.375,
-        fov=0.75,
-        N=49152,
-        Nx=16,
-        yB_size=18432,
-        yN_size=21504,
-        yP_size=21504,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=2², eff 79.0%
-    "40k[.75]-n17920-1k": dict(
-        W=15.375,
-        fov=0.75,
-        N=40960,
-        Nx=16,
-        yB_size=15360,
-        yN_size=17920,
-        yP_size=17920,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=2², eff 79.0%
-    "32k[.75]-n14k-1k": dict(
-        W=15.375,
-        fov=0.75,
-        N=32768,
-        Nx=16,
-        yB_size=12288,
-        yN_size=14336,
-        yP_size=14336,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=2², eff 79.0%
-    "28k[.75]-n12544-1k": dict(
-        W=15.375,
-        fov=0.75,
-        N=28672,
-        Nx=16,
-        yB_size=10752,
-        yN_size=12544,
-        yP_size=12544,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=2², eff 79.0%
-    "24k[.75]-n10752-1k": dict(
-        W=15.375,
-        fov=0.75,
-        N=24576,
-        Nx=16,
-        yB_size=9216,
-        yN_size=10752,
-        yP_size=10752,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=2², eff 79.0%
-    "20k[.75]-n8960-1k": dict(
-        W=15.375,
-        fov=0.75,
-        N=20480,
-        Nx=16,
-        yB_size=7680,
-        yN_size=8960,
-        yP_size=8960,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=2², eff 79.0%
-    "16k[.75]-n7k-1k": dict(
-        W=15.375,
-        fov=0.75,
-        N=16384,
-        Nx=16,
-        yB_size=6144,
-        yN_size=7168,
-        yP_size=7168,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=2², eff 79.0%
-    "128k[.75]-n48k-1k": dict(
-        W=10.625,
-        fov=0.75,
-        N=131072,
-        Nx=8,
-        yB_size=32768,
-        yN_size=49152,
-        yP_size=49152,
-        xA_size=968,
-        xM_size=1024,
-    ),  # nfacet=3², eff 63.0%
-    "112k[.75]-n42k-1k": dict(
-        W=10.625,
-        fov=0.75,
-        N=114688,
-        Nx=8,
-        yB_size=28672,
-        yN_size=43008,
-        yP_size=43008,
-        xA_size=968,
-        xM_size=1024,
-    ),  # nfacet=3², eff 63.0%
-    "96k[.75]-n36k-1k": dict(
-        W=10.625,
-        fov=0.75,
-        N=98304,
-        Nx=8,
-        yB_size=24576,
-        yN_size=36864,
-        yP_size=36864,
-        xA_size=968,
-        xM_size=1024,
-    ),  # nfacet=3², eff 63.0%
-    "80k[.75]-n30k-1k": dict(
-        W=10.625,
-        fov=0.75,
-        N=81920,
-        Nx=8,
-        yB_size=20480,
-        yN_size=30720,
-        yP_size=30720,
-        xA_size=968,
-        xM_size=1024,
-    ),  # nfacet=3², eff 63.0%
-    "64k[.75]-n24k-1k": dict(
-        W=10.625,
-        fov=0.75,
-        N=65536,
-        Nx=8,
-        yB_size=16384,
-        yN_size=24576,
-        yP_size=24576,
-        xA_size=968,
-        xM_size=1024,
-    ),  # nfacet=3², eff 63.0%
-    "56k[.75]-n21k-1k": dict(
-        W=10.625,
-        fov=0.75,
-        N=57344,
-        Nx=8,
-        yB_size=14336,
-        yN_size=21504,
-        yP_size=21504,
-        xA_size=968,
-        xM_size=1024,
-    ),  # nfacet=3², eff 63.0%
-    "48k[.75]-n18k-1k": dict(
-        W=10.625,
-        fov=0.75,
-        N=49152,
-        Nx=8,
-        yB_size=12288,
-        yN_size=18432,
-        yP_size=18432,
-        xA_size=968,
-        xM_size=1024,
-    ),  # nfacet=3², eff 63.0%
-    "40k[.75]-n15k-1k": dict(
-        W=10.625,
-        fov=0.75,
-        N=40960,
-        Nx=8,
-        yB_size=10240,
-        yN_size=15360,
-        yP_size=15360,
-        xA_size=968,
-        xM_size=1024,
-    ),  # nfacet=3², eff 63.0%
-    "32k[.75]-n12k-1k": dict(
-        W=10.625,
-        fov=0.75,
-        N=32768,
-        Nx=8,
-        yB_size=8192,
-        yN_size=12288,
-        yP_size=12288,
-        xA_size=968,
-        xM_size=1024,
-    ),  # nfacet=3², eff 63.0%
-    "28k[.75]-n10752-1k": dict(
-        W=10.625,
-        fov=0.75,
-        N=28672,
-        Nx=8,
-        yB_size=7168,
-        yN_size=10752,
-        yP_size=10752,
-        xA_size=968,
-        xM_size=1024,
-    ),  # nfacet=3², eff 63.0%
-    "24k[.75]-n9k-1k": dict(
-        W=10.625,
-        fov=0.75,
-        N=24576,
-        Nx=8,
-        yB_size=6144,
-        yN_size=9216,
-        yP_size=9216,
-        xA_size=968,
-        xM_size=1024,
-    ),  # nfacet=3², eff 63.0%
-    "20k[.75]-n7680-1k": dict(
-        W=10.625,
-        fov=0.75,
-        N=20480,
-        Nx=8,
-        yB_size=5120,
-        yN_size=7680,
-        yP_size=7680,
-        xA_size=968,
-        xM_size=1024,
-    ),  # nfacet=3², eff 63.0%
-    "16k[.75]-n6k-1k": dict(
-        W=10.625,
-        fov=0.75,
-        N=16384,
-        Nx=8,
-        yB_size=4096,
-        yN_size=6144,
-        yP_size=6144,
-        xA_size=968,
-        xM_size=1024,
-    ),  # nfacet=3², eff 63.0%
-    "128k[.75]-n40k-1k": dict(
-        W=13.1875,
-        fov=0.75,
-        N=131072,
-        Nx=16,
-        yB_size=32768,
-        yN_size=40960,
-        yP_size=40960,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=3², eff 73.8%
-    "112k[.75]-n35k-1k": dict(
-        W=13.1875,
-        fov=0.75,
-        N=114688,
-        Nx=16,
-        yB_size=28672,
-        yN_size=35840,
-        yP_size=35840,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=3², eff 73.8%
-    "96k[.75]-n30k-1k": dict(
-        W=13.1875,
-        fov=0.75,
-        N=98304,
-        Nx=16,
-        yB_size=24576,
-        yN_size=30720,
-        yP_size=30720,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=3², eff 73.8%
-    "80k[.75]-n25k-1k": dict(
-        W=13.1875,
-        fov=0.75,
-        N=81920,
-        Nx=16,
-        yB_size=20480,
-        yN_size=25600,
-        yP_size=25600,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=3², eff 73.8%
-    "64k[.75]-n20k-1k": dict(
-        W=13.1875,
-        fov=0.75,
-        N=65536,
-        Nx=16,
-        yB_size=16384,
-        yN_size=20480,
-        yP_size=20480,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=3², eff 73.8%
-    "56k[.75]-n17920-1k": dict(
-        W=13.1875,
-        fov=0.75,
-        N=57344,
-        Nx=16,
-        yB_size=14336,
-        yN_size=17920,
-        yP_size=17920,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=3², eff 73.8%
-    "48k[.75]-n15k-1k": dict(
-        W=13.1875,
-        fov=0.75,
-        N=49152,
-        Nx=16,
-        yB_size=12288,
-        yN_size=15360,
-        yP_size=15360,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=3², eff 73.8%
-    "40k[.75]-n12800-1k": dict(
-        W=13.1875,
-        fov=0.75,
-        N=40960,
-        Nx=16,
-        yB_size=10240,
-        yN_size=12800,
-        yP_size=12800,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=3², eff 73.8%
-    "32k[.75]-n10k-1k": dict(
-        W=13.1875,
-        fov=0.75,
-        N=32768,
-        Nx=16,
-        yB_size=8192,
-        yN_size=10240,
-        yP_size=10240,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=3², eff 73.8%
-    "28k[.75]-n8960-1k": dict(
-        W=13.1875,
-        fov=0.75,
-        N=28672,
-        Nx=16,
-        yB_size=7168,
-        yN_size=8960,
-        yP_size=8960,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=3², eff 73.8%
-    "24k[.75]-n7680-1k": dict(
-        W=13.1875,
-        fov=0.75,
-        N=24576,
-        Nx=16,
-        yB_size=6144,
-        yN_size=7680,
-        yP_size=7680,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=3², eff 73.8%
-    "20k[.75]-n6400-1k": dict(
-        W=13.1875,
-        fov=0.75,
-        N=20480,
-        Nx=16,
-        yB_size=5120,
-        yN_size=6400,
-        yP_size=6400,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=3², eff 73.8%
-    "16k[.75]-n5k-1k": dict(
-        W=13.1875,
-        fov=0.75,
-        N=16384,
-        Nx=16,
-        yB_size=4096,
-        yN_size=5120,
-        yP_size=5120,
-        xA_size=944,
-        xM_size=1024,
-    ),  # nfacet=3², eff 73.8%
     "128k[.75]-n32k-1k": dict(
         W=11.9375,
         fov=0.75,
@@ -7122,435 +2568,6 @@ SWIFT_CONFIGS = {
         xA_size=896,
         xM_size=1024,
     ),  # nfacet=4², eff 65.6%
-    "128k[.75]-n28k-1k": dict(
-        W=15.375,
-        fov=0.75,
-        N=131072,
-        Nx=128,
-        yB_size=24576,
-        yN_size=28672,
-        yP_size=28672,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=4², eff 75.0%
-    "112k[.75]-n25088-1k": dict(
-        W=15.375,
-        fov=0.75,
-        N=114688,
-        Nx=128,
-        yB_size=21504,
-        yN_size=25088,
-        yP_size=25088,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=4², eff 75.0%
-    "96k[.75]-n21k-1k": dict(
-        W=15.375,
-        fov=0.75,
-        N=98304,
-        Nx=128,
-        yB_size=18432,
-        yN_size=21504,
-        yP_size=21504,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=4², eff 75.0%
-    "80k[.75]-n17920-1k": dict(
-        W=15.375,
-        fov=0.75,
-        N=81920,
-        Nx=128,
-        yB_size=15360,
-        yN_size=17920,
-        yP_size=17920,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=4², eff 75.0%
-    "64k[.75]-n14k-1k": dict(
-        W=15.375,
-        fov=0.75,
-        N=65536,
-        Nx=128,
-        yB_size=12288,
-        yN_size=14336,
-        yP_size=14336,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=4², eff 75.0%
-    "56k[.75]-n12544-1k": dict(
-        W=15.375,
-        fov=0.75,
-        N=57344,
-        Nx=128,
-        yB_size=10752,
-        yN_size=12544,
-        yP_size=12544,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=4², eff 75.0%
-    "48k[.75]-n10752-1k": dict(
-        W=15.375,
-        fov=0.75,
-        N=49152,
-        Nx=128,
-        yB_size=9216,
-        yN_size=10752,
-        yP_size=10752,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=4², eff 75.0%
-    "40k[.75]-n8960-1k": dict(
-        W=15.375,
-        fov=0.75,
-        N=40960,
-        Nx=128,
-        yB_size=7680,
-        yN_size=8960,
-        yP_size=8960,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=4², eff 75.0%
-    "32k[.75]-n7k-1k": dict(
-        W=15.375,
-        fov=0.75,
-        N=32768,
-        Nx=128,
-        yB_size=6144,
-        yN_size=7168,
-        yP_size=7168,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=4², eff 75.0%
-    "28k[.75]-n6272-1k": dict(
-        W=15.375,
-        fov=0.75,
-        N=28672,
-        Nx=128,
-        yB_size=5376,
-        yN_size=6272,
-        yP_size=6272,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=4², eff 75.0%
-    "24k[.75]-n5376-1k": dict(
-        W=15.375,
-        fov=0.75,
-        N=24576,
-        Nx=128,
-        yB_size=4608,
-        yN_size=5376,
-        yP_size=5376,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=4², eff 75.0%
-    "20k[.75]-n4480-1k": dict(
-        W=15.375,
-        fov=0.75,
-        N=20480,
-        Nx=128,
-        yB_size=3840,
-        yN_size=4480,
-        yP_size=4480,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=4², eff 75.0%
-    "16k[.75]-n3584-1k": dict(
-        W=15.375,
-        fov=0.75,
-        N=16384,
-        Nx=128,
-        yB_size=3072,
-        yN_size=3584,
-        yP_size=3584,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=4², eff 75.0%
-    "128k[.75]-n24k-1k": dict(
-        W=14.3125,
-        fov=0.75,
-        N=131072,
-        Nx=128,
-        yB_size=20480,
-        yN_size=24576,
-        yP_size=24576,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
-    "112k[.75]-n21k-1k": dict(
-        W=14.3125,
-        fov=0.75,
-        N=114688,
-        Nx=128,
-        yB_size=17920,
-        yN_size=21504,
-        yP_size=21504,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
-    "96k[.75]-n18k-1k": dict(
-        W=14.3125,
-        fov=0.75,
-        N=98304,
-        Nx=128,
-        yB_size=15360,
-        yN_size=18432,
-        yP_size=18432,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
-    "80k[.75]-n15k-1k": dict(
-        W=14.3125,
-        fov=0.75,
-        N=81920,
-        Nx=128,
-        yB_size=12800,
-        yN_size=15360,
-        yP_size=15360,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
-    "64k[.75]-n12k-1k": dict(
-        W=14.3125,
-        fov=0.75,
-        N=65536,
-        Nx=128,
-        yB_size=10240,
-        yN_size=12288,
-        yP_size=12288,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
-    "56k[.75]-n10752-1k": dict(
-        W=14.3125,
-        fov=0.75,
-        N=57344,
-        Nx=128,
-        yB_size=8960,
-        yN_size=10752,
-        yP_size=10752,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
-    "48k[.75]-n9k-1k": dict(
-        W=14.3125,
-        fov=0.75,
-        N=49152,
-        Nx=128,
-        yB_size=7680,
-        yN_size=9216,
-        yP_size=9216,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
-    "40k[.75]-n7680-1k": dict(
-        W=14.3125,
-        fov=0.75,
-        N=40960,
-        Nx=128,
-        yB_size=6400,
-        yN_size=7680,
-        yP_size=7680,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
-    "32k[.75]-n6k-1k": dict(
-        W=14.3125,
-        fov=0.75,
-        N=32768,
-        Nx=128,
-        yB_size=5120,
-        yN_size=6144,
-        yP_size=6144,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
-    "28k[.75]-n5376-1k": dict(
-        W=14.3125,
-        fov=0.75,
-        N=28672,
-        Nx=128,
-        yB_size=4480,
-        yN_size=5376,
-        yP_size=5376,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
-    "24k[.75]-n4608-1k": dict(
-        W=14.3125,
-        fov=0.75,
-        N=24576,
-        Nx=128,
-        yB_size=3840,
-        yN_size=4608,
-        yP_size=4608,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
-    "20k[.75]-n3840-1k": dict(
-        W=14.3125,
-        fov=0.75,
-        N=20480,
-        Nx=128,
-        yB_size=3200,
-        yN_size=3840,
-        yP_size=3840,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
-    "16k[.75]-n3k-1k": dict(
-        W=14.3125,
-        fov=0.75,
-        N=16384,
-        Nx=128,
-        yB_size=2560,
-        yN_size=3072,
-        yP_size=3072,
-        xA_size=896,
-        xM_size=1024,
-    ),  # nfacet=5², eff 70.0%
-    "128k[.75]-n20k-1k": dict(
-        W=13.1875,
-        fov=0.75,
-        N=131072,
-        Nx=128,
-        yB_size=16384,
-        yN_size=20480,
-        yP_size=20480,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 50.0%
-    "112k[.75]-n17920-1k": dict(
-        W=13.1875,
-        fov=0.75,
-        N=114688,
-        Nx=128,
-        yB_size=14336,
-        yN_size=17920,
-        yP_size=17920,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 50.0%
-    "96k[.75]-n15k-1k": dict(
-        W=13.1875,
-        fov=0.75,
-        N=98304,
-        Nx=128,
-        yB_size=12288,
-        yN_size=15360,
-        yP_size=15360,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 50.0%
-    "80k[.75]-n12800-1k": dict(
-        W=13.1875,
-        fov=0.75,
-        N=81920,
-        Nx=128,
-        yB_size=10240,
-        yN_size=12800,
-        yP_size=12800,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 50.0%
-    "64k[.75]-n10k-1k": dict(
-        W=13.1875,
-        fov=0.75,
-        N=65536,
-        Nx=128,
-        yB_size=8192,
-        yN_size=10240,
-        yP_size=10240,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 50.0%
-    "56k[.75]-n8960-1k": dict(
-        W=13.1875,
-        fov=0.75,
-        N=57344,
-        Nx=128,
-        yB_size=7168,
-        yN_size=8960,
-        yP_size=8960,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 50.0%
-    "48k[.75]-n7680-1k": dict(
-        W=13.1875,
-        fov=0.75,
-        N=49152,
-        Nx=128,
-        yB_size=6144,
-        yN_size=7680,
-        yP_size=7680,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 50.0%
-    "40k[.75]-n6400-1k": dict(
-        W=13.1875,
-        fov=0.75,
-        N=40960,
-        Nx=128,
-        yB_size=5120,
-        yN_size=6400,
-        yP_size=6400,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 50.0%
-    "32k[.75]-n5k-1k": dict(
-        W=13.1875,
-        fov=0.75,
-        N=32768,
-        Nx=128,
-        yB_size=4096,
-        yN_size=5120,
-        yP_size=5120,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 50.0%
-    "28k[.75]-n4480-1k": dict(
-        W=13.1875,
-        fov=0.75,
-        N=28672,
-        Nx=128,
-        yB_size=3584,
-        yN_size=4480,
-        yP_size=4480,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 50.0%
-    "24k[.75]-n3840-1k": dict(
-        W=13.1875,
-        fov=0.75,
-        N=24576,
-        Nx=128,
-        yB_size=3072,
-        yN_size=3840,
-        yP_size=3840,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 50.0%
-    "20k[.75]-n3200-1k": dict(
-        W=13.1875,
-        fov=0.75,
-        N=20480,
-        Nx=128,
-        yB_size=2560,
-        yN_size=3200,
-        yP_size=3200,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 50.0%
-    "16k[.75]-n2560-1k": dict(
-        W=13.1875,
-        fov=0.75,
-        N=16384,
-        Nx=128,
-        yB_size=2048,
-        yN_size=2560,
-        yP_size=2560,
-        xA_size=640,
-        xM_size=1024,
-    ),  # nfacet=6², eff 50.0%
     "128k[.75]-n16k-1k": dict(
         W=16.3125,
         fov=0.75,
