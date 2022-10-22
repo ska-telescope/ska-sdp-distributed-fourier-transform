@@ -75,6 +75,15 @@ def test_swift_configs():
     for config in SWIFT_CONFIGS.values():
         if config["N"] < 4 * 1024:
             make_core(config)
+
+
+@pytest.mark.parametrize(
+    "xA_size", [TEST_PARAMS["xA_size"], TEST_PARAMS["xA_size"] - 1]
+)
+@pytest.mark.parametrize(
+    "yB_size", [TEST_PARAMS["yB_size"], TEST_PARAMS["yB_size"] - 1]
+)
+def test_facet_to_subgrid_basic(xA_size, yB_size):
     """Test basic properties of 1D facet to subgrid distributed FT
     primitives for cases where the subgrids are expected to be a
     constant value.
@@ -82,14 +91,11 @@ def test_swift_configs():
 
     # Basic layout parameters
     N = TEST_PARAMS["N"]
-    xA_size = TEST_PARAMS["xA_size"]
-    yB_size = TEST_PARAMS["yB_size"]
 
     # Instantiate classes
     dft = make_core(TEST_PARAMS)
     Nx = dft.subgrid_off_step
     Ny = dft.facet_off_step
-    assert yB_size % Ny == 0
 
     # Test with different values and facet offsets
     for val, facet_off in itertools.product(
@@ -117,21 +123,24 @@ def test_swift_configs():
             numpy.testing.assert_array_almost_equal(subgrid, val / N)
 
 
-def test_facet_to_subgrid_dft_1d():
+@pytest.mark.parametrize(
+    "xA_size", [TEST_PARAMS["xA_size"], TEST_PARAMS["xA_size"] - 1]
+)
+@pytest.mark.parametrize(
+    "yB_size", [TEST_PARAMS["yB_size"], TEST_PARAMS["yB_size"] - 1]
+)
+def test_facet_to_subgrid_dft_1d(xA_size, yB_size):
     """Test facet to subgrid distributed FT primitives against direct
     Fourier transformation implementation.
     """
 
     # Basic layout parameters
     N = TEST_PARAMS["N"]
-    xA_size = TEST_PARAMS["xA_size"]
-    yB_size = TEST_PARAMS["yB_size"]
 
     # Instantiate classes
     dft = make_core(TEST_PARAMS)
     Nx = dft.subgrid_off_step
     Ny = dft.facet_off_step
-    assert yB_size % Ny == 0
 
     # Test with different values and facet offsets
     for sources, facet_off in itertools.product(
@@ -141,16 +150,25 @@ def test_facet_to_subgrid_dft_1d():
             [(1, -3)],
             [(-0.1, 5)],
             [(1, 20), (2, 5), (3, -4)],
-            [(0, i) for i in range(-20, 20)],
+            [(1, -yB_size)],  # border - clamped below
+            [(1, yB_size)],  # border - clamped below
+            [(1, i) for i in range(-10, 10)],
         ],
-        numpy.arange(-yB_size // 2 + 6 * Ny, yB_size // 2, Ny),
+        numpy.arange(-100 * Ny, 100 * Ny, 10 * Ny),
     ):
+
+        # Clamp coordinate(s) to facet size
+        min_x = -(yB_size - 1) // 2 + facet_off
+        max_x = min_x + yB_size - 1
+        sources = [(i, min(max(x, min_x), max_x)) for i, x in sources]
 
         # Set sources in facet
         facet = make_facet_from_sources(sources, N, yB_size, [facet_off])
 
         # We assume all sources are on the facet
-        assert numpy.sum(facet) == sum(src[0] for src in sources)
+        assert numpy.sum(facet) == sum(
+            src[0] for src in sources
+        ), f"{sources} {yB_size} {facet_off}"
         prepped = dft.prepare_facet(facet, facet_off, axis=0)
 
         # Now generate subgrids at different (valid) subgrid offsets.
@@ -182,7 +200,6 @@ def test_facet_to_subgrid_dft_2d():
     dft = make_core(TEST_PARAMS)
     Nx = dft.subgrid_off_step
     Ny = dft.facet_off_step
-    assert yB_size % Ny == 0
 
     # Test with different values and facet offsets
     for sources, facet_offs in itertools.product(
@@ -222,24 +239,23 @@ def test_facet_to_subgrid_dft_2d():
             numpy.testing.assert_array_almost_equal(subgrid, expected)
 
 
-def test_subgrid_to_facet_basic():
+@pytest.mark.parametrize(
+    "xA_size", [TEST_PARAMS["xA_size"], TEST_PARAMS["xA_size"] - 1]
+)
+@pytest.mark.parametrize(
+    "yB_size", [TEST_PARAMS["yB_size"], TEST_PARAMS["yB_size"] - 1]
+)
+def test_subgrid_to_facet_basic(xA_size, yB_size):
     """Test basic properties of 1D subgrid to facet distributed FT
     primitives for cases where a subgrid is set to a constant value.
     """
-
-    # Basic layout parameters
-    xA_size = TEST_PARAMS["xA_size"]
-    yB_size = TEST_PARAMS["yB_size"]
 
     # Instantiate classes
     dft = make_core(TEST_PARAMS)
     Nx = dft.subgrid_off_step
     Ny = dft.facet_off_step
-    assert yB_size % Ny == 0
     sg_offs = Nx * numpy.arange(-9, 8)
-    facet_offs = numpy.hstack(
-        [[-yB_size // 2 + Ny, yB_size // 2], Ny * numpy.arange(-9, 8)]
-    )
+    facet_offs = Ny * numpy.arange(-9, 8)
 
     # Test linearity with different values, and start with subgrids at
     # different (valid) subgrid offsets.
@@ -268,21 +284,24 @@ def test_subgrid_to_facet_basic():
             )
 
 
-def test_subgrid_to_facet_dft():
+@pytest.mark.parametrize(
+    "xA_size", [TEST_PARAMS["xA_size"], TEST_PARAMS["xA_size"] - 1]
+)
+@pytest.mark.parametrize(
+    "yB_size", [TEST_PARAMS["yB_size"], TEST_PARAMS["yB_size"] - 1]
+)
+def test_subgrid_to_facet_dft(xA_size, yB_size):
     """Test basic properties of 1D subgrid to facet distributed FT
     primitives for cases where a subgrid is set to a constant value.
     """
 
     # Basic layout parameters
     N = TEST_PARAMS["N"]
-    xA_size = TEST_PARAMS["xA_size"]
-    yB_size = TEST_PARAMS["yB_size"]
 
     # Instantiate classes
     dft = make_core(TEST_PARAMS)
     Nx = dft.subgrid_off_step
     Ny = dft.facet_off_step
-    assert yB_size % Ny == 0
 
     # Parameters to try
     source_lists = [
@@ -292,9 +311,7 @@ def test_subgrid_to_facet_dft():
         [(-0.1, 5)],
     ]
     sg_offs = Nx * numpy.arange(-9, 8)
-    facet_offs = numpy.hstack(
-        [[-yB_size // 2 + Ny, yB_size // 2], Ny * numpy.arange(-9, 8)]
-    )
+    facet_offs = Ny * numpy.arange(-9, 8)
 
     # Test linearity with different values, and start with subgrids at
     # different (valid) subgrid offsets.
