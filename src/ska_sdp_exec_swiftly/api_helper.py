@@ -76,7 +76,7 @@ def sum_and_finish_subgrid(
     facets_config_list,
     subgrid_config,
 ):
-    """sum facet contribution and finsh subgrid"""
+    """sum facet contribution and finish subgrid"""
     # Initialise facet sum
     summed_facet = numpy.zeros(
         (distributedFFT.xM_size, distributedFFT.xM_size), dtype=complex

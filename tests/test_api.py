@@ -91,7 +91,6 @@ def test_swiftly_api(
         swiftlyconfig, facets_config_list, lru_backward, queue_size, client
     )
     if shuffle:
-
         random.shuffle(subgrid_config_list)
 
     for subgrid_config in subgrid_config_list:

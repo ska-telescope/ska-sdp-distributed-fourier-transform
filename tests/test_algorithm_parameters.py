@@ -101,7 +101,6 @@ def test_facet_to_subgrid_basic(xA_size, yB_size):
     for val, facet_off in itertools.product(
         [0, 1, 0.1], numpy.arange(-5 * Ny, 5 * Ny // 2, Ny)
     ):
-
         # Set value at centre of image (might be off-centre for
         # the facet depending on offset)
         facet = numpy.zeros(yB_size)
@@ -156,7 +155,6 @@ def test_facet_to_subgrid_dft_1d(xA_size, yB_size):
         ],
         numpy.arange(-100 * Ny, 100 * Ny, 10 * Ny),
     ):
-
         # Clamp coordinate(s) to facet size
         min_x = -(yB_size - 1) // 2 + facet_off
         max_x = min_x + yB_size - 1
@@ -209,7 +207,6 @@ def test_facet_to_subgrid_dft_2d():
         ],
         [[0, 0], [Ny, Ny], [-Ny, Ny], [0, -Ny]],
     ):
-
         # Set sources in facet
         facet = make_facet_from_sources(sources, N, yB_size, facet_offs)
 
@@ -260,7 +257,6 @@ def test_subgrid_to_facet_basic(xA_size, yB_size):
     # Test linearity with different values, and start with subgrids at
     # different (valid) subgrid offsets.
     for val, sg_off in itertools.product([0, 1, 0.1], sg_offs):
-
         # Constant-value subgrid
         prepped = dft.prepare_subgrid(
             (val / xA_size) * numpy.ones(xA_size), sg_off
@@ -316,7 +312,6 @@ def test_subgrid_to_facet_dft(xA_size, yB_size):
     # Test linearity with different values, and start with subgrids at
     # different (valid) subgrid offsets.
     for sources, sg_off in itertools.product(source_lists, sg_offs):
-
         # Generate subgrid. As we are only filling the grid partially
         # here, we have to scale it.
         subgrid = (

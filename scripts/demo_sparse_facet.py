@@ -116,9 +116,7 @@ def fov_sparse_cover_off_mask(swiftlyconfig, ifov_pixel, x=0, y=0):
     facet_size = swiftlyconfig.max_facet_size
     off0_off1_list = []
     for nfacet, off1 in calc_nfacet_and_off1(facet_size, ifov_pixel, N):
-
         for off0 in calc_off0_per_row(facet_size, nfacet, N):
-
             off0_off1_list.append((off0 + x, off1 + y))
     mask_list = [
         (

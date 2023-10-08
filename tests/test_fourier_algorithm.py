@@ -696,7 +696,6 @@ def test_make_facet_subgrid_from_sources_1d():
     for sources, image_size, subgrid_offset, facet_offset in itertools.product(
         source_lists, [4, 8, 16, 32], [0, 5, -7], [0, 2, -3]
     ):
-
         # Generate "sub" grid and facet. We choose image and subgrid
         # size to be equal to entire image size so the results should
         # be precisely the FFT of each other (at an offset)
@@ -741,7 +740,6 @@ def test_make_facet_subgrid_from_sources_2d():
     for sources, image_size, subgrid_offset, facet_offset in itertools.product(
         source_lists, [4, 8, 16], facet_sg_offsets, facet_sg_offsets
     ):
-
         # Generate "sub" grid and facet. We choose image and subgrid
         # size to be equal to entire image size so the results should
         # be precisely the FFT of each other (at an offset)

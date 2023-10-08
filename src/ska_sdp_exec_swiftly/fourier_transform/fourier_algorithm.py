@@ -246,7 +246,6 @@ def make_facet_from_sources(
     # Set indicated pixels on facet
     offs = numpy.array(facet_offsets, dtype=int) - dims * [facet_size // 2]
     for intensity, *coord in sources:
-
         # Determine position relative to facet centre
         coord = numpy.mod(coord - offs, image_size)
 
