@@ -205,17 +205,18 @@ class SwiftlyCore:
         return pswf
 
     # facet to subgrid algorithm
-    def prepare_facet(self, facet, facet_off_elem, axis):
+    def prepare_facet(self, facet, facet_off, axis):
         """
-        Calculate the inverse FFT of a padded facet element multiplied by Fb
-        (Fb: Fourier transform of grid correction function)
+        Prepare facet for extracting subgrid contribution
+
+        This is a relatively expensive operation, both in terms of computation
+        and generated data. It should therefore where possible be used for multiple
+        :py:func:`extract_facet_contrib_to_subgrid` calls.
 
         :param facet: single facet element
-        :param Fb: Fourier transform of grid correction function
+        :param subgrid_off: subgrid offset
         :param axis: axis along which operations are performed (0 or 1)
-        :param chunk: using chunk mode or not
-
-        :return: TODO: BF? prepared facet
+        :return: prepared facet data
         """
 
         facet_size = facet.shape[axis]
@@ -227,65 +228,61 @@ class SwiftlyCore:
             self.yN_size,
             axis,
         )
-        return ifft(numpy.roll(BF, facet_off_elem, axis=axis), axis)
+        return ifft(numpy.roll(BF, facet_off, axis=axis), axis)
 
     def extract_facet_contrib_to_subgrid(
-        self, BF, subgrid_off_elem, axis
+        self, prep_facet, subgrid_off, axis
     ):  # pylint: disable=too-many-arguments
         """
         Extract the facet contribution to a subgrid.
 
-        :param BF: TODO: ? prepared facet
-        :param subgrid_off_elem: single subgrid offset element
-        :param facet_off_elem: single subgrid offset element
+        :param prep_facet: prepared facet (see :py:func:`prepare_facet`)
+        :param subgrid_off: subgrid offset
         :param axis: axis along which the operations are performed (0 or 1)
 
-        :return: contribution of facet to subgrid
+        :return: compact representation of contribution of facet to subgrid
         """
 
-        scaled_subgrid_off_elem = subgrid_off_elem * self.yN_size // self.N
+        scaled_subgrid_off = subgrid_off * self.yN_size // self.N
         return numpy.roll(
             extract_mid(
-                numpy.roll(BF, -scaled_subgrid_off_elem, axis=axis),
+                numpy.roll(prep_facet, -scaled_subgrid_off, axis=axis),
                 self.xM_yN_size,
                 axis,
             ),
-            scaled_subgrid_off_elem,
+            scaled_subgrid_off,
             axis,
         )
 
-    def add_facet_contribution(self, facet_contrib, facet_off_elem, axis):
+    def add_facet_contribution(self, facet_contrib, facet_off, axis):
         """
         Further transforms facet contributions, which then will be summed up.
 
         :param facet_contrib: array-chunk of individual facet contributions
-        :param facet_off_elem: facet offset for the facet_contrib array chunk
+        :param facet_off: facet offset for the facet_contrib array chunk
         :param axis: axis along which the operations are performed (0 or 1)
-
-        :return: TODO??
+        :return: addition to subgrid
         """
 
-        scaled_facet_off_elem = facet_off_elem * self.xM_size // self.N
+        scaled_facet_off = facet_off * self.xM_size // self.N
 
         FNMBF = broadcast(
             self._Fn, len(facet_contrib.shape), axis
-        ) * numpy.roll(
-            fft(facet_contrib, axis), -scaled_facet_off_elem, axis=axis
-        )
+        ) * numpy.roll(fft(facet_contrib, axis), -scaled_facet_off, axis=axis)
 
         return numpy.roll(
             pad_mid(FNMBF, self.xM_size, axis),
-            scaled_facet_off_elem,
+            scaled_facet_off,
             axis=axis,
         )
 
     def finish_subgrid(
-        self, summed_facets, subgrid_off_elem, subgrid_size, subgrid_masks=None
+        self, summed_contribs, subgrid_off, subgrid_size, subgrid_masks=None
     ):
         """
         Obtain finished subgrid. Operation performed for all axes.
 
-        :param summed_facets: summed facets contributing to this subgrid
+        :param summed_contribs: summed facet contributions to this subgrid
         :param subgrid_off: subgrid offset per axis
         :param subgrid_size: subgrid size
         :param subgrid_masks: subgrid mask per axis (optional)
@@ -293,21 +290,20 @@ class SwiftlyCore:
         :return: approximate subgrid element
         """
 
-        tmp = summed_facets
-        dims = len(summed_facets.shape)
-
-        if not isinstance(subgrid_off_elem, list):
+        dims = len(summed_contribs.shape)
+        if not isinstance(subgrid_off, list):
             if dims != 1:
                 raise ValueError(
                     "Subgrid offset must be given for every dimension!"
                 )
-            subgrid_off_elem = [subgrid_off_elem]
+            subgrid_off = [subgrid_off]
 
         # Loop operation over all axes
+        tmp = summed_contribs
         for axis in range(dims):
             tmp = extract_mid(
                 numpy.roll(
-                    ifft(tmp, axis=axis), -subgrid_off_elem[axis], axis=axis
+                    ifft(tmp, axis=axis), -subgrid_off[axis], axis=axis
                 ),
                 subgrid_size,
                 axis=axis,
@@ -320,33 +316,32 @@ class SwiftlyCore:
         return tmp
 
     # subgrid to facet algorithm
-    def prepare_subgrid(self, subgrid, subgrid_off_elem):
+    def prepare_subgrid(self, subgrid, subgrid_off):
         """
         Calculate the FFT of a padded subgrid element.
         No reason to do this per-axis, so always do it for all axes.
 
         :param subgrid: single subgrid array element
-        :param subgrid_off_elem: subgrid offsets (tuple)
+        :param subgrid_off: subgrid offsets (tuple)
 
         :return: Padded subgrid in image space
         """
 
         tmp = subgrid
         dims = len(subgrid.shape)
-        if dims == 1 and not isinstance(subgrid_off_elem, tuple):
-            subgrid_off_elem = (subgrid_off_elem,)
-        if len(subgrid_off_elem) != dims:
+        if dims == 1 and not isinstance(subgrid_off, tuple):
+            subgrid_off = (subgrid_off,)
+        if len(subgrid_off) != dims:
             raise ValueError(
                 "Dimensionality mismatch between subgrid and offsets!"
             )
 
         # Loop operation over all axes
         for axis in range(dims):
-
             # Pad & align with global zero modulo xM_size
             tmp = numpy.roll(
                 pad_mid(tmp, self.xM_size, axis=axis),
-                subgrid_off_elem[axis],
+                subgrid_off[axis],
                 axis=axis,
             )
 
@@ -355,12 +350,12 @@ class SwiftlyCore:
 
         return tmp
 
-    def extract_subgrid_contrib_to_facet(self, FSi, facet_off_elem, axis):
+    def extract_subgrid_contrib_to_facet(self, FSi, facet_off, axis):
         """
         Extract contribution of subgrid to a facet.
 
         :param Fsi: Prepared subgrid in image space (see prepare_facet)
-        :param facet_off_elem: facet offset
+        :param facet_off: facet offset
         :param axis: axis along which the operations are performed (0 or 1)
 
         :return: Contribution of subgrid to facet
@@ -370,7 +365,7 @@ class SwiftlyCore:
         # Align with image zero in image space
         FSi = numpy.roll(
             FSi,
-            -facet_off_elem * self.xM_size // self.N,
+            -facet_off * self.xM_size // self.N,
             axis,
         )
 
@@ -380,15 +375,13 @@ class SwiftlyCore:
             axis,
         )
 
-        return numpy.roll(
-            FNjSi, facet_off_elem * self.xM_size // self.N, axis=axis
-        )
+        return numpy.roll(FNjSi, facet_off * self.xM_size // self.N, axis=axis)
 
     # pylint: disable=too-many-arguments
     def add_subgrid_contribution(
         self,
         subgrid_contrib,
-        subgrid_off_elem,
+        subgrid_off,
         axis,
     ):
         """
@@ -396,7 +389,7 @@ class SwiftlyCore:
 
         :param subgrid_contrib: Subgrid contribution to this facet (see
                 extract_subgrid_contrib_to_facet)
-        :param subgrid_off_elem: subgrid offset
+        :param subgrid_off: subgrid offset
         :param facet_m0_trunc: mask truncated to a facet (image space)
         :param axis: axis along which operations are performed (0 or 1)
 
@@ -408,7 +401,7 @@ class SwiftlyCore:
         NjSi_temp = ifft(subgrid_contrib, axis)
         MiNjSi = numpy.roll(
             NjSi_temp,
-            -subgrid_off_elem * self.yN_size // self.N,
+            -subgrid_off * self.yN_size // self.N,
             axis=axis,
         )
 
@@ -420,12 +413,12 @@ class SwiftlyCore:
                 self.yN_size,
                 axis,
             ),
-            subgrid_off_elem * self.yN_size // self.N,
+            subgrid_off * self.yN_size // self.N,
             axis=axis,
         )
 
     def finish_facet(
-        self, MiNjSi_sum, facet_off_elem, facet_size, facet_B_mask_elem, axis
+        self, MiNjSi_sum, facet_off, facet_size, facet_B_mask, axis
     ):
         """
         Obtain finished facet.
@@ -435,16 +428,16 @@ class SwiftlyCore:
 
         :param MiNjSi_sum: sum of subgrid contributions to a facet
         :param facet_size: facet size
-        :param facet_off_elem: facet offset
-        :param facet_B_mask_elem: a facet mask element
+        :param facet_off: facet offset
+        :param facet_B_mask: a facet mask element
         :param axis: axis along which operations are performed (0 or 1)
 
         :return: finished (approximate) facet element
         """
 
-        if facet_B_mask_elem is not None:
+        if facet_B_mask is not None:
             facet_mask = broadcast(
-                extract_mid(self._Fb, facet_size, 0) * facet_B_mask_elem,
+                extract_mid(self._Fb, facet_size, 0) * facet_B_mask,
                 len(MiNjSi_sum.shape),
                 axis,
             )
@@ -456,7 +449,8 @@ class SwiftlyCore:
             )
 
         return facet_mask * extract_mid(
-            numpy.roll(fft(MiNjSi_sum, axis), -facet_off_elem, axis=axis),
+            numpy.roll(fft(MiNjSi_sum, axis), -facet_off, axis=axis),
             facet_size,
             axis,
         )
+
