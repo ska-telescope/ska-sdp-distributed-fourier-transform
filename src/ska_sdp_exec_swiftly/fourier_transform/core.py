@@ -33,58 +33,17 @@ class SwiftlyCore:
     """
     Streaming Distributed Fourier Transform class
 
-    It takes the fundamental_constants dict as input
-    (see BaseParameters class).
-    It encompasses all building blocks of the algorithm for
-    both subgrid -> facet and facet -> subgrid directions.
-
-    The algorithm was developed for 2D input arrays (images).
-
-    **fundamental_constants contains the following keys:
+    It encompasses all processing functions for both the subgrid -> facet and
+    facet -> subgrid directions, with support for 1D and 2D arrays.
 
     :param W: PSWF (prolate-spheroidal wave function)
               parameter (grid-space support)
     :param fov: field of view
     :param N: total image size
-    :param yB_size: effective facet size
-    :param xA_size: effective subgrid size
     :param xM_size: padded subgrid size (pad subgrid with zeros
                     at margins to reach this size)
     :param yN_size: padded facet size which evenly divides the image size,
                     used for resampling facets into image space
-
-    A / x --> grid (frequency) space; B / y --> image (facet) space
-
-    The class, in addition, derives the following,
-    commonly used sizes (integers), and offset arrays:
-
-    :param xM_yN_size: (padded subgrid size * padding) / N
-
-    Class that calculates and holds fundamental constant arrays.
-    See the parent class docstring for description of input parameters.
-
-    It contains the following arrays (in addition to BaseParameters):
-
-    :param facet_B: facet mask
-    :param subgrid_A: subgrid mask
-    :param Fb: Fourier transform of grid correction function
-    :param Fn: Fourier transform of gridding function
-    :param facet_m0_trunc: mask truncated to a facet (image space)
-    :param pswf: prolate spheroidal wave function
-
-    Notes on gridding-related functions (arrays; Fb, Fn, facet_m0_trunc):
-
-        Calculate actual work terms to use.
-        We need both $n$ and $b$ in image space
-        In case of gridding: "n": gridding function (in image space)
-                             "b": grid correction function.
-
-        Note (Peter W): The reason they're single functions
-        (i.e. we only compute one Fn, Fb and m0 instead of one
-        per facet/subgrid) is that we assume that they are all
-        the same function, just shifted in grid and image space
-        respectively (to the positions of the subgrids and facets)
-
     """
 
     # pylint: disable=too-many-instance-attributes

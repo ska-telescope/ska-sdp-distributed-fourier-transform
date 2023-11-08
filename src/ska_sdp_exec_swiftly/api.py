@@ -30,7 +30,7 @@ from .api_helper import (
     prepare_and_split_subgrid,
     sum_and_finish_subgrid,
 )
-from .fourier_transform import SwiftlyCore
+from .fourier_transform import SwiftlyCore, SwiftlyCoreFunc
 
 log = logging.getLogger("fourier-logger")
 log.setLevel(logging.INFO)
@@ -105,19 +105,43 @@ class SubgridConfig:
 
 
 class SwiftlyConfig:
-    """Swiftly configuration"""
+    """
+    Swiftly configuration
+    """
 
-    def __init__(self, dask_client=None, **fundamental_constants):
-        self._constants = fundamental_constants
+    def __init__(
+        self,
+        W: float,
+        fov: float,
+        N: int,
+        yB_size: int,
+        yN_size: int,
+        xA_size: int,
+        xM_size: int,
+        dask_client=None,
+        backend="numpy",
+        **other_args,
+    ):
+        self._W = W
+        self._fov = fov
+        self._N = N
+        self._yB_size = yB_size
+        self._yN_size = yN_size
+        self._xA_size = xA_size
+        self._xM_size = xM_size
+
         if dask_client is None:
             dask_client = Client.current()
         self.dask_client = dask_client or Client.current()
-        self._core = SwiftlyCore(
-            self._constants["W"],
-            self._constants["N"],
-            self._constants["xM_size"],
-            self._constants["yN_size"],
-        )
+
+        # Construct backend routines
+        if backend == "numpy":
+            self._core = SwiftlyCore(W, N, xM_size, yN_size)
+        elif backend == "ska_sdp_func":
+            self._core = SwiftlyCoreFunc(W, N, xM_size, yN_size)
+        else:
+            raise ValueError(f"Unknown SwiFTly backend: {backend}")
+
         self.core_task = dask.delayed(
             self.dask_client.scatter(self._core, broadcast=True)
         )
@@ -127,21 +151,21 @@ class SwiftlyConfig:
         """
         Size of the entire (virtual) image in pixels
         """
-        return self._constants["N"]
+        return self._N
 
     @property
     def max_facet_size(self):
         """
         Maximum size of a facet in pixels
         """
-        return self._constants["yB_size"]
+        return self._yB_size
 
     @property
     def max_subgrid_size(self):
         """
         Maximum size of a subgrid in pixels
         """
-        return self._constants["xA_size"]
+        return self._xA_size
 
     @property
     def pswf_parameter(self):
@@ -151,7 +175,7 @@ class SwiftlyConfig:
         Needs to be optimised to yield the best trade-off between
         realised accuracy and required facet/subgrid padding.
         """
-        return self._constants["W"]
+        return self._W
 
     @property
     def internal_facet_size(self):
@@ -160,7 +184,7 @@ class SwiftlyConfig:
 
         Includes padding for accuracy / efficiency.
         """
-        return self._constants["yN_size"]
+        return self._yN_size
 
     @property
     def internal_subgrid_size(self):
@@ -169,7 +193,7 @@ class SwiftlyConfig:
 
         Includes padding for accuracy / efficiency.
         """
-        return self._constants["xM_size"]
+        return self._xM_size
 
     @property
     def facet_off_step(self):
