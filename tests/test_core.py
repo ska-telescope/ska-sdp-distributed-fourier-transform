@@ -7,7 +7,7 @@ import itertools
 import numpy
 import pytest
 
-from ska_sdp_exec_swiftly.fourier_transform.algorithm_parameters import (
+from ska_sdp_exec_swiftly.fourier_transform.core import (
     SwiftlyCore,
     SwiftlyCoreFunc,
 )

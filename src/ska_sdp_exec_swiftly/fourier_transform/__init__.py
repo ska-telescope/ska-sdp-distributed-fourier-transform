@@ -6,7 +6,7 @@ __all__ = [
     "make_facet_from_sources",
 ]
 
-from .algorithm_parameters import SwiftlyCore
+from .core import SwiftlyCore, SwiftlyCoreFunc
 from .fourier_algorithm import (
     make_facet_from_sources,
     make_subgrid_from_sources,

@@ -277,7 +277,7 @@ class SwiftlyCore:
         )
 
     def finish_subgrid(
-        self, summed_contribs, subgrid_off, subgrid_size, subgrid_masks=None
+        self, summed_contribs, subgrid_off, subgrid_size, out=None
     ):
         """
         Obtain finished subgrid. Operation performed for all axes.
@@ -285,7 +285,6 @@ class SwiftlyCore:
         :param summed_contribs: summed facet contributions to this subgrid
         :param subgrid_off: subgrid offset per axis
         :param subgrid_size: subgrid size
-        :param subgrid_masks: subgrid mask per axis (optional)
 
         :return: approximate subgrid element
         """
@@ -546,7 +545,7 @@ class SwiftlyCoreFunc:
         raise ValueError(f"Invalid axis {axis} or shape {in_arr.shape}!")
 
     def _auto_broadcast_create(
-        self, create_fn, fn, in_arr, out_size, axis, *args
+        self, create_fn, fn, in_arr, out_size, axis, out, *args
     ):
         # Convert to complex if needed
         if not numpy.iscomplexobj(in_arr):
@@ -557,26 +556,79 @@ class SwiftlyCoreFunc:
 
         # One dimensional case: Add new axis to arrays
         if len(in_arr.shape) == 1:
-            out = create_fn(out_size, dtype=complex)
+            shape = (out_size,)
+            if out is None:
+                out = create_fn(shape, dtype=complex)
+            elif out.shape != shape:
+                raise ValueError(
+                    f"Output array has shape {out.shape}, expected {shape}!"
+                )
             fn(in_arr[numpy.newaxis], out[numpy.newaxis], *args)
             return out
 
-        # Two dimensional case: Processing functions work on second axis,
-        # therefore transpose if we are meant to work on the first axis.
-        if len(in_arr.shape) == 2:
-            if axis == 0:
-                out = create_fn((out_size, in_arr.shape[1]), dtype=complex)
-                fn(in_arr.T, out.T, *args)
-                return out
-            if axis == 1:
-                out = create_fn((in_arr.shape[0], out_size), dtype=complex)
-                fn(in_arr, out, *args)
-                return out
+        # Has to be two dimensional case now
+        if len(in_arr.shape) != 2:
+            raise ValueError(
+                f"Invalid number of dimensions in input array: {in_arr}"
+            )
 
-        raise ValueError(f"Invalid axis {axis} or shape {in_arr.shape}!")
+        # Processing functions work on second axis, therefore transpose if we
+        # are meant to work on the first axis.
+        if axis == 0:
+            shape = (out_size, in_arr.shape[1])
+            if out is None:
+                out = create_fn((out_size, in_arr.shape[1]), dtype=complex)
+            elif out.shape != shape:
+                raise ValueError(
+                    f"Output array has shape {out.shape}, expected {shape}!"
+                )
+
+            fn(in_arr.T, out.T, *args)
+            return out
+
+        if axis == 1:
+            shape = (in_arr.shape[0], out_size)
+            if out is None:
+                out = create_fn(shape, dtype=complex)
+            elif out.shape != shape:
+                raise ValueError(
+                    f"Output array has shape {out.shape}, expected {shape}!"
+                )
+            fn(in_arr, out, *args)
+            return out
+
+        raise ValueError(f"Invalid axis {axis} for shape {in_arr.shape}!")
+
+    def _auto_broadcast_create_2d(
+        self, create_fn, fn, in_arr, out_size, out, *args
+    ):
+        # Convert to complex if needed
+        if not numpy.iscomplexobj(in_arr):
+            if in_arr.dtype == numpy.dtype(float):
+                in_arr = in_arr.astype(complex)
+            elif in_arr.dtype == numpy.dtype("float32"):
+                in_arr = in_arr.astype("complex64")
+
+        # Has to be two dimensional case now
+        if len(in_arr.shape) != 2:
+            raise ValueError(
+                f"Invalid number of dimensions in input array: {in_arr}"
+            )
+
+        # Create or check output array
+        shape = (out_size, out_size)
+        if out is None:
+            out = create_fn(shape, dtype=complex)
+        else:
+            assert (
+                out.shape == shape
+            ), "Output array has shape {out.shape}, expected {shape}!"
+
+        fn(in_arr, out, *args)
+        return out
 
     # facet to subgrid algorithm
-    def prepare_facet(self, facet, facet_off, axis):
+    def prepare_facet(self, facet, facet_off, axis, out=None):
         """
         Prepare facet for extracting subgrid contribution
 
@@ -596,11 +648,12 @@ class SwiftlyCoreFunc:
             facet,
             self.yN_size,
             axis,
+            out,
             facet_off,
         )
 
     def extract_facet_contrib_to_subgrid(
-        self, prep_facet, subgrid_off, axis
+        self, prep_facet, subgrid_off, axis, out=None
     ):  # pylint: disable=too-many-arguments
         """
         Extract the facet contribution to a subgrid.
@@ -618,10 +671,13 @@ class SwiftlyCoreFunc:
             prep_facet,
             self.xM_yN_size,
             axis,
+            out,
             subgrid_off,
         )
 
-    def add_facet_contribution(self, facet_contrib, facet_off, axis):
+    extract_from_facet = extract_facet_contrib_to_subgrid
+
+    def add_facet_contribution(self, facet_contrib, facet_off, axis, out=None):
         """
         Further transforms facet contributions, which then will be summed up.
 
@@ -637,7 +693,30 @@ class SwiftlyCoreFunc:
             facet_contrib,
             self.xM_size,
             axis,
+            out,
             facet_off,
+        )
+
+    add_to_subgrid = add_facet_contribution
+
+    def add_to_subgrid_2d(self, facet_contrib, facet_offs, out=None):
+        """
+        Further transforms facet contributions, which then will be summed up.
+
+        :param facet_contrib: array-chunk of individual facet contributions
+        :param facet_off: facet offset for the facet_contrib array chunk
+        :param axis: axis along which the operations are performed (0 or 1)
+        :return: addition to subgrid
+        """
+
+        return self._auto_broadcast_create_2d(
+            numpy.zeros,
+            self._swiftly.add_to_subgrid_2d,
+            facet_contrib,
+            self.xM_size,
+            out,
+            facet_offs[0],
+            facet_offs[1],
         )
 
     def finish_subgrid(
@@ -650,7 +729,6 @@ class SwiftlyCoreFunc:
         :param subgrid_off: subgrid offset per axis
         :param subgrid_size: subgrid size
         :param subgrid_masks: subgrid mask per axis (optional)
-
         :return: approximate subgrid element
         """
 
@@ -718,7 +796,7 @@ class SwiftlyCoreFunc:
 
         raise ValueError(f"Invalid shape {subgrid.shape}!")
 
-    def extract_subgrid_contrib_to_facet(self, FSi, facet_off, axis):
+    def extract_subgrid_contrib_to_facet(self, FSi, facet_off, axis, out=None):
         """
         Extract contribution of subgrid to a facet.
 
@@ -736,15 +814,13 @@ class SwiftlyCoreFunc:
             FSi,
             self.xM_yN_size,
             axis,
+            out,
             facet_off,
         )
 
     # pylint: disable=too-many-arguments
     def add_subgrid_contribution(
-        self,
-        subgrid_contrib,
-        subgrid_off,
-        axis,
+        self, subgrid_contrib, subgrid_off, axis, out=None
     ):
         """
         Sum up subgrid contributions to a facet.
@@ -765,11 +841,12 @@ class SwiftlyCoreFunc:
             subgrid_contrib,
             self.yN_size,
             axis,
+            out,
             subgrid_off,
         )
 
     def finish_facet(
-        self, facet_sum, facet_off, facet_size, facet_B_mask, axis
+        self, facet_sum, facet_off, facet_size, facet_B_mask, axis, out=None
     ):
         """
         Obtain finished facet.
@@ -792,5 +869,6 @@ class SwiftlyCoreFunc:
             facet_sum,
             facet_size,
             axis,
+            out,
             facet_off,
         )
