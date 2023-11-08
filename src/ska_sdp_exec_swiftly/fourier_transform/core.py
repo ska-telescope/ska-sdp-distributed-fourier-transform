@@ -210,8 +210,8 @@ class SwiftlyCore:
         Prepare facet for extracting subgrid contribution
 
         This is a relatively expensive operation, both in terms of computation
-        and generated data. It should therefore where possible be used for multiple
-        :py:func:`extract_facet_contrib_to_subgrid` calls.
+        and generated data. It should therefore where possible be used for
+        multiple :py:func:`extract_facet_contrib_to_subgrid` calls.
 
         :param facet: single facet element
         :param subgrid_off: subgrid offset
@@ -307,10 +307,6 @@ class SwiftlyCore:
                 subgrid_size,
                 axis=axis,
             )
-
-            # Apply subgrid mask if requested
-            if subgrid_masks is not None:
-                tmp *= broadcast(subgrid_masks[axis], dims, axis)
 
         return tmp
 
@@ -532,18 +528,6 @@ class SwiftlyCoreFunc:
         )
         return class_string
 
-    def _auto_broadcast(self, fn, in_arr, out, axis, *args):
-        if len(in_arr.shape) == 1:
-            fn(in_arr[numpy.newaxis], out[numpy.newaxis], *args)
-
-        if len(in_arr.shape) == 2:
-            if axis == 0:
-                fn(in_arr.T, out.T, **kwargs)
-            if axis == 1:
-                fn(in_arr, out, **kwargs)
-
-        raise ValueError(f"Invalid axis {axis} or shape {in_arr.shape}!")
-
     def _auto_broadcast_create(
         self, create_fn, fn, in_arr, out_size, axis, out, *args
     ):
@@ -633,8 +617,8 @@ class SwiftlyCoreFunc:
         Prepare facet for extracting subgrid contribution
 
         This is a relatively expensive operation, both in terms of computation
-        and generated data. It should therefore where possible be used for multiple
-        :py:func:`extract_facet_contrib_to_subgrid` calls.
+        and generated data. It should therefore where possible be used for
+        multiple :py:func:`extract_facet_contrib_to_subgrid` calls.
 
         :param facet: single facet element
         :param subgrid_off: subgrid offset
@@ -750,9 +734,7 @@ class SwiftlyCoreFunc:
             self._swiftly.finish_subgrid(out1.T, out.T, subgrid_off[1])
             return out
 
-        raise ValueError(
-            f"Invalid axis {axis} or shape {summed_contribs.shape}!"
-        )
+        raise ValueError(f"Invalid shape {summed_contribs.shape}!")
 
     # subgrid to facet algorithm
     def prepare_subgrid(self, subgrid, subgrid_off):
@@ -770,7 +752,7 @@ class SwiftlyCoreFunc:
         if not numpy.iscomplexobj(subgrid):
             if subgrid.dtype == numpy.dtype(float):
                 subgrid = subgrid.astype(complex)
-            elif in_arr.dtype == numpy.dtype("float32"):
+            elif subgrid.dtype == numpy.dtype("float32"):
                 subgrid = subgrid.astype("complex64")
 
         if len(subgrid.shape) == 1:

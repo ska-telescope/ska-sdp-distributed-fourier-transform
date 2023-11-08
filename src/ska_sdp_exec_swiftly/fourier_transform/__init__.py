@@ -2,6 +2,7 @@
 
 __all__ = [
     "SwiftlyCore",
+    "SwiftlyCoreFunc",
     "make_subgrid_from_sources",
     "make_facet_from_sources",
 ]
