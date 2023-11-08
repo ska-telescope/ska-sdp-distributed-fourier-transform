@@ -9,6 +9,7 @@ import pytest
 
 from ska_sdp_exec_swiftly.fourier_transform.algorithm_parameters import (
     SwiftlyCore,
+    SwiftlyCoreFunc,
 )
 from ska_sdp_exec_swiftly.fourier_transform.fourier_algorithm import (
     make_facet_from_sources,
@@ -26,17 +27,25 @@ TEST_PARAMS = {
 }
 
 
-def make_core(pars):
+def make_core(pars, backend="numpy"):
     """Construct SwiftlyCore from parameter dictionary"""
-    return SwiftlyCore(pars["W"], pars["N"], pars["xM_size"], pars["yN_size"])
+    if backend == "numpy":
+        return SwiftlyCore(
+            pars["W"], pars["N"], pars["xM_size"], pars["yN_size"]
+        )
+    elif backend == "ska_sdp_func":
+        return SwiftlyCoreFunc(
+            pars["W"], pars["N"], pars["xM_size"], pars["yN_size"]
+        )
 
 
-def test_base_params_fundamental():
+@pytest.mark.parametrize("backend", ["numpy", "ska_sdp_func"])
+def test_base_params_fundamental(backend):
     """
     Input dictionary values are correctly assigned to
     fundamental attributes of the class.
     """
-    result = make_core(TEST_PARAMS)
+    result = make_core(TEST_PARAMS, backend)
 
     assert result.W == TEST_PARAMS["W"]
     assert result.N == TEST_PARAMS["N"]
@@ -44,17 +53,19 @@ def test_base_params_fundamental():
     assert result.xM_size == TEST_PARAMS["xM_size"]
 
 
-def test_base_params_derived():
+@pytest.mark.parametrize("backend", ["numpy", "ska_sdp_func"])
+def test_base_params_derived(backend):
     """
     Input dictionary values are correctly used to
     obtain derived attributes of the class.
     """
 
-    result = make_core(TEST_PARAMS)
+    result = make_core(TEST_PARAMS, backend)
     assert result.xM_yN_size == 128
 
 
-def test_base_params_check_params():
+@pytest.mark.parametrize("backend", ["numpy", "ska_sdp_func"])
+def test_base_params_check_params(backend):
     """
     BaseParameters.check_params is called as part of __init__
     It raises a ValueError if a certain condition doesn't apply,
@@ -64,26 +75,28 @@ def test_base_params_check_params():
     new_params["N"] = 1050
 
     with pytest.raises(ValueError):
-        make_core(new_params)
+        make_core(new_params, backend)
 
 
-def test_swift_configs():
+@pytest.mark.parametrize("backend", ["numpy", "ska_sdp_func"])
+def test_swift_configs(backend):
     """
     Test all standard configurations
     """
 
     for config in SWIFT_CONFIGS.values():
         if config["N"] < 4 * 1024:
-            make_core(config)
+            make_core(config, backend)
 
 
+@pytest.mark.parametrize("backend", ["numpy", "ska_sdp_func"])
 @pytest.mark.parametrize(
     "xA_size", [TEST_PARAMS["xA_size"], TEST_PARAMS["xA_size"] - 1]
 )
 @pytest.mark.parametrize(
     "yB_size", [TEST_PARAMS["yB_size"], TEST_PARAMS["yB_size"] - 1]
 )
-def test_facet_to_subgrid_basic(xA_size, yB_size):
+def test_facet_to_subgrid_basic(xA_size, yB_size, backend):
     """Test basic properties of 1D facet to subgrid distributed FT
     primitives for cases where the subgrids are expected to be a
     constant value.
@@ -93,7 +106,7 @@ def test_facet_to_subgrid_basic(xA_size, yB_size):
     N = TEST_PARAMS["N"]
 
     # Instantiate classes
-    dft = make_core(TEST_PARAMS)
+    dft = make_core(TEST_PARAMS, backend)
     Nx = dft.subgrid_off_step
     Ny = dft.facet_off_step
 
@@ -122,13 +135,14 @@ def test_facet_to_subgrid_basic(xA_size, yB_size):
             numpy.testing.assert_array_almost_equal(subgrid, val / N)
 
 
+@pytest.mark.parametrize("backend", ["numpy", "ska_sdp_func"])
 @pytest.mark.parametrize(
     "xA_size", [TEST_PARAMS["xA_size"], TEST_PARAMS["xA_size"] - 1]
 )
 @pytest.mark.parametrize(
     "yB_size", [TEST_PARAMS["yB_size"], TEST_PARAMS["yB_size"] - 1]
 )
-def test_facet_to_subgrid_dft_1d(xA_size, yB_size):
+def test_facet_to_subgrid_dft_1d(xA_size, yB_size, backend):
     """Test facet to subgrid distributed FT primitives against direct
     Fourier transformation implementation.
     """
@@ -137,7 +151,7 @@ def test_facet_to_subgrid_dft_1d(xA_size, yB_size):
     N = TEST_PARAMS["N"]
 
     # Instantiate classes
-    dft = make_core(TEST_PARAMS)
+    dft = make_core(TEST_PARAMS, backend)
     Nx = dft.subgrid_off_step
     Ny = dft.facet_off_step
 
@@ -181,10 +195,17 @@ def test_facet_to_subgrid_dft_1d(xA_size, yB_size):
 
             # Now check against DFT
             expected = make_subgrid_from_sources(sources, N, xA_size, [sg_off])
+            if not numpy.allclose(subgrid, expected):
+                print(sources, facet_off)
+                numpy.save("facet.npy", facet)
+                numpy.save("subgrid.npy", subgrid)
+                numpy.save("expected.npy", expected)
+
             numpy.testing.assert_array_almost_equal(subgrid, expected)
 
 
-def test_facet_to_subgrid_dft_2d():
+@pytest.mark.parametrize("backend", ["numpy", "ska_sdp_func"])
+def test_facet_to_subgrid_dft_2d(backend):
     """Test facet to subgrid distributed FT primitives against direct
     Fourier transformation implementation -- 2D version
     """
@@ -195,7 +216,7 @@ def test_facet_to_subgrid_dft_2d():
     yB_size = TEST_PARAMS["yB_size"]
 
     # Instantiate classes
-    dft = make_core(TEST_PARAMS)
+    dft = make_core(TEST_PARAMS, backend)
     Nx = dft.subgrid_off_step
     Ny = dft.facet_off_step
 
@@ -236,19 +257,20 @@ def test_facet_to_subgrid_dft_2d():
             numpy.testing.assert_array_almost_equal(subgrid, expected)
 
 
+@pytest.mark.parametrize("backend", ["numpy", "ska_sdp_func"])
 @pytest.mark.parametrize(
     "xA_size", [TEST_PARAMS["xA_size"], TEST_PARAMS["xA_size"] - 1]
 )
 @pytest.mark.parametrize(
     "yB_size", [TEST_PARAMS["yB_size"], TEST_PARAMS["yB_size"] - 1]
 )
-def test_subgrid_to_facet_basic(xA_size, yB_size):
+def test_subgrid_to_facet_basic(xA_size, yB_size, backend):
     """Test basic properties of 1D subgrid to facet distributed FT
     primitives for cases where a subgrid is set to a constant value.
     """
 
     # Instantiate classes
-    dft = make_core(TEST_PARAMS)
+    dft = make_core(TEST_PARAMS, backend)
     Nx = dft.subgrid_off_step
     Ny = dft.facet_off_step
     sg_offs = Nx * numpy.arange(-9, 8)
@@ -280,13 +302,14 @@ def test_subgrid_to_facet_basic(xA_size, yB_size):
             )
 
 
+@pytest.mark.parametrize("backend", ["numpy", "ska_sdp_func"])
 @pytest.mark.parametrize(
     "xA_size", [TEST_PARAMS["xA_size"], TEST_PARAMS["xA_size"] - 1]
 )
 @pytest.mark.parametrize(
     "yB_size", [TEST_PARAMS["yB_size"], TEST_PARAMS["yB_size"] - 1]
 )
-def test_subgrid_to_facet_dft(xA_size, yB_size):
+def test_subgrid_to_facet_dft(xA_size, yB_size, backend):
     """Test basic properties of 1D subgrid to facet distributed FT
     primitives for cases where a subgrid is set to a constant value.
     """
@@ -295,7 +318,7 @@ def test_subgrid_to_facet_dft(xA_size, yB_size):
     N = TEST_PARAMS["N"]
 
     # Instantiate classes
-    dft = make_core(TEST_PARAMS)
+    dft = make_core(TEST_PARAMS, backend)
     Nx = dft.subgrid_off_step
     Ny = dft.facet_off_step
 
@@ -342,4 +365,86 @@ def test_subgrid_to_facet_dft(xA_size, yB_size):
             )
             numpy.testing.assert_array_almost_equal(
                 facet[expected != 0], expected[expected != 0]
+            )
+            if sources[0][0] > 0:
+                numpy.testing.assert_array_less(
+                    facet[expected == 0], numpy.max(expected)
+                )
+            else:
+                numpy.testing.assert_array_less(
+                    -facet[expected == 0], numpy.max(-expected)
+                )
+
+
+@pytest.mark.parametrize("backend", ["numpy", "ska_sdp_func"])
+def test_subgrid_to_facet_dft_2d(backend):
+    """Test basic properties of 1D subgrid to facet distributed FT
+    primitives for cases where a subgrid is set to a constant value.
+    """
+
+    # Basic layout parameters
+    N = TEST_PARAMS["N"]
+    xA_size = TEST_PARAMS["xA_size"]
+    yB_size = TEST_PARAMS["yB_size"]
+
+    # Instantiate classes
+    dft = make_core(TEST_PARAMS, backend)
+    Nx = dft.subgrid_off_step
+    Ny = dft.facet_off_step
+
+    # Parameters to try
+    source_lists = [
+        [(1, 0, 0)],
+        [(1, 20, 4)],
+        [(2, 2, 5)],
+        [(3, -5, 4)],
+    ]
+    sg_offs = [[0, 0], [0, Nx], [Nx, 0], [-Nx, -Nx]]
+    facet_offs = [[0, 0], [Ny, Ny], [-Ny, Ny], [0, -Ny]]
+
+    # Test linearity with different values, and start with subgrids at
+    # different (valid) subgrid offsets.
+    for sources, sg_off in itertools.product(source_lists, sg_offs):
+        # Generate subgrid. As we are only filling the grid partially
+        # here, we have to scale it.
+        subgrid = (
+            make_subgrid_from_sources(sources, N, xA_size, sg_off)
+            / xA_size
+            / xA_size
+            * N
+            * N
+        )
+        prepped = dft.prepare_subgrid(subgrid, sg_off)
+
+        # Check different facet offsets
+        for facet_off in facet_offs:
+            extracted0 = dft.extract_subgrid_contrib_to_facet(
+                prepped, facet_off[0], axis=0
+            )
+            extracted1 = dft.extract_subgrid_contrib_to_facet(
+                extracted0, facet_off[1], axis=1
+            )
+            accumulated0 = dft.add_subgrid_contribution(
+                extracted1, sg_off[0], axis=0
+            )
+            accumulated1 = dft.add_subgrid_contribution(
+                accumulated0, sg_off[1], axis=1
+            )
+            facet0 = dft.finish_facet(
+                accumulated1, facet_off[0], yB_size, None, axis=0
+            )
+            facet1 = dft.finish_facet(
+                facet0, facet_off[1], yB_size, None, axis=1
+            )
+
+            # Check that pixels in questions have correct value. As -
+            # again - we have only partially filled the grid, the only
+            # value we can really check is the (singular) one we set
+            # previously.
+            expected = make_facet_from_sources(sources, N, yB_size, facet_off)
+            numpy.testing.assert_array_almost_equal(
+                facet1[expected != 0], expected[expected != 0]
+            )
+            numpy.testing.assert_array_less(
+                facet1[expected == 0], numpy.max(expected)
             )

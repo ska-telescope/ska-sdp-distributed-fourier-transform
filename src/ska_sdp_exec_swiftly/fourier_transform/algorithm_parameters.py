@@ -454,3 +454,343 @@ class SwiftlyCore:
             axis,
         )
 
+
+class SwiftlyCoreFunc:
+    """
+    Streaming Distributed Fourier Transform class
+
+    This version uses native implementations of SwiFTly functions from
+    ska_sdp_func
+    """
+
+    # pylint: disable=too-many-instance-attributes
+
+    def __init__(self, W, N, xM_size, yN_size):
+        # Fundamental sizes and parameters
+        self.W = W
+        self.N = N
+        self.xM_size = xM_size
+        self.yN_size = yN_size
+        self.check_params()
+
+        # Derive subgrid <> facet contribution size
+        self.xM_yN_size = self.xM_size * self.yN_size // self.N
+
+        import ska_sdp_func.fourier_transforms.swiftly
+
+        self._swiftly = ska_sdp_func.fourier_transforms.swiftly.Swiftly(
+            N, yN_size, xM_size, W
+        )
+
+    def check_params(self):
+        """
+        Validate some of the parameters.
+        """
+        if self.N % self.yN_size != 0:
+            raise ValueError(
+                f"Image size {self.N} not divisible by "
+                f"facet size {self.yN_size}!"
+            )
+        if self.N % self.xM_size != 0:
+            raise ValueError(
+                f"Image size {self.N} not divisible by "
+                f"subgrid size {self.xM_size}!"
+            )
+        if (self.xM_size * self.yN_size) % self.N != 0:
+            raise ValueError(
+                f"Contribution size not integer with "
+                f"image size {self.N}, subgrid size {self.xM_size} "
+                f"and facet size {self.yN_size}!"
+            )
+
+    @property
+    def subgrid_off_step(self):
+        """
+        Returns the base subgrid offset.
+
+        All subgrid offsets must be divisible by this value.
+        """
+        return self.N // self.yN_size
+
+    @property
+    def facet_off_step(self):
+        """
+        Returns the base facet offset.
+
+        All facet offsets must be divisible by this value.
+        """
+        return self.N // self.xM_size
+
+    def __str__(self):
+        class_string = (
+            "Fundamental parameters: \n"
+            f"W = {self.W}\n"
+            f"N = {self.N}\n"
+            f"xM_size = {self.xM_size}\n"
+            f"yN_size = {self.yN_size}\n"
+            f"\nDerived values: \n"
+            f"xM_yN_size = {self.xM_yN_size}\n"
+        )
+        return class_string
+
+    def _auto_broadcast(self, fn, in_arr, out, axis, *args):
+        if len(in_arr.shape) == 1:
+            fn(in_arr[numpy.newaxis], out[numpy.newaxis], *args)
+
+        if len(in_arr.shape) == 2:
+            if axis == 0:
+                fn(in_arr.T, out.T, **kwargs)
+            if axis == 1:
+                fn(in_arr, out, **kwargs)
+
+        raise ValueError(f"Invalid axis {axis} or shape {in_arr.shape}!")
+
+    def _auto_broadcast_create(
+        self, create_fn, fn, in_arr, out_size, axis, *args
+    ):
+        # Convert to complex if needed
+        if not numpy.iscomplexobj(in_arr):
+            if in_arr.dtype == numpy.dtype(float):
+                in_arr = in_arr.astype(complex)
+            elif in_arr.dtype == numpy.dtype("float32"):
+                in_arr = in_arr.astype("complex64")
+
+        # One dimensional case: Add new axis to arrays
+        if len(in_arr.shape) == 1:
+            out = create_fn(out_size, dtype=complex)
+            fn(in_arr[numpy.newaxis], out[numpy.newaxis], *args)
+            return out
+
+        # Two dimensional case: Processing functions work on second axis,
+        # therefore transpose if we are meant to work on the first axis.
+        if len(in_arr.shape) == 2:
+            if axis == 0:
+                out = create_fn((out_size, in_arr.shape[1]), dtype=complex)
+                fn(in_arr.T, out.T, *args)
+                return out
+            if axis == 1:
+                out = create_fn((in_arr.shape[0], out_size), dtype=complex)
+                fn(in_arr, out, *args)
+                return out
+
+        raise ValueError(f"Invalid axis {axis} or shape {in_arr.shape}!")
+
+    # facet to subgrid algorithm
+    def prepare_facet(self, facet, facet_off, axis):
+        """
+        Prepare facet for extracting subgrid contribution
+
+        This is a relatively expensive operation, both in terms of computation
+        and generated data. It should therefore where possible be used for multiple
+        :py:func:`extract_facet_contrib_to_subgrid` calls.
+
+        :param facet: single facet element
+        :param subgrid_off: subgrid offset
+        :param axis: axis along which operations are performed (0 or 1)
+        :return: prepared facet data
+        """
+
+        return self._auto_broadcast_create(
+            numpy.empty,
+            self._swiftly.prepare_facet,
+            facet,
+            self.yN_size,
+            axis,
+            facet_off,
+        )
+
+    def extract_facet_contrib_to_subgrid(
+        self, prep_facet, subgrid_off, axis
+    ):  # pylint: disable=too-many-arguments
+        """
+        Extract the facet contribution to a subgrid.
+
+        :param prep_facet: prepared facet (see :py:func:`prepare_facet`)
+        :param subgrid_off: subgrid offset
+        :param axis: axis along which the operations are performed (0 or 1)
+
+        :return: compact representation of contribution of facet to subgrid
+        """
+
+        return self._auto_broadcast_create(
+            numpy.empty,
+            self._swiftly.extract_from_facet,
+            prep_facet,
+            self.xM_yN_size,
+            axis,
+            subgrid_off,
+        )
+
+    def add_facet_contribution(self, facet_contrib, facet_off, axis):
+        """
+        Further transforms facet contributions, which then will be summed up.
+
+        :param facet_contrib: array-chunk of individual facet contributions
+        :param facet_off: facet offset for the facet_contrib array chunk
+        :param axis: axis along which the operations are performed (0 or 1)
+        :return: addition to subgrid
+        """
+
+        return self._auto_broadcast_create(
+            numpy.zeros,
+            self._swiftly.add_to_subgrid,
+            facet_contrib,
+            self.xM_size,
+            axis,
+            facet_off,
+        )
+
+    def finish_subgrid(
+        self, summed_contribs, subgrid_off, subgrid_size, subgrid_masks=None
+    ):
+        """
+        Obtain finished subgrid. Operation performed for all axes.
+
+        :param summed_contribs: summed facet contributions to this subgrid
+        :param subgrid_off: subgrid offset per axis
+        :param subgrid_size: subgrid size
+        :param subgrid_masks: subgrid mask per axis (optional)
+
+        :return: approximate subgrid element
+        """
+
+        if len(summed_contribs.shape) == 1:
+            out = numpy.empty(subgrid_size, dtype=complex)
+            self._swiftly.finish_subgrid(
+                summed_contribs[numpy.newaxis], out[numpy.newaxis], subgrid_off
+            )
+            return out
+
+        if len(summed_contribs.shape) == 2:
+            if not isinstance(subgrid_off, list) or len(subgrid_off) != 2:
+                raise ValueError(
+                    "Subgrid offset must be given for every dimension!"
+                )
+            out1 = numpy.empty((self.xM_size, subgrid_size), dtype=complex)
+            self._swiftly.finish_subgrid(summed_contribs, out1, subgrid_off[0])
+            out = numpy.empty((subgrid_size, subgrid_size), dtype=complex)
+            self._swiftly.finish_subgrid(out1.T, out.T, subgrid_off[1])
+            return out
+
+        raise ValueError(
+            f"Invalid axis {axis} or shape {summed_contribs.shape}!"
+        )
+
+    # subgrid to facet algorithm
+    def prepare_subgrid(self, subgrid, subgrid_off):
+        """
+        Calculate the FFT of a padded subgrid element.
+        No reason to do this per-axis, so always do it for all axes.
+
+        :param subgrid: single subgrid array element
+        :param subgrid_off: subgrid offsets (tuple)
+
+        :return: Padded subgrid in image space
+        """
+
+        # Convert to complex if needed
+        if not numpy.iscomplexobj(subgrid):
+            if subgrid.dtype == numpy.dtype(float):
+                subgrid = subgrid.astype(complex)
+            elif in_arr.dtype == numpy.dtype("float32"):
+                subgrid = subgrid.astype("complex64")
+
+        if len(subgrid.shape) == 1:
+            subgrid = pad_mid(subgrid, self.xM_size, 0)
+            self._swiftly.prepare_subgrid_inplace(
+                subgrid[numpy.newaxis], subgrid_off
+            )
+            return subgrid
+
+        elif len(subgrid.shape) == 2:
+            if not isinstance(subgrid_off, list) or len(subgrid_off) != 2:
+                raise ValueError(
+                    "Subgrid offset must be given for every dimension!"
+                )
+            # TODO: Remove intermediate allocation
+            subgrid = pad_mid(
+                pad_mid(subgrid, self.xM_size, 0), self.xM_size, 1
+            )
+            self._swiftly.prepare_subgrid_inplace_2d(
+                subgrid, subgrid_off[0], subgrid_off[1]
+            )
+            return subgrid
+
+        raise ValueError(f"Invalid shape {subgrid.shape}!")
+
+    def extract_subgrid_contrib_to_facet(self, FSi, facet_off, axis):
+        """
+        Extract contribution of subgrid to a facet.
+
+        :param Fsi: Prepared subgrid in image space (see prepare_facet)
+        :param facet_off: facet offset
+        :param axis: axis along which the operations are performed (0 or 1)
+
+        :return: Contribution of subgrid to facet
+
+        """
+
+        return self._auto_broadcast_create(
+            numpy.empty,
+            self._swiftly.extract_from_subgrid,
+            FSi,
+            self.xM_yN_size,
+            axis,
+            facet_off,
+        )
+
+    # pylint: disable=too-many-arguments
+    def add_subgrid_contribution(
+        self,
+        subgrid_contrib,
+        subgrid_off,
+        axis,
+    ):
+        """
+        Sum up subgrid contributions to a facet.
+
+        :param subgrid_contrib: Subgrid contribution to this facet (see
+                extract_subgrid_contrib_to_facet)
+        :param subgrid_off: subgrid offset
+        :param facet_m0_trunc: mask truncated to a facet (image space)
+        :param axis: axis along which operations are performed (0 or 1)
+
+        :return summed subgrid contributions
+
+        """
+
+        return self._auto_broadcast_create(
+            numpy.zeros,
+            self._swiftly.add_to_facet,
+            subgrid_contrib,
+            self.yN_size,
+            axis,
+            subgrid_off,
+        )
+
+    def finish_facet(
+        self, facet_sum, facet_off, facet_size, facet_B_mask, axis
+    ):
+        """
+        Obtain finished facet.
+
+        It extracts from the padded facet (obtained from subgrid via FFT)
+        the true-sized facet and multiplies with masked Fb.
+
+        :param MiNjSi_sum: sum of subgrid contributions to a facet
+        :param facet_size: facet size
+        :param facet_off: facet offset
+        :param facet_B_mask: a facet mask element
+        :param axis: axis along which operations are performed (0 or 1)
+
+        :return: finished (approximate) facet element
+        """
+
+        return self._auto_broadcast_create(
+            numpy.empty,
+            self._swiftly.finish_facet,
+            facet_sum,
+            facet_size,
+            axis,
+            facet_off,
+        )
