@@ -163,8 +163,55 @@ class SwiftlyCore:
 
         return pswf
 
+    def _copy_to_out(
+        self,
+        result: numpy.ndarray,
+        out: numpy.ndarray = None,
+        add_mode: bool = False,
+    ):
+        """
+        Helper that copies data to "out" if appropriate
+
+        This is not a particularly good idea for the numpy implementation, but
+        provides compatibility for ska_sdp_func versions with support output
+        arrays natively.
+
+        This is a relatively expensive operation, both in terms of computation
+        and generated data. It should therefore where possible be used for
+        multiple :py:func:`extract_facet_contrib_to_subgrid` calls.
+
+        :param facet: single facet element
+        :param subgrid_off: subgrid offset
+        :param axis: axis along which operations are performed (0 or 1)
+        :return: prepared facet data
+
+        """
+
+        # If no "out" is given, just return original result
+        if out is None:
+            return result
+
+        # Check shape is as expected
+        if out.shape != result.shape:
+            raise ValueError(
+                "Output shape is {out.shape}, expected {result.shape}!"
+            )
+
+        # Add result, return "out"
+        if add_mode:
+            out[:] += result
+        else:
+            out[:] = result
+        return out
+
     # facet to subgrid algorithm
-    def prepare_facet(self, facet, facet_off, axis):
+    def prepare_facet(
+        self,
+        facet: numpy.ndarray,
+        facet_off=int,
+        axis=int,
+        out: numpy.ndarray = None,
+    ):
         """
         Prepare facet for extracting subgrid contribution
 
@@ -175,6 +222,9 @@ class SwiftlyCore:
         :param facet: single facet element
         :param subgrid_off: subgrid offset
         :param axis: axis along which operations are performed (0 or 1)
+        :param out: Output array. If specified, we set and return it
+          instead of a new array.
+
         :return: prepared facet data
         """
 
@@ -187,23 +237,30 @@ class SwiftlyCore:
             self.yN_size,
             axis,
         )
-        return ifft(numpy.roll(BF, facet_off, axis=axis), axis)
+        result = ifft(numpy.roll(BF, facet_off, axis=axis), axis)
+        return self._copy_to_out(result, out)
 
     def extract_facet_contrib_to_subgrid(
-        self, prep_facet, subgrid_off, axis
-    ):  # pylint: disable=too-many-arguments
+        self,
+        prep_facet: numpy.ndarray,
+        subgrid_off: int,
+        axis: int,
+        out: numpy.ndarray = None,
+    ):
         """
         Extract the facet contribution to a subgrid.
 
         :param prep_facet: prepared facet (see :py:func:`prepare_facet`)
         :param subgrid_off: subgrid offset
         :param axis: axis along which the operations are performed (0 or 1)
+        :param out: Output array. If specified, we set and return it
+          instead of a new array.
 
         :return: compact representation of contribution of facet to subgrid
         """
 
         scaled_subgrid_off = subgrid_off * self.yN_size // self.N
-        return numpy.roll(
+        result = numpy.roll(
             extract_mid(
                 numpy.roll(prep_facet, -scaled_subgrid_off, axis=axis),
                 self.xM_yN_size,
@@ -212,14 +269,24 @@ class SwiftlyCore:
             scaled_subgrid_off,
             axis,
         )
+        return self._copy_to_out(result, out)
 
-    def add_facet_contribution(self, facet_contrib, facet_off, axis):
+    def add_facet_contribution(
+        self,
+        facet_contrib: numpy.ndarray,
+        facet_off: int,
+        axis: int,
+        out: numpy.ndarray = None,
+    ):
         """
         Further transforms facet contributions, which then will be summed up.
 
         :param facet_contrib: array-chunk of individual facet contributions
         :param facet_off: facet offset for the facet_contrib array chunk
         :param axis: axis along which the operations are performed (0 or 1)
+        :param out: Output array. If specified, we set and return it
+          instead of a new array.
+
         :return: addition to subgrid
         """
 
@@ -229,19 +296,28 @@ class SwiftlyCore:
             self._Fn, len(facet_contrib.shape), axis
         ) * numpy.roll(fft(facet_contrib, axis), -scaled_facet_off, axis=axis)
 
-        return numpy.roll(
+        result = numpy.roll(
             pad_mid(FNMBF, self.xM_size, axis),
             scaled_facet_off,
             axis=axis,
         )
+        return self._copy_to_out(result, out, add_mode=True)
 
-    def finish_subgrid(self, summed_contribs, subgrid_off, subgrid_size):
+    def finish_subgrid(
+        self,
+        summed_contribs: numpy.ndarray,
+        subgrid_off: int,
+        subgrid_size: int,
+        out: numpy.ndarray = None,
+    ):
         """
         Obtain finished subgrid. Operation performed for all axes.
 
         :param summed_contribs: summed facet contributions to this subgrid
         :param subgrid_off: subgrid offset per axis
         :param subgrid_size: subgrid size
+        :param out: Output array. If specified, we set and return it
+          instead of a new array.
 
         :return: approximate subgrid element
         """
@@ -265,16 +341,24 @@ class SwiftlyCore:
                 axis=axis,
             )
 
-        return tmp
+        return self._copy_to_out(tmp, out)
 
     # subgrid to facet algorithm
-    def prepare_subgrid(self, subgrid, subgrid_off):
+    def prepare_subgrid(
+        self,
+        subgrid: numpy.ndarray,
+        subgrid_off: int,
+        out: numpy.ndarray = None,
+    ):
         """
         Calculate the FFT of a padded subgrid element.
-        No reason to do this per-axis, so always do it for all axes.
+
+        No reason to do this per-axis, so always done for all axes.
 
         :param subgrid: single subgrid array element
         :param subgrid_off: subgrid offsets (tuple)
+        :param out: Output array. If specified, we set and return it
+          instead of a new array.
 
         :return: Padded subgrid in image space
         """
@@ -300,18 +384,25 @@ class SwiftlyCore:
             # Bring into image space
             tmp = fft(tmp, axis=axis)
 
-        return tmp
+        return self._copy_to_out(tmp, out)
 
-    def extract_subgrid_contrib_to_facet(self, FSi, facet_off, axis):
+    def extract_subgrid_contrib_to_facet(
+        self,
+        FSi: numpy.ndarray,
+        facet_off: int,
+        axis: int,
+        out: numpy.ndarray = None,
+    ):
         """
         Extract contribution of subgrid to a facet.
 
         :param Fsi: Prepared subgrid in image space (see prepare_facet)
         :param facet_off: facet offset
         :param axis: axis along which the operations are performed (0 or 1)
+        :param out: Output array. If specified, we set and return
+          it instead of creating a new array.
 
         :return: Contribution of subgrid to facet
-
         """
 
         # Align with image zero in image space
@@ -327,13 +418,17 @@ class SwiftlyCore:
             axis,
         )
 
-        return numpy.roll(FNjSi, facet_off * self.xM_size // self.N, axis=axis)
+        result = numpy.roll(
+            FNjSi, facet_off * self.xM_size // self.N, axis=axis
+        )
+        return self._copy_to_out(result, out)
 
     def add_subgrid_contribution(
         self,
-        subgrid_contrib,
-        subgrid_off,
-        axis,
+        subgrid_contrib: numpy.ndarray,
+        subgrid_off: int,
+        axis: int,
+        out: numpy.ndarray = None,
     ):
         """
         Sum up subgrid contributions to a facet.
@@ -341,8 +436,9 @@ class SwiftlyCore:
         :param subgrid_contrib: Subgrid contribution to this facet (see
                 extract_subgrid_contrib_to_facet)
         :param subgrid_off: subgrid offset
-        :param facet_m0_trunc: mask truncated to a facet (image space)
         :param axis: axis along which operations are performed (0 or 1)
+        :param out: Output array. If specified, we add to it and return
+          it instead of creating a new array.
 
         :return summed subgrid contributions
 
@@ -358,7 +454,7 @@ class SwiftlyCore:
 
         # Finally put at the right place in the (full) frequency space
         # at padded facet resolution
-        return numpy.roll(
+        result = numpy.roll(
             pad_mid(
                 MiNjSi,
                 self.yN_size,
@@ -368,43 +464,43 @@ class SwiftlyCore:
             axis=axis,
         )
 
+        # Add to existing array or return?
+        return self._copy_to_out(result, out, add_mode=True)
+
     # pylint: disable=too-many-arguments
     def finish_facet(
-        self, MiNjSi_sum, facet_off, facet_size, facet_B_mask, axis
+        self,
+        MiNjSi_sum: numpy.ndarray,
+        facet_off: int,
+        facet_size: int,
+        axis: int,
+        out: numpy.ndarray = None,
     ):
         """
         Obtain finished facet.
 
-        It extracts from the padded facet (obtained from subgrid via FFT)
-        the true-sized facet and multiplies with masked Fb.
+        It extracts from the padded facet (obtained from subgrid contribution
+        sum via FFT) the true-sized facet and multiplies with Fb.
 
         :param MiNjSi_sum: sum of subgrid contributions to a facet
         :param facet_size: facet size
         :param facet_off: facet offset
-        :param facet_B_mask: a facet mask element
-        :param axis: axis along which operations are performed (0 or 1)
+        :param out: Output array. If specified, we set and return it
+          instead of a new array.
 
         :return: finished (approximate) facet element
         """
 
-        if facet_B_mask is not None:
-            facet_mask = broadcast(
-                extract_mid(self._Fb, facet_size, 0) * facet_B_mask,
-                len(MiNjSi_sum.shape),
-                axis,
-            )
-        else:
-            facet_mask = broadcast(
-                extract_mid(self._Fb, facet_size, 0),
-                len(MiNjSi_sum.shape),
-                axis,
-            )
-
-        return facet_mask * extract_mid(
+        result = broadcast(
+            extract_mid(self._Fb, facet_size, 0),
+            len(MiNjSi_sum.shape),
+            axis,
+        ) * extract_mid(
             numpy.roll(fft(MiNjSi_sum, axis), -facet_off, axis=axis),
             facet_size,
             axis,
         )
+        return self._copy_to_out(result, out)
 
 
 class SwiftlyCoreFunc:
@@ -568,7 +664,13 @@ class SwiftlyCoreFunc:
         return out
 
     # facet to subgrid algorithm
-    def prepare_facet(self, facet, facet_off, axis, out=None):
+    def prepare_facet(
+        self,
+        facet: numpy.ndarray,
+        facet_off=int,
+        axis=int,
+        out: numpy.ndarray = None,
+    ):
         """
         Prepare facet for extracting subgrid contribution
 
@@ -579,6 +681,9 @@ class SwiftlyCoreFunc:
         :param facet: single facet element
         :param subgrid_off: subgrid offset
         :param axis: axis along which operations are performed (0 or 1)
+        :param out: Output array. If specified, we set and return it
+          instead of a new array.
+
         :return: prepared facet data
         """
 
@@ -593,14 +698,20 @@ class SwiftlyCoreFunc:
         )
 
     def extract_facet_contrib_to_subgrid(
-        self, prep_facet, subgrid_off, axis, out=None
-    ):  # pylint: disable=too-many-arguments
+        self,
+        prep_facet: numpy.ndarray,
+        subgrid_off: int,
+        axis: int,
+        out: numpy.ndarray = None,
+    ):
         """
         Extract the facet contribution to a subgrid.
 
         :param prep_facet: prepared facet (see :py:func:`prepare_facet`)
         :param subgrid_off: subgrid offset
         :param axis: axis along which the operations are performed (0 or 1)
+        :param out: Output array. If specified, we set and return it
+          instead of a new array.
 
         :return: compact representation of contribution of facet to subgrid
         """
@@ -617,13 +728,22 @@ class SwiftlyCoreFunc:
 
     extract_from_facet = extract_facet_contrib_to_subgrid
 
-    def add_facet_contribution(self, facet_contrib, facet_off, axis, out=None):
+    def add_facet_contribution(
+        self,
+        facet_contrib: numpy.ndarray,
+        facet_off: int,
+        axis: int,
+        out: numpy.ndarray = None,
+    ):
         """
         Further transforms facet contributions, which then will be summed up.
 
         :param facet_contrib: array-chunk of individual facet contributions
         :param facet_off: facet offset for the facet_contrib array chunk
         :param axis: axis along which the operations are performed (0 or 1)
+        :param out: Output array. If specified, we set and return it
+          instead of a new array.
+
         :return: addition to subgrid
         """
 
@@ -639,13 +759,21 @@ class SwiftlyCoreFunc:
 
     add_to_subgrid = add_facet_contribution
 
-    def add_to_subgrid_2d(self, facet_contrib, facet_offs, out=None):
+    def add_to_subgrid_2d(
+        self,
+        facet_contrib: numpy.ndarray,
+        facet_off0: int,
+        facet_off1: int,
+        out: numpy.ndarray = None,
+    ):
         """
         Further transforms facet contributions, which then will be summed up.
 
         :param facet_contrib: array-chunk of individual facet contributions
-        :param facet_off: facet offset for the facet_contrib array chunk
-        :param axis: axis along which the operations are performed (0 or 1)
+        :param facet_off0: facet offset for the facet contribution (axis 0)
+        :param facet_off1: facet offset for the facet contribution (axis 1)
+        :param out: Output array. If specified, we add to and return it
+          instead of creating a new array.
         :return: addition to subgrid
         """
 
@@ -655,11 +783,17 @@ class SwiftlyCoreFunc:
             facet_contrib,
             self.xM_size,
             out,
-            facet_offs[0],
-            facet_offs[1],
+            facet_off0,
+            facet_off1,
         )
 
-    def finish_subgrid(self, summed_contribs, subgrid_off, subgrid_size):
+    def finish_subgrid(
+        self,
+        summed_contribs: numpy.ndarray,
+        subgrid_off: int,
+        subgrid_size: int,
+        out: numpy.ndarray = None,
+    ):
         """
         Obtain finished subgrid. Operation performed for all axes.
 
@@ -780,9 +914,8 @@ class SwiftlyCoreFunc:
             subgrid_off,
         )
 
-    def finish_facet(
-        self, facet_sum, facet_off, facet_size, _facet_B_mask, axis, out=None
-    ):
+    # pylint: disable=too-many-arguments
+    def finish_facet(self, facet_sum, facet_off, facet_size, axis, out=None):
         """
         Obtain finished facet.
 

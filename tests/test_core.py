@@ -293,9 +293,7 @@ def test_subgrid_to_facet_basic(xA_size, yB_size, backend):
             accumulated = dft.add_subgrid_contribution(
                 extracted, sg_off, axis=0
             )
-            facet = dft.finish_facet(
-                accumulated, facet_off, yB_size, numpy.ones(yB_size), axis=0
-            )
+            facet = dft.finish_facet(accumulated, facet_off, yB_size, axis=0)
 
             # Check that we have value at centre of image
             numpy.testing.assert_array_almost_equal(
@@ -353,9 +351,7 @@ def test_subgrid_to_facet_dft(xA_size, yB_size, backend):
             accumulated = dft.add_subgrid_contribution(
                 extracted, sg_off, axis=0
             )
-            facet = dft.finish_facet(
-                accumulated, facet_off, yB_size, None, axis=0
-            )
+            facet = dft.finish_facet(accumulated, facet_off, yB_size, axis=0)
 
             # Check that pixels in questions have correct value. As -
             # again - we have only partially filled the grid, the only
@@ -432,11 +428,9 @@ def test_subgrid_to_facet_dft_2d(backend):
                 accumulated0, sg_off[1], axis=1
             )
             facet0 = dft.finish_facet(
-                accumulated1, facet_off[0], yB_size, None, axis=0
+                accumulated1, facet_off[0], yB_size, axis=0
             )
-            facet1 = dft.finish_facet(
-                facet0, facet_off[1], yB_size, None, axis=1
-            )
+            facet1 = dft.finish_facet(facet0, facet_off[1], yB_size, axis=1)
 
             # Check that pixels in questions have correct value. As -
             # again - we have only partially filled the grid, the only
