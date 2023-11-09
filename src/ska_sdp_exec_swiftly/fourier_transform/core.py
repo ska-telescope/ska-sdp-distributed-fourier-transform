@@ -1,4 +1,3 @@
-# pylint: disable=unused-argument
 """
 The main data classes are listed in this module.
 
@@ -236,9 +235,7 @@ class SwiftlyCore:
             axis=axis,
         )
 
-    def finish_subgrid(
-        self, summed_contribs, subgrid_off, subgrid_size, out=None
-    ):
+    def finish_subgrid(self, summed_contribs, subgrid_off, subgrid_size):
         """
         Obtain finished subgrid. Operation performed for all axes.
 
@@ -332,7 +329,6 @@ class SwiftlyCore:
 
         return numpy.roll(FNjSi, facet_off * self.xM_size // self.N, axis=axis)
 
-    # pylint: disable=too-many-arguments
     def add_subgrid_contribution(
         self,
         subgrid_contrib,
@@ -372,6 +368,7 @@ class SwiftlyCore:
             axis=axis,
         )
 
+    # pylint: disable=too-many-arguments
     def finish_facet(
         self, MiNjSi_sum, facet_off, facet_size, facet_B_mask, axis
     ):
@@ -486,6 +483,7 @@ class SwiftlyCoreFunc:
         )
         return class_string
 
+    # pylint: disable=too-many-arguments, too-many-branches
     def _auto_broadcast_create(
         self, create_fn, fn, in_arr, out_size, axis, out, *args
     ):
@@ -661,16 +659,13 @@ class SwiftlyCoreFunc:
             facet_offs[1],
         )
 
-    def finish_subgrid(
-        self, summed_contribs, subgrid_off, subgrid_size, subgrid_masks=None
-    ):
+    def finish_subgrid(self, summed_contribs, subgrid_off, subgrid_size):
         """
         Obtain finished subgrid. Operation performed for all axes.
 
         :param summed_contribs: summed facet contributions to this subgrid
         :param subgrid_off: subgrid offset per axis
         :param subgrid_size: subgrid size
-        :param subgrid_masks: subgrid mask per axis (optional)
         :return: approximate subgrid element
         """
 
@@ -720,7 +715,7 @@ class SwiftlyCoreFunc:
             )
             return subgrid
 
-        elif len(subgrid.shape) == 2:
+        if len(subgrid.shape) == 2:
             if not isinstance(subgrid_off, list) or len(subgrid_off) != 2:
                 raise ValueError(
                     "Subgrid offset must be given for every dimension!"
@@ -786,7 +781,7 @@ class SwiftlyCoreFunc:
         )
 
     def finish_facet(
-        self, facet_sum, facet_off, facet_size, facet_B_mask, axis, out=None
+        self, facet_sum, facet_off, facet_size, _facet_B_mask, axis, out=None
     ):
         """
         Obtain finished facet.

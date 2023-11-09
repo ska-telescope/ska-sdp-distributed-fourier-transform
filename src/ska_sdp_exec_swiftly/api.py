@@ -120,7 +120,7 @@ class SwiftlyConfig:
         xM_size: int,
         dask_client=None,
         backend="numpy",
-        **other_args,
+        **_other_args,
     ):
         self._W = W
         self._fov = fov

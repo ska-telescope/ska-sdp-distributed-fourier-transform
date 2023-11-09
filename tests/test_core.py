@@ -33,10 +33,11 @@ def make_core(pars, backend="numpy"):
         return SwiftlyCore(
             pars["W"], pars["N"], pars["xM_size"], pars["yN_size"]
         )
-    elif backend == "ska_sdp_func":
+    if backend == "ska_sdp_func":
         return SwiftlyCoreFunc(
             pars["W"], pars["N"], pars["xM_size"], pars["yN_size"]
         )
+    raise ValueError(f"Unknown backend {backend}!")
 
 
 @pytest.mark.parametrize("backend", ["numpy", "ska_sdp_func"])
