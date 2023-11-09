@@ -1,9 +1,11 @@
+--extra-index-url https://artefact.skao.int/repository/pypi-internal/simple
 numpy
 scipy
 dask
 distributed
 h5py
 matplotlib
+ska-sdp-func
 sphinx
 sphinx-argparse
 sphinx-rtd-theme

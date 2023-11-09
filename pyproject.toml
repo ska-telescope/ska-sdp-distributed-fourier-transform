@@ -6,6 +6,10 @@ authors = ["SKA SDP Developers"]
 license = "BSD-3-Clause"
 repository = "https://gitlab.com/ska-telescope/sdp/ska-sdp-distributed-fourier-transform"
 
+[[tool.poetry.source]]
+name = "ska"
+url = "https://artefact.skao.int/repository/pypi-internal/simple"
+
 [tool.poetry.dependencies]
 python = "^3.9.5"
 bokeh = "^2.4.3"
@@ -17,6 +21,7 @@ numpy = "^1.23.3"
 scipy = {version="^1.9.1", python=">=3.9.5,<3.11"}
 h5py = "^3.7.0"
 pandas = "^1.4.4"
+ska-sdp-func = "^1.0.0"
 
 [tool.poetry.dev-dependencies]
 isort = "^5.10.1"

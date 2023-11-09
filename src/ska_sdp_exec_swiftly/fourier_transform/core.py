@@ -18,6 +18,7 @@ then we don't create facets outside that.
 import numpy
 import scipy.signal
 import scipy.special
+import ska_sdp_func.fourier_transforms.swiftly
 
 from .fourier_algorithm import (
     broadcast,
@@ -429,8 +430,6 @@ class SwiftlyCoreFunc:
 
         # Derive subgrid <> facet contribution size
         self.xM_yN_size = self.xM_size * self.yN_size // self.N
-
-        import ska_sdp_func.fourier_transforms.swiftly
 
         self._swiftly = ska_sdp_func.fourier_transforms.swiftly.Swiftly(
             N, yN_size, xM_size, W
