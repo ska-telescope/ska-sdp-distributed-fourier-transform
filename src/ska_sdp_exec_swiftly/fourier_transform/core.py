@@ -103,15 +103,13 @@ class SwiftlyCore:
         """
         return self.N // self.xM_size
 
-    def __str__(self):
+    def __repr__(self):
         class_string = (
-            "Fundamental parameters: \n"
-            f"W = {self.W}\n"
-            f"N = {self.N}\n"
-            f"xM_size = {self.xM_size}\n"
-            f"yN_size = {self.yN_size}\n"
-            f"\nDerived values: \n"
-            f"xM_yN_size = {self.xM_yN_size}\n"
+            f"{self.__class__.__name__}("
+            f"W={self.W}, "
+            f"N={self.N}, "
+            f"xM_size={self.xM_size}, "
+            f"yN_size={self.yN_size})"
         )
         return class_string
 
@@ -176,15 +174,10 @@ class SwiftlyCore:
         provides compatibility for ska_sdp_func versions with support output
         arrays natively.
 
-        This is a relatively expensive operation, both in terms of computation
-        and generated data. It should therefore where possible be used for
-        multiple :py:func:`extract_facet_contrib_to_subgrid` calls.
-
-        :param facet: single facet element
-        :param subgrid_off: subgrid offset
-        :param axis: axis along which operations are performed (0 or 1)
-        :return: prepared facet data
-
+        :param result: Result of processing function
+        :param out: Provided output array (can be `None`)
+        :param add_mode: Whether to add instead of overwrite
+        :return: Either result or out array
         """
 
         # If no "out" is given, just return original result
@@ -421,6 +414,7 @@ class SwiftlyCore:
         result = numpy.roll(
             FNjSi, facet_off * self.xM_size // self.N, axis=axis
         )
+        result = ifft(result, axis)
         return self._copy_to_out(result, out)
 
     def add_subgrid_contribution(
@@ -445,9 +439,8 @@ class SwiftlyCore:
         """
 
         # Bring subgrid contribution into frequency space
-        NjSi_temp = ifft(subgrid_contrib, axis)
         MiNjSi = numpy.roll(
-            NjSi_temp,
+            subgrid_contrib,
             -subgrid_off * self.yN_size // self.N,
             axis=axis,
         )
@@ -528,6 +521,21 @@ class SwiftlyCoreFunc:
             N, yN_size, xM_size, W
         )
 
+    # Pickle support
+    def __getnewargs__(self):
+        return (self.W, self.N, self.xM_size, self.yN_size)
+
+    def __getstate__(self):
+        return {
+            "W": self.W,
+            "N": self.N,
+            "xM_size": self.xM_size,
+            "yN_size": self.yN_size,
+        }
+
+    def __setstate__(self, args):
+        self.__init__(**args)
+
     def check_params(self):
         """
         Validate some of the parameters.
@@ -567,15 +575,13 @@ class SwiftlyCoreFunc:
         """
         return self.N // self.xM_size
 
-    def __str__(self):
+    def __repr__(self):
         class_string = (
-            "Fundamental parameters: \n"
-            f"W = {self.W}\n"
-            f"N = {self.N}\n"
-            f"xM_size = {self.xM_size}\n"
-            f"yN_size = {self.yN_size}\n"
-            f"\nDerived values: \n"
-            f"xM_yN_size = {self.xM_yN_size}\n"
+            f"{self.__class__.__name__}("
+            f"W={self.W}, "
+            f"N={self.N}, "
+            f"xM_size={self.xM_size}, "
+            f"yN_size={self.yN_size})"
         )
         return class_string
 
@@ -816,9 +822,9 @@ class SwiftlyCoreFunc:
                     "Subgrid offset must be given for every dimension!"
                 )
             out1 = numpy.empty((self.xM_size, subgrid_size), dtype=complex)
-            self._swiftly.finish_subgrid(summed_contribs, out1, subgrid_off[0])
+            self._swiftly.finish_subgrid(summed_contribs, out1, subgrid_off[1])
             out = numpy.empty((subgrid_size, subgrid_size), dtype=complex)
-            self._swiftly.finish_subgrid(out1.T, out.T, subgrid_off[1])
+            self._swiftly.finish_subgrid(out1.T, out.T, subgrid_off[0])
             return out
 
         raise ValueError(f"Invalid shape {summed_contribs.shape}!")
@@ -850,6 +856,7 @@ class SwiftlyCoreFunc:
             return subgrid
 
         if len(subgrid.shape) == 2:
+
             if not isinstance(subgrid_off, list) or len(subgrid_off) != 2:
                 raise ValueError(
                     "Subgrid offset must be given for every dimension!"
@@ -897,7 +904,6 @@ class SwiftlyCoreFunc:
         :param subgrid_contrib: Subgrid contribution to this facet (see
                 extract_subgrid_contrib_to_facet)
         :param subgrid_off: subgrid offset
-        :param facet_m0_trunc: mask truncated to a facet (image space)
         :param axis: axis along which operations are performed (0 or 1)
 
         :return summed subgrid contributions
@@ -920,12 +926,11 @@ class SwiftlyCoreFunc:
         Obtain finished facet.
 
         It extracts from the padded facet (obtained from subgrid via FFT)
-        the true-sized facet and multiplies with masked Fb.
+        the true-sized facet and multiplies with Fb.
 
         :param MiNjSi_sum: sum of subgrid contributions to a facet
         :param facet_size: facet size
         :param facet_off: facet offset
-        :param facet_B_mask: a facet mask element
         :param axis: axis along which operations are performed (0 or 1)
 
         :return: finished (approximate) facet element

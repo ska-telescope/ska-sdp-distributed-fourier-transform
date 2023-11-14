@@ -258,7 +258,8 @@ def make_facet_from_sources(
 
     # Apply facet mask
     for axis, mask in enumerate(facet_masks or []):
-        facet *= broadcast(numpy.array(mask), dims, axis)
+        if mask is not None:
+            facet *= broadcast(numpy.array(mask), dims, axis)
 
     return facet
 

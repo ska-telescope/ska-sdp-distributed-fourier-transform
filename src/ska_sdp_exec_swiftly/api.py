@@ -261,9 +261,7 @@ class SwiftlyForward:
         :return: subgrid task
         """
         NMBF_NMBF_tasks = [
-            dask.delayed(
-                self.config.core_task
-            ).extract_facet_contrib_to_subgrid(
+            self.config.core_task.extract_facet_contrib_to_subgrid(
                 NMBF_BF,
                 subgrid_config.off1,
                 axis=1,
@@ -288,7 +286,7 @@ class SwiftlyForward:
         if self.BF_Fs_persist is None:
             self.BF_Fs_persist = self._client.persist(
                 [
-                    dask.delayed(self.config.core_task).prepare_facet(
+                    self.config.core_task.prepare_facet(
                         facet_data,
                         facet.off0,
                         axis=0,

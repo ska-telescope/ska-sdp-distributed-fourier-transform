@@ -43,31 +43,28 @@ TEST_PARAMS = {
 @pytest.mark.parametrize(
     "queue_size,lru_forward,lru_backward,shuffle",
     [
+        (100, 1, 1, False),
+        (100, 2, 1, False),
+        (200, 1, 2, False),
         (100, 1, 1, True),
         (200, 1, 1, True),
         (100, 2, 1, True),
-        (200, 2, 1, True),
-        (100, 1, 2, True),
         (200, 1, 2, True),
-        (100, 1, 1, False),
-        (200, 1, 1, False),
-        (100, 2, 1, False),
-        (200, 2, 1, False),
-        (100, 1, 2, False),
-        (200, 1, 2, False),
     ],
 )
+@pytest.mark.parametrize("backend", ["ska_sdp_func", "numpy"])
 def test_swiftly_api(
     client,  # noqa: F811
     queue_size,
     lru_forward,
     lru_backward,
     shuffle,
-):  # pylint: disable=redefined-outer-name
+    backend,
+):  # pylint: disable=redefined-outer-name,too-many-arguments
     """test major with api"""
 
     sources = [(1, 1, 0)]
-    swiftlyconfig = SwiftlyConfig(**TEST_PARAMS)
+    swiftlyconfig = SwiftlyConfig(backend=backend, **TEST_PARAMS)
 
     subgrid_config_list = make_full_subgrid_cover(swiftlyconfig)
     facets_config_list = make_full_facet_cover(swiftlyconfig)

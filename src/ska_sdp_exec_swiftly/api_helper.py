@@ -76,7 +76,7 @@ def sum_and_finish_subgrid(
     facets_config_list,
     subgrid_config,
 ):
-    """sum facet contribution and finish subgrid"""
+    """Sum facet contributions to a subgrid and finish it"""
 
     # Group facets by off1 (i.e. column)
     summed_facet = None
@@ -115,7 +115,8 @@ def sum_and_finish_subgrid(
 def prepare_and_split_subgrid(
     distributedFFT, subgrid, subgrid_offs, facets_config_list
 ):
-    """prepare NAF_NAF"""
+    """Prepare subgrid and extract contributions to all facets"""
+
     # Prepare subgrid
     prepared_subgrid = distributedFFT.prepare_subgrid(subgrid, subgrid_offs)
 
@@ -140,9 +141,10 @@ def prepare_and_split_subgrid(
 
 def accumulate_column(distributedFFT, NAF_NAF, NAF_MNAF, subgrid_off1):
     """
-    Update column sum (NAF_MNAF)
+    Sum up subgrid contributions from a subgrid column (i.e. same subgrid
+    offset 1) to a facet (NAF_MNAF)
 
-    Note that this is done in-place, so ideally take care not to reuse the the
+    Note that this is done in-place, so do not to reuse the
     NAF_MNAF parameter after passing it to this function / task!
     """
     return distributedFFT.add_subgrid_contribution(
@@ -160,8 +162,8 @@ def accumulate_facet(
     """
     Update MNAF_BMNAF
 
-    Note that this is done in-place, so ideally take care not to reuse the the
-    MNAF_BMNAF parameter after passing it to this function / task!
+    Note that this is done in-place, so do not to reuse the
+    NAF_MNAF parameter after passing it to this function / task!
     """
 
     NAF_BMNAF = distributedFFT.finish_facet(
@@ -172,8 +174,6 @@ def accumulate_facet(
     )
     if facet_config.mask1 is not None:
         NAF_BMNAF *= facet_config.mask1[numpy.newaxis, :]
-    # TODO: add_subgrid_contribution should add
-    # directly to NAF_MNAF here at some point.
     return distributedFFT.add_subgrid_contribution(
         NAF_BMNAF, sg_off0, axis=0, out=MNAF_BMNAF
     )
@@ -181,19 +181,19 @@ def accumulate_facet(
 
 def finish_facet(distriFFT, MNAF_BMNAF, facet_config):
     """wrapper of finish_facet"""
-    if MNAF_BMNAF is not None:
-        approx_facet = distriFFT.finish_facet(
-            MNAF_BMNAF,
-            facet_config.off0,
-            facet_config.size,
-            axis=0,
-        )
-        if facet_config.mask0 is not None:
-            approx_facet *= facet_config.mask0[:, numpy.newaxis]
-    else:
-        approx_facet = numpy.zeros(
+    if MNAF_BMNAF is None:
+        return numpy.zeros(
             (distriFFT.yB_size, distriFFT.yB_size), dtype=complex
         )
+
+    approx_facet = distriFFT.finish_facet(
+        MNAF_BMNAF,
+        facet_config.off0,
+        facet_config.size,
+        axis=0,
+    )
+    if facet_config.mask0 is not None:
+        approx_facet *= facet_config.mask0[:, numpy.newaxis]
     return approx_facet
 
 
