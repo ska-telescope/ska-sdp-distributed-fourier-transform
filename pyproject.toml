@@ -21,7 +21,7 @@ numpy = "^1.23.3"
 scipy = {version="^1.9.1", python=">=3.9.5,<3.11"}
 h5py = "^3.7.0"
 pandas = "^1.4.4"
-ska-sdp-func = "^1.0.0"
+ska-sdp-func = "^1.0.1"
 
 [tool.poetry.dev-dependencies]
 isort = "^5.10.1"
