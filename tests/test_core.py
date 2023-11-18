@@ -123,10 +123,8 @@ def test_facet_to_subgrid_basic(xA_size, yB_size, backend):
 
         # Now generate subgrids at different (valid) subgrid offsets.
         for sg_off in numpy.arange(0, 10 * Nx, Nx):
-            subgrid_contrib = dft.extract_facet_contrib_to_subgrid(
-                prepped, sg_off, axis=0
-            )
-            subgrid_acc = dft.add_facet_contribution(
+            subgrid_contrib = dft.extract_from_facet(prepped, sg_off, axis=0)
+            subgrid_acc = dft.add_to_subgrid(
                 subgrid_contrib, facet_off, axis=0
             )
             subgrid = dft.finish_subgrid(subgrid_acc, sg_off, xA_size)
@@ -188,10 +186,8 @@ def test_facet_to_subgrid_dft_1d(xA_size, yB_size, backend):
 
         # Now generate subgrids at different (valid) subgrid offsets.
         for sg_off in [0, Nx, -Nx, N]:
-            subgrid_contrib = dft.extract_facet_contrib_to_subgrid(
-                prepped, sg_off, axis=0
-            )
-            subgrid_acc = dft.add_facet_contribution(
+            subgrid_contrib = dft.extract_from_facet(prepped, sg_off, axis=0)
+            subgrid_acc = dft.add_to_subgrid(
                 subgrid_contrib, facet_off, axis=0
             )
             subgrid = dft.finish_subgrid(subgrid_acc, sg_off, xA_size)
@@ -237,16 +233,16 @@ def test_facet_to_subgrid_dft_2d(backend):
 
         # Now generate subgrids at different (valid) subgrid offsets.
         for sg_offs in [[0, 0], [0, Nx], [Nx, 0], [-Nx, -Nx]]:
-            subgrid_contrib0 = dft.extract_facet_contrib_to_subgrid(
+            subgrid_contrib0 = dft.extract_from_facet(
                 prepped, sg_offs[0], axis=0
             )
-            subgrid_contrib = dft.extract_facet_contrib_to_subgrid(
+            subgrid_contrib = dft.extract_from_facet(
                 subgrid_contrib0, sg_offs[1], axis=1
             )
-            subgrid_acc0 = dft.add_facet_contribution(
+            subgrid_acc0 = dft.add_to_subgrid(
                 subgrid_contrib, facet_offs[0], axis=0
             )
-            subgrid_acc = dft.add_facet_contribution(
+            subgrid_acc = dft.add_to_subgrid(
                 subgrid_acc0, facet_offs[1], axis=1
             )
             subgrid = dft.finish_subgrid(subgrid_acc, sg_offs, xA_size)
@@ -287,12 +283,8 @@ def test_subgrid_to_facet_basic(xA_size, yB_size, backend):
 
         # Check different facet offsets
         for facet_off in facet_offs:
-            extracted = dft.extract_subgrid_contrib_to_facet(
-                prepped, facet_off, axis=0
-            )
-            accumulated = dft.add_subgrid_contribution(
-                extracted, sg_off, axis=0
-            )
+            extracted = dft.extract_from_subgrid(prepped, facet_off, axis=0)
+            accumulated = dft.add_to_facet(extracted, sg_off, axis=0)
             facet = dft.finish_facet(accumulated, facet_off, yB_size, axis=0)
 
             # Check that we have value at centre of image
@@ -345,12 +337,8 @@ def test_subgrid_to_facet_dft(xA_size, yB_size, backend):
 
         # Check different facet offsets
         for facet_off in facet_offs:
-            extracted = dft.extract_subgrid_contrib_to_facet(
-                prepped, facet_off, axis=0
-            )
-            accumulated = dft.add_subgrid_contribution(
-                extracted, sg_off, axis=0
-            )
+            extracted = dft.extract_from_subgrid(prepped, facet_off, axis=0)
+            accumulated = dft.add_to_facet(extracted, sg_off, axis=0)
             facet = dft.finish_facet(accumulated, facet_off, yB_size, axis=0)
 
             # Check that pixels in questions have correct value. As -
@@ -414,18 +402,14 @@ def test_subgrid_to_facet_dft_2d(backend):
 
         # Check different facet offsets
         for facet_off in facet_offs:
-            extracted0 = dft.extract_subgrid_contrib_to_facet(
+            extracted0 = dft.extract_from_subgrid(
                 prepped, facet_off[0], axis=0
             )
-            extracted1 = dft.extract_subgrid_contrib_to_facet(
+            extracted1 = dft.extract_from_subgrid(
                 extracted0, facet_off[1], axis=1
             )
-            accumulated0 = dft.add_subgrid_contribution(
-                extracted1, sg_off[0], axis=0
-            )
-            accumulated1 = dft.add_subgrid_contribution(
-                accumulated0, sg_off[1], axis=1
-            )
+            accumulated0 = dft.add_to_facet(extracted1, sg_off[0], axis=0)
+            accumulated1 = dft.add_to_facet(accumulated0, sg_off[1], axis=1)
             facet0 = dft.finish_facet(
                 accumulated1, facet_off[0], yB_size, axis=0
             )

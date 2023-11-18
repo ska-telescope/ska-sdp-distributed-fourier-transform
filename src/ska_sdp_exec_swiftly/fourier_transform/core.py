@@ -210,7 +210,7 @@ class SwiftlyCore:
 
         This is a relatively expensive operation, both in terms of computation
         and generated data. It should therefore where possible be used for
-        multiple :py:func:`extract_facet_contrib_to_subgrid` calls.
+        multiple :py:func:`extract_from_facet` calls.
 
         :param facet: single facet element
         :param subgrid_off: subgrid offset
@@ -233,7 +233,7 @@ class SwiftlyCore:
         result = ifft(numpy.roll(BF, facet_off, axis=axis), axis)
         return self._copy_to_out(result, out)
 
-    def extract_facet_contrib_to_subgrid(
+    def extract_from_facet(
         self,
         prep_facet: numpy.ndarray,
         subgrid_off: int,
@@ -264,7 +264,7 @@ class SwiftlyCore:
         )
         return self._copy_to_out(result, out)
 
-    def add_facet_contribution(
+    def add_to_subgrid(
         self,
         facet_contrib: numpy.ndarray,
         facet_off: int,
@@ -379,7 +379,7 @@ class SwiftlyCore:
 
         return self._copy_to_out(tmp, out)
 
-    def extract_subgrid_contrib_to_facet(
+    def extract_from_subgrid(
         self,
         FSi: numpy.ndarray,
         facet_off: int,
@@ -417,7 +417,7 @@ class SwiftlyCore:
         result = ifft(result, axis)
         return self._copy_to_out(result, out)
 
-    def add_subgrid_contribution(
+    def add_to_facet(
         self,
         subgrid_contrib: numpy.ndarray,
         subgrid_off: int,
@@ -428,7 +428,7 @@ class SwiftlyCore:
         Sum up subgrid contributions to a facet.
 
         :param subgrid_contrib: Subgrid contribution to this facet (see
-                extract_subgrid_contrib_to_facet)
+                extract_from_subgrid)
         :param subgrid_off: subgrid offset
         :param axis: axis along which operations are performed (0 or 1)
         :param out: Output array. If specified, we add to it and return
@@ -682,7 +682,7 @@ class SwiftlyCoreFunc:
 
         This is a relatively expensive operation, both in terms of computation
         and generated data. It should therefore where possible be used for
-        multiple :py:func:`extract_facet_contrib_to_subgrid` calls.
+        multiple :py:func:`extract_from_facet` calls.
 
         :param facet: single facet element
         :param subgrid_off: subgrid offset
@@ -703,7 +703,7 @@ class SwiftlyCoreFunc:
             facet_off,
         )
 
-    def extract_facet_contrib_to_subgrid(
+    def extract_from_facet(
         self,
         prep_facet: numpy.ndarray,
         subgrid_off: int,
@@ -732,9 +732,7 @@ class SwiftlyCoreFunc:
             subgrid_off,
         )
 
-    extract_from_facet = extract_facet_contrib_to_subgrid
-
-    def add_facet_contribution(
+    def add_to_subgrid(
         self,
         facet_contrib: numpy.ndarray,
         facet_off: int,
@@ -762,8 +760,6 @@ class SwiftlyCoreFunc:
             out,
             facet_off,
         )
-
-    add_to_subgrid = add_facet_contribution
 
     def add_to_subgrid_2d(
         self,
@@ -872,7 +868,7 @@ class SwiftlyCoreFunc:
 
         raise ValueError(f"Invalid shape {subgrid.shape}!")
 
-    def extract_subgrid_contrib_to_facet(self, FSi, facet_off, axis, out=None):
+    def extract_from_subgrid(self, FSi, facet_off, axis, out=None):
         """
         Extract contribution of subgrid to a facet.
 
@@ -895,14 +891,12 @@ class SwiftlyCoreFunc:
         )
 
     # pylint: disable=too-many-arguments
-    def add_subgrid_contribution(
-        self, subgrid_contrib, subgrid_off, axis, out=None
-    ):
+    def add_to_facet(self, subgrid_contrib, subgrid_off, axis, out=None):
         """
         Sum up subgrid contributions to a facet.
 
         :param subgrid_contrib: Subgrid contribution to this facet (see
-                extract_subgrid_contrib_to_facet)
+                extract_from_subgrid)
         :param subgrid_off: subgrid offset
         :param axis: axis along which operations are performed (0 or 1)
 

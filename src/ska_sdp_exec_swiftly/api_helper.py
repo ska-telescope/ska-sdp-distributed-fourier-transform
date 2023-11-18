@@ -89,12 +89,12 @@ def sum_and_finish_subgrid(
         ):
             if facet_config.off1 != off1:
                 continue
-            summed_facet_col = distributedFFT.add_facet_contribution(
+            summed_facet_col = distributedFFT.add_to_subgrid(
                 NMBF_NMBF, facet_config.off0, axis=0, out=summed_facet_col
             )
 
         # Add all facets of this column to finished facet
-        summed_facet = distributedFFT.add_facet_contribution(
+        summed_facet = distributedFFT.add_to_subgrid(
             summed_facet_col, off1, axis=1, out=summed_facet
         )
 
@@ -123,7 +123,7 @@ def prepare_and_split_subgrid(
     # Extract subgrid facet contributions
 
     NAF_AFs = {
-        off0: distributedFFT.extract_subgrid_contrib_to_facet(
+        off0: distributedFFT.extract_from_subgrid(
             prepared_subgrid, off0, axis=0
         )
         for off0 in set(
@@ -131,7 +131,7 @@ def prepare_and_split_subgrid(
         )
     }
     NAF_NAFs = [
-        distributedFFT.extract_subgrid_contrib_to_facet(
+        distributedFFT.extract_from_subgrid(
             NAF_AFs[facet_config.off0], facet_config.off1, axis=1
         )
         for facet_config in facets_config_list
@@ -147,7 +147,7 @@ def accumulate_column(distributedFFT, NAF_NAF, NAF_MNAF, subgrid_off1):
     Note that this is done in-place, so do not to reuse the
     NAF_MNAF parameter after passing it to this function / task!
     """
-    return distributedFFT.add_subgrid_contribution(
+    return distributedFFT.add_to_facet(
         NAF_NAF, subgrid_off1, axis=1, out=NAF_MNAF
     )
 
@@ -174,7 +174,7 @@ def accumulate_facet(
     )
     if facet_config.mask1 is not None:
         NAF_BMNAF *= facet_config.mask1[numpy.newaxis, :]
-    return distributedFFT.add_subgrid_contribution(
+    return distributedFFT.add_to_facet(
         NAF_BMNAF, sg_off0, axis=0, out=MNAF_BMNAF
     )
 
@@ -200,7 +200,7 @@ def finish_facet(distriFFT, MNAF_BMNAF, facet_config):
 def extract_column(distriFFT, BF_F, subgrid_off0, facet_off1):
     """extract column task"""
     return distriFFT.prepare_facet(
-        distriFFT.extract_facet_contrib_to_subgrid(
+        distriFFT.extract_from_facet(
             BF_F,
             subgrid_off0,
             axis=0,

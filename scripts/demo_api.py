@@ -155,19 +155,21 @@ dfft_parser.add_argument(
     "--queue_size",
     type=int,
     default=20,
-    help="the size of queue",
+    help="maximum number of subgrids to keep in distributed memory",
 )
 dfft_parser.add_argument(
     "--lru_forward",
     type=int,
     default=1,
-    help="max columns pin NMBF_BFs",
+    help="maximum subgrid column preparations to keep in "
+    "distributed memory for forward transform",
 )
 dfft_parser.add_argument(
     "--lru_backward",
     type=int,
     default=1,
-    help="max columns pin NAF_MNAFs",
+    help="maximum subgrid column accumulations to keep in "
+    "distributed memorys for backward transform",
 )
 
 if __name__ == "__main__":

@@ -261,7 +261,7 @@ class SwiftlyForward:
         :return: subgrid task
         """
         NMBF_NMBF_tasks = [
-            self.config.core_task.extract_facet_contrib_to_subgrid(
+            self.config.core_task.extract_from_facet(
                 NMBF_BF,
                 subgrid_config.off1,
                 axis=1,
