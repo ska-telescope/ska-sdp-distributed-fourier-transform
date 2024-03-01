@@ -97,15 +97,15 @@ def _generate_subgrid_contributions(
                 nout=1,
             )
             for j1 in range(distr_fft_class.nfacet):
-                subgrid_contrib[i0][i1][j0][
-                    j1
-                ] = distr_fft_class.extract_subgrid_contrib_to_facet(
-                    NAF_AF,
-                    distr_fft_class.facet_off[j1],
-                    base_arrays.Fn,
-                    axis=1,
-                    use_dask=use_dask,
-                    nout=1,
+                subgrid_contrib[i0][i1][j0][j1] = (
+                    distr_fft_class.extract_subgrid_contrib_to_facet(
+                        NAF_AF,
+                        distr_fft_class.facet_off[j1],
+                        base_arrays.Fn,
+                        axis=1,
+                        use_dask=use_dask,
+                        nout=1,
+                    )
                 )
     return subgrid_contrib
 
@@ -302,16 +302,16 @@ def facet_to_subgrid_2d_method_1(
                 nout=1,
             )
             for i1 in range(distr_ft_class.nsubgrid):
-                NMBF_NMBF[i0][i1][j0][
-                    j1
-                ] = distr_ft_class.extract_facet_contrib_to_subgrid(
-                    NMBF_BF,
-                    distr_ft_class.subgrid_off[i1],
-                    base_arrays.facet_m0_trunc,
-                    base_arrays.Fn,
-                    axis=1,
-                    use_dask=use_dask,
-                    nout=1,
+                NMBF_NMBF[i0][i1][j0][j1] = (
+                    distr_ft_class.extract_facet_contrib_to_subgrid(
+                        NMBF_BF,
+                        distr_ft_class.subgrid_off[i1],
+                        base_arrays.facet_m0_trunc,
+                        base_arrays.Fn,
+                        axis=1,
+                        use_dask=use_dask,
+                        nout=1,
+                    )
                 )
 
     approx_subgrid = generate_approx_subgrid(
@@ -390,16 +390,16 @@ def facet_to_subgrid_2d_method_2(
                 nout=1,
             )
             for i1 in range(distr_fft_class.nsubgrid):
-                NMBF_NMBF[i0][i1][j0][
-                    j1
-                ] = distr_fft_class.extract_facet_contrib_to_subgrid(
-                    NMBF_BF,
-                    distr_fft_class.subgrid_off[i1],
-                    base_arrays.facet_m0_trunc,
-                    base_arrays.Fn,
-                    axis=1,
-                    use_dask=use_dask,
-                    nout=1,
+                NMBF_NMBF[i0][i1][j0][j1] = (
+                    distr_fft_class.extract_facet_contrib_to_subgrid(
+                        NMBF_BF,
+                        distr_fft_class.subgrid_off[i1],
+                        base_arrays.facet_m0_trunc,
+                        base_arrays.Fn,
+                        axis=1,
+                        use_dask=use_dask,
+                        nout=1,
+                    )
                 )
 
     approx_subgrid = generate_approx_subgrid(
@@ -470,16 +470,16 @@ def facet_to_subgrid_2d_method_3(
                 nout=1,
             )
             for i0 in range(distr_fft_class.nsubgrid):
-                NMBF_NMBF[i0][i1][j0][
-                    j1
-                ] = distr_fft_class.extract_facet_contrib_to_subgrid(
-                    BF_NMBF,
-                    distr_fft_class.subgrid_off[i0],
-                    base_arrays.facet_m0_trunc,
-                    base_arrays.Fn,
-                    axis=0,
-                    use_dask=use_dask,
-                    nout=1,
+                NMBF_NMBF[i0][i1][j0][j1] = (
+                    distr_fft_class.extract_facet_contrib_to_subgrid(
+                        BF_NMBF,
+                        distr_fft_class.subgrid_off[i0],
+                        base_arrays.facet_m0_trunc,
+                        base_arrays.Fn,
+                        axis=0,
+                        use_dask=use_dask,
+                        nout=1,
+                    )
                 )
     approx_subgrid = generate_approx_subgrid(
         NMBF_NMBF, distr_fft_class, base_arrays, use_dask=use_dask
