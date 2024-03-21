@@ -2,7 +2,7 @@ include .make/base.mk
 include .make/python.mk
 include .make/oci.mk
 
-PROJECT_NAME = ska-sdp-distributed-fourier-transform
+PROJECT_NAME = ska-sdp-exec-swiftly
 
 # C0103: invalid-name (caused by non-compliant variable names)
 # W0511: fixme (don't report TODOs)
