@@ -1,10 +1,10 @@
 [tool.poetry]
-name = "ska-sdp-distributed-fourier-transform"
+name = "ska-sdp-exec-swiftly"
 version = "0.0.0"
-description = "SKA SDP Distributed Fourier Transform"
+description = "SKA SDP SwiFTly Distributed Fourier Transform"
 authors = ["SKA SDP Developers"]
 license = "BSD-3-Clause"
-repository = "https://gitlab.com/ska-telescope/sdp/ska-sdp-distributed-fourier-transform"
+repository = "https://gitlab.com/ska-telescope/sdp/ska-sdp-exec-swiftly"
 
 [tool.poetry.dependencies]
 python = "^3.10"
