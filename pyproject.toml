@@ -1,6 +1,7 @@
+
 [tool.poetry]
 name = "ska-sdp-exec-swiftly"
-version = "0.0.0"
+version = "1.0.0"
 description = "SKA SDP streaming widefield Fourier transforms for radio astronomy"
 authors = ["SKA SDP Developers"]
 license = "BSD-3-Clause"
