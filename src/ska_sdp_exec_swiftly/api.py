@@ -132,7 +132,7 @@ class SwiftlyConfig:
 
         if dask_client is None:
             dask_client = Client.current()
-        self.dask_client = dask_client or Client.current()
+        self.dask_client = dask_client
 
         # Construct backend routines
         if backend == "numpy":
