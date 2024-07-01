@@ -16,3 +16,8 @@ PYTHON_SWITCHES_FOR_PYLINT = --disable=C0103,W0511,R0801,R0914,R0915
 # W503: same problem with "line break before binary operator"
 PYTHON_SWITCHES_FOR_FLAKE8 = --ignore=E203,W503
 PYTHON_LINT_TARGET = src/ tests/ scripts/
+
+# Ignore sins in notebook (it is mostly for historical interest anyway)
+# A lot of them seem to be just plain wrong?
+NOTEBOOK_SWITCHES_FOR_PYLINT = --disable=E0602,C0116,W0621,E0102,R1782,C0413,C0209,W0122,R0913,R1705,E0601,C0301,C0114,R0402
+NOTEBOOK_SWITCHES_FOR_FLAKE8 = --ignore=E501,F821,F811,W503,E203,E402

@@ -38,6 +38,7 @@ pylint-junit = "^0.3.4"
 pytest = "^7.4.4"
 pytest-cov = "^4.1.0"
 build = "^1.0.3"
+nbqa = "^1.8.5"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
