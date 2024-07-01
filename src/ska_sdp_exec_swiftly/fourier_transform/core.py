@@ -1,17 +1,5 @@
 """
 The main data classes are listed in this module.
-
-Note: An alternative way of calculating nfacet is::
-
-    if sizes.fov is not None:
-        nfacet = int(numpy.ceil(sizes.N * sizes.fov / sizes.yB_size))
-        log.info(
-            f"{nfacet}x{nfacet} facets for FoV of {sizes.fov} "
-            f"({sizes.N * sizes.fov / nfacet / sizes.yB_size * 100}% efficiency)"
-        )
-
-This makes sure that if we have a specific FoV we care about,
-then we don't create facets outside that.
 """  # noqa: E501
 
 import numpy
