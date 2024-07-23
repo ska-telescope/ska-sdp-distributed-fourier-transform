@@ -13,7 +13,7 @@ import dask.distributed
 import numpy
 from distributed import performance_report
 from distributed.diagnostics import MemorySampler
-from utils import get_and_write_transfer
+from utils import cli_parser, get_and_write_transfer
 
 from ska_sdp_exec_swiftly import (
     SWIFT_CONFIGS,
@@ -21,11 +21,9 @@ from ska_sdp_exec_swiftly import (
     SwiftlyConfig,
     SwiftlyForward,
     check_facet,
-    cli_parser,
     make_facet,
     make_full_facet_cover,
     make_full_subgrid_cover,
-    set_up_dask,
 )
 
 log = logging.getLogger("fourier-logger")
@@ -53,12 +51,8 @@ def demo_api(queue_size, fundamental_params, lru_forward, lru_backward):
         (
             facet_config,
             dask.delayed(make_facet)(
-                swiftlyconfig.distriFFT.N,
-                swiftlyconfig.distriFFT.yB_size,
-                facet_config.off0,
-                facet_config.mask0,
-                facet_config.off1,
-                facet_config.mask1,
+                swiftlyconfig.image_size,
+                facet_config,
                 sources,
             ),
         )
@@ -88,11 +82,8 @@ def demo_api(queue_size, fundamental_params, lru_forward, lru_backward):
     # check
     check_task = [
         dask.delayed(check_facet)(
-            swiftlyconfig.distriFFT.N,
-            facet_config.off0,
-            facet_config.mask0,
-            facet_config.off1,
-            facet_config.mask1,
+            swiftlyconfig.image_size,
+            facet_config,
             new_facet,
             sources,
         )
@@ -114,9 +105,6 @@ def main(args):
     # Fixing seed of numpy random
     numpy.random.seed(123456789)
 
-    scheduler = os.environ.get("DASK_SCHEDULER", None)
-    dask_client = set_up_dask(scheduler_address=scheduler)
-
     swift_config_keys = args.swift_config.split(",")
     for c in swift_config_keys:
         try:
@@ -127,6 +115,10 @@ def main(args):
                 f"configuration keys. Please consult src/swift_configs.py "
                 f"for available options."
             ) from error
+
+    scheduler = os.environ.get("DASK_SCHEDULER", None)
+    dask_client = dask.distributed.Client(scheduler)
+    log.info(dask_client.dashboard_link)
 
     for config_key in swift_config_keys:
         log.info("Running for swift-config: %s", config_key)
@@ -158,25 +150,29 @@ def main(args):
         dask_client.restart()
 
 
+dfft_parser = cli_parser()
+dfft_parser.add_argument(
+    "--queue_size",
+    type=int,
+    default=20,
+    help="maximum number of subgrids to keep in distributed memory",
+)
+dfft_parser.add_argument(
+    "--lru_forward",
+    type=int,
+    default=1,
+    help="maximum subgrid column preparations to keep in "
+    "distributed memory for forward transform",
+)
+dfft_parser.add_argument(
+    "--lru_backward",
+    type=int,
+    default=1,
+    help="maximum subgrid column accumulations to keep in "
+    "distributed memorys for backward transform",
+)
+
 if __name__ == "__main__":
-    dfft_parser = cli_parser()
-    dfft_parser.add_argument(
-        "--queue_size",
-        type=int,
-        default=20,
-        help="the size of queue",
-    )
-    dfft_parser.add_argument(
-        "--lru_forward",
-        type=int,
-        default=1,
-        help="max columns pin NMBF_BFs",
-    )
-    dfft_parser.add_argument(
-        "--lru_backward",
-        type=int,
-        default=1,
-        help="max columns pin NAF_MNAFs",
-    )
+    logging.basicConfig()
     parsed_args = dfft_parser.parse_args()
     main(parsed_args)

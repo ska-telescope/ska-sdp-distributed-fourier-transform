@@ -8,13 +8,12 @@ We provide functions that help testing and
 basic validation of the algorithm.
 
 """
+import argparse
 import logging
 
 import dask
 import numpy
 from distributed import Lock
-
-from ska_sdp_exec_swiftly import single_write_hdf5_task
 
 log = logging.getLogger("fourier-logger")
 log.setLevel(logging.INFO)
@@ -165,36 +164,6 @@ def batch_NMBF_NMBF_sum_finish_subgrid(
 
 
 @dask.delayed
-def write_approx_subgrid(approx_subgrid_list, base_arrays, hdf5_path):
-    """
-    write a batch of approx_subgrid to hdf5
-
-    :param approx_subgrid_list: a batch of approx_subgrid
-    :param base_arrays: BaseArrays class object
-    :param hdf5_path: approx G hdf5 file path
-
-    :return List of i0,i1 and shape of approx_subgrid
-    """
-    res_list = []
-    for i0, i1, approx_subgrid in approx_subgrid_list:
-        lock = Lock(hdf5_path)
-        lock.acquire()
-        _ = single_write_hdf5_task(
-            hdf5_path,
-            "G_data",
-            base_arrays,
-            i0,
-            i1,
-            approx_subgrid,
-            use_dask=False,
-            nout=1,
-        )
-        lock.release()
-        res_list.append((i0, i1, approx_subgrid.shape))
-    return res_list
-
-
-@dask.delayed
 def write_network_transfer_info(path, info):
     """
     write the network transfer info
@@ -260,3 +229,34 @@ def get_and_write_transfer(dask_client, key):
         f"{key},{tmp_size_1},{tmp_size_2}",
     )
     dask_client.compute(write_task, sync=True)
+
+
+def cli_parser():
+    """
+    Parse command line arguments
+
+    :return: argparse
+    """
+    parser = argparse.ArgumentParser(
+        description="Distributed Fast Fourier Transform",
+        fromfile_prefix_chars="@",
+    )
+    parser.add_argument(
+        "--swift_config",
+        type=str,
+        default="1k[1]-n512-256",
+        help="Dictionary key from swift_configs.py corresponding "
+        "to the configuration we want to run the algorithm for."
+        "If coma-separated list of strings, then the code "
+        "will iterate through each key. "
+        "e.g. '12k[1]-n6k-512,10k[1]-n5k-512,8k[1]-n4k-512'",
+    )
+
+    parser.add_argument(
+        "--source_number",
+        type=int,
+        default=10,
+        help="Number of random sources to add to input data",
+    )
+
+    return parser

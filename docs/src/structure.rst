@@ -1,5 +1,5 @@
 Main Repository Structure
-====================
+=========================
 
 The following diagram demonstrates the folder structure in the
 `repository <https://gitlab.com/ska-telescope/sdp/ska-sdp-distributed-fourier-transform>`_::
@@ -15,13 +15,9 @@ The following diagram demonstrates the folder structure in the
     |       |__fourier_transform
     |             algorithm_parameters.py
     |             fourier_algorithm.py
-    |       fourier_transform_dask.py
-    |       utils.py
     |       swift_configs.py
-    |       dask_wrapper.py
     |       api.py
     |       api_helper.py
-    |       generate_hdf5.py
     |__ tests
         <repository-related-files; e.g. poetry.lock, gitignore, Makefile, etc>
 
@@ -41,23 +37,12 @@ The following diagram demonstrates the folder structure in the
 
 
 
-- **src/fourier_transform_dask.py:** contains the main function which orchestrates the code.
-  It also decides whether to run the code with Dask or not. It is set up to run the algorithm in 2D.
+- **src/ska_sdp_exec_swiftly/swift_configs.py:** contains a dictionary of example configurations, which can be directly used with the code
 
-- **src/utils.py:** contains plotting and validation testing utils
-
-- **src/swift_configs.py:** contains a dictionary of example configurations, which can be directly used with the code
-
-- **src/generate_hdf5.py:** contains functions that involve generating data and storing them using HDF5 data format.
-  This is used in cases where the initial data size is too big for the machine to handle.
-
-- **src/api.py:** contains the basic data structure of the algorithm for the object-oriented API.
+- **src/ska_sdp_exec_swiftly/api.py:** contains the basic data structure of the algorithm for the object-oriented API.
   Includes core parameters, the facet and subgrid class.
 
-- **src/api_helper.py:** contains several helper functions for the API implementation.
-
-- **dask_wrapper.py:** contains a few functions that help wrap the distributed coded into dask delayed,
-      and set up and tear down the dask client.
+- **src/ska_sdp_exec_swiftly/api_helper.py:** contains several helper functions for the API implementation.
 
 Please refer to the :ref:`api` page for the details of functions and classes of the algorithm.
 

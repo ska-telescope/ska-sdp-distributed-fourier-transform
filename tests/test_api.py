@@ -7,6 +7,13 @@ import random
 
 import dask
 import pytest
+from distributed.utils_test import (  # noqa: F401,E501; pylint: disable=unused-import
+    cleanup,
+    client,
+    cluster_fixture,
+    loop,
+    loop_in_thread,
+)
 
 from ska_sdp_exec_swiftly import (
     SwiftlyBackward,
@@ -16,7 +23,6 @@ from ska_sdp_exec_swiftly import (
     make_facet,
     make_full_facet_cover,
     make_full_subgrid_cover,
-    set_up_dask,
 )
 
 log = logging.getLogger("fourier-logger")
@@ -24,14 +30,12 @@ log.setLevel(logging.WARNING)
 
 
 TEST_PARAMS = {
-    "W": 13.25,
-    "fov": 0.75,
+    "W": 13.5625,
+    "fov": 1.0,
     "N": 1024,
-    "Nx": 4,
-    "yB_size": 256,
-    "yN_size": 320,
-    "yP_size": 512,
-    "xA_size": 188,
+    "yB_size": 416,
+    "yN_size": 512,
+    "xA_size": 228,
     "xM_size": 256,
 }
 
@@ -39,26 +43,28 @@ TEST_PARAMS = {
 @pytest.mark.parametrize(
     "queue_size,lru_forward,lru_backward,shuffle",
     [
+        (100, 1, 1, False),
+        (100, 2, 1, False),
+        (200, 1, 2, False),
         (100, 1, 1, True),
         (200, 1, 1, True),
         (100, 2, 1, True),
-        (200, 2, 1, True),
-        (100, 1, 2, True),
         (200, 1, 2, True),
-        (100, 1, 1, False),
-        (200, 1, 1, False),
-        (100, 2, 1, False),
-        (200, 2, 1, False),
-        (100, 1, 2, False),
-        (200, 1, 2, False),
     ],
 )
-def test_swiftly_api(queue_size, lru_forward, lru_backward, shuffle):
+@pytest.mark.parametrize("backend", ["ska_sdp_func", "numpy"])
+def test_swiftly_api(
+    client,  # noqa: F811
+    queue_size,
+    lru_forward,
+    lru_backward,
+    shuffle,
+    backend,
+):  # pylint: disable=redefined-outer-name,too-many-arguments
     """test major with api"""
-    client = set_up_dask()
 
     sources = [(1, 1, 0)]
-    swiftlyconfig = SwiftlyConfig(**TEST_PARAMS)
+    swiftlyconfig = SwiftlyConfig(backend=backend, **TEST_PARAMS)
 
     subgrid_config_list = make_full_subgrid_cover(swiftlyconfig)
     facets_config_list = make_full_facet_cover(swiftlyconfig)
@@ -67,24 +73,21 @@ def test_swiftly_api(queue_size, lru_forward, lru_backward, shuffle):
         (
             facet_config,
             dask.delayed(make_facet)(
-                swiftlyconfig.distriFFT.N,
-                swiftlyconfig.distriFFT.yB_size,
-                facet_config.off0,
-                facet_config.mask0,
-                facet_config.off1,
-                facet_config.mask1,
+                swiftlyconfig.image_size,
+                facet_config,
                 sources,
             ),
         )
         for facet_config in facets_config_list
     ]
 
-    fwd = SwiftlyForward(swiftlyconfig, facet_tasks, lru_forward, queue_size)
+    fwd = SwiftlyForward(
+        swiftlyconfig, facet_tasks, lru_forward, queue_size, client
+    )
     bwd = SwiftlyBackward(
-        swiftlyconfig, facets_config_list, lru_backward, queue_size
+        swiftlyconfig, facets_config_list, lru_backward, queue_size, client
     )
     if shuffle:
-
         random.shuffle(subgrid_config_list)
 
     for subgrid_config in subgrid_config_list:
@@ -103,11 +106,8 @@ def test_swiftly_api(queue_size, lru_forward, lru_backward, shuffle):
     # check
     check_task = [
         dask.delayed(check_facet)(
-            swiftlyconfig.distriFFT.N,
-            facet_config.off0,
-            facet_config.mask0,
-            facet_config.off1,
-            facet_config.mask1,
+            swiftlyconfig.image_size,
+            facet_config,
             new_facet,
             sources,
         )
@@ -123,5 +123,3 @@ def test_swiftly_api(queue_size, lru_forward, lru_backward, shuffle):
             error,
         )
         assert error < 3e-10
-
-    client.close()
