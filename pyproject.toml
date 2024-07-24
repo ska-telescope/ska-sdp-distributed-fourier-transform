@@ -1,10 +1,20 @@
+
 [tool.poetry]
 name = "ska-sdp-exec-swiftly"
-version = "0.0.0"
-description = "SKA SDP SwiFTly Distributed Fourier Transform"
+version = "1.0.0"
+description = "SKA SDP streaming widefield Fourier transforms for radio astronomy"
 authors = ["SKA SDP Developers"]
 license = "BSD-3-Clause"
 repository = "https://gitlab.com/ska-telescope/sdp/ska-sdp-exec-swiftly"
+
+[[tool.poetry.source]]
+name = "PyPI"
+priority = "primary"
+
+[[tool.poetry.source]]
+name = "ska"
+url = "https://artefact.skao.int/repository/pypi-internal/simple"
+priority = "primary"
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -17,6 +27,7 @@ numpy = "^1.26.4"
 scipy = "^1.12.0"
 h5py = "^3.10.0"
 pandas = "^2.2.1"
+ska-sdp-func = "^1.0.1"
 
 [tool.poetry.group.dev.dependencies]
 isort = "^5.13.2"
@@ -27,6 +38,7 @@ pylint-junit = "^0.3.4"
 pytest = "^7.4.4"
 pytest-cov = "^4.1.0"
 build = "^1.0.3"
+nbqa = "^1.8.5"
 
 [tool.poetry.group.docs.dependencies]
 sphinx = "^7.2"
@@ -43,9 +55,9 @@ h5py = "^3.10.0"
 dask = "^2024.2.1"
 distributed = "^2024.2.1"
 matplotlib = "^3.8.3"
+ska-sdp-func = "^1.0.1"
+nbmake = "^1.5.4"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
-
-

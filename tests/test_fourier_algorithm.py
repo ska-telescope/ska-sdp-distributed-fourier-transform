@@ -4,23 +4,18 @@ Unit tests for fourier_algorithm.py functions
 
 import itertools
 
-import dask
 import numpy
 import pytest
 
-from ska_sdp_exec_swiftly.fourier_transform.algorithm_parameters import (
-    BaseArrays,
-)
 from ska_sdp_exec_swiftly.fourier_transform.fourier_algorithm import (
     broadcast,
     coordinates,
     create_slice,
     extract_mid,
     fft,
+    generate_masks,
     ifft,
-    ith_subgrid_facet_element,
     make_facet_from_sources,
-    make_subgrid_and_facet_from_sources,
     make_subgrid_from_sources,
     pad_mid,
     roll_and_extract_mid,
@@ -500,72 +495,6 @@ def test_create_slice_raises_error(dims, axis):
         create_slice(2, 6, dims, axis)
 
 
-@pytest.mark.parametrize("use_dask", [False, True])
-def test_ith_subgrid_facet_element_axis_int(use_dask):
-    """
-    Input array is one dimensional, i.e. the axis argument is an integer.
-    Steps the code takes with example data in test:
-        * input array: [13, 44, 12, 23, 33, 1, 53, 1234, 332, 54, 9]
-        * roll by 2: [54, 9, 13, 44, 12, 23, 33, 1, 53, 1234, 332]
-        * extract mid (5): [44, 12, 23, 33, 1]
-        * masked: [0, 0, 23, 33, 1] ==> expected result
-    """
-    image = numpy.array([13, 44, 12, 23, 33, 1, 53, 1234, 332, 54, 9])
-    offset = 2
-    true_size = 5
-    mask = [0, 0, 1, 1, 1]  # length of mask = true_size
-
-    result = ith_subgrid_facet_element(
-        image, offset, true_size, mask, axis=0, use_dask=use_dask, nout=1
-    )
-    if use_dask:
-        result = dask.compute(result, sync=True)
-
-    assert (result == numpy.array([0, 0, 23, 33, 1])).all()
-
-
-@pytest.mark.parametrize("use_dask", [False, True])
-def test_ith_subgrid_facet_element_axis_tuple(use_dask):
-    """
-    Input array is two dimensional, i.e. the axis argument
-    is a tuple of length two.
-
-    Steps the code takes with example data in test:
-        * input array:
-            [[1, 44, 12, 23, 33],
-            [13, 53, 1234, 332, 54],
-            [123, -53, 32, -55, -452]]
-        * roll by 1 along axis=0 and 3 along axis=1:
-            [[32, -55, -452, 123, -53],
-            [12, 23, 33, 1, 44],
-            [332, 54, 13, 53, 1234]]
-        * extract mid (5):
-            [[-55, -452],
-            [23, 33]]
-        * masked:
-            [[0, 0],
-            [0, 33]] ==> expected result
-    """
-    image = numpy.array(
-        [
-            [1, 44, 12, 23, 33],
-            [13, 53, 1234, 332, 54],
-            [123, -53, 32, -55, -452],
-        ]
-    )
-    offset = (1, 3)
-    true_size = 2
-    mask = numpy.array([[0, 0], [0, 1]])
-
-    result = ith_subgrid_facet_element(
-        image, offset, true_size, mask, axis=(0, 1), use_dask=use_dask, nout=1
-    )
-    if use_dask:
-        result = dask.compute(result, sync=True)
-
-    assert (result == numpy.array([[0, 0], [0, 33]])).all()
-
-
 # pylint: disable=too-many-locals
 def test_roll_and_extract_mid():
     """
@@ -767,7 +696,6 @@ def test_make_facet_subgrid_from_sources_1d():
     for sources, image_size, subgrid_offset, facet_offset in itertools.product(
         source_lists, [4, 8, 16, 32], [0, 5, -7], [0, 2, -3]
     ):
-
         # Generate "sub" grid and facet. We choose image and subgrid
         # size to be equal to entire image size so the results should
         # be precisely the FFT of each other (at an offset)
@@ -812,7 +740,6 @@ def test_make_facet_subgrid_from_sources_2d():
     for sources, image_size, subgrid_offset, facet_offset in itertools.product(
         source_lists, [4, 8, 16], facet_sg_offsets, facet_sg_offsets
     ):
-
         # Generate "sub" grid and facet. We choose image and subgrid
         # size to be equal to entire image size so the results should
         # be precisely the FFT of each other (at an offset)
@@ -842,56 +769,19 @@ def test_make_facet_subgrid_from_sources_2d():
             )
 
 
-def test_make_subgrid_and_facet_from_sources_function():
+def test_generate_masks():
     """
-    Test the function make_facet_and_subgrid_from_sources
+    Using subgrid_off and xA_size and nsubgrid, as would
+    the code with the values specified by TEST_PARAMS
     """
 
-    image_size = 1024
-    xA_size = 188
-    yB_size = 256
+    mask_size = 188
+    offsets = [4, 192, 380, 568, 756, 944]
 
-    TEST_PARAMS = {
-        "W": 13.25,
-        "fov": 0.75,
-        "N": image_size,
-        "Nx": 4,
-        "yB_size": yB_size,
-        "yN_size": 320,
-        "yP_size": 512,
-        "xA_size": xA_size,
-        "xM_size": 256,
-    }
-
-    base_arrays = BaseArrays(**TEST_PARAMS)
-
-    sources = [(1, 0, 0)]
-
-    subgrid, facet = make_subgrid_and_facet_from_sources(
-        sources, base_arrays, use_dask=False
-    )
-
-    # Testing the shape
-    assert subgrid.shape == (
-        base_arrays.nsubgrid,
-        base_arrays.nsubgrid,
-        xA_size,
-        xA_size,
-    )
-    assert facet.shape == (
-        base_arrays.nfacet,
-        base_arrays.nfacet,
-        yB_size,
-        yB_size,
-    )
-
-    # Testing the data
-    assert abs(numpy.sum(facet[0, 0])) == 1.0
-
-    subgrid = numpy.roll(subgrid, [0, 0], axis=(0, 1))
-    ft_subgrid_0 = fft(fft(subgrid[0, 0], axis=0), axis=1)
-    assert numpy.isclose(
-        abs(numpy.sum(ft_subgrid_0)),
-        1.0 / (image_size / xA_size) ** 2,
-        rtol=1e-13,
-    )
+    mask = generate_masks(1024, mask_size, offsets)
+    assert mask.shape == (len(offsets), mask_size)
+    assert (mask[0, :52] == 0.0).all()
+    assert (mask[5, -52:] == 0.0).all()
+    assert (mask[1:5, :] == 1.0).all()
+    assert (mask[0, 53:] == 1.0).all()
+    assert (mask[5, :-52] == 1.0).all()
